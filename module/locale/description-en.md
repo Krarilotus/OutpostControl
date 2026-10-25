@@ -1,7 +1,7 @@
 # Outpost Control
 
 **Author**: Monsterfish
-**Version**: 1.0.2
+**Version**: 1.0.3
 
 More say over the European and Arabian outposts you place in the map editor. Every part can be
 switched off in the settings.
@@ -51,8 +51,15 @@ gets a job that suits it:
 Riding round the castle means circling it a good way out and cutting down workers and troops
 outside the walls. Knights only go for the lord when they can reach him; otherwise they ride
 round the castle too. A troop with nothing left to do (the moat is filled, no wall in the way)
-attacks the way the whole wave would have. Catapults and fire ballistas attack as before. Every
-share can be changed in the settings.
+attacks the way the whole wave would have. Every share can be changed in the settings.
+
+## Siege engines on the way
+
+Catapults and fire ballistas from an outpost shoot at what they pass, like the AI's raiding
+siege engines: catapults at the nearest enemy building in their range, then the next one; fire
+ballistas at the nearest enemy troops or workers in their range, and at buildings when no one is
+near. The range is the game's own for each engine (changed by the Rebalancer if you use it).
+With nothing in range they carry on towards the castle as before.
 
 ## Saves and maps
 

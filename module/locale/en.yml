@@ -24,7 +24,7 @@ jobs_group: Attackers' jobs
 jobs_group_descr: |
   When a wave leaves an outpost, its troops split up by type and each part gets a job that suits
   it. The numbers below say how many of each type take the first job; the rest take the second.
-  Catapults and fire ballistas attack as before.
+  Catapults and fire ballistas have their own setting below.
 jobs_enabled: Give the attackers jobs
 jobs_enabled_tooltip: |
   Without this, a whole wave does one thing: walk up and attack a building, now and then digging
@@ -66,6 +66,16 @@ jobs_fire_throwers: Fire throwers burning buildings (%)
 jobs_fire_throwers_tooltip: |
   The rest walk up and burn the troops they meet.
 
+siege_group: Siege engines on the way
+siege_group_descr: |
+  Catapults and fire ballistas from an outpost shoot at what they pass, like the AI's raiding
+  siege engines.
+siege_enabled: Shoot targets on the way
+siege_enabled_tooltip: |
+  Catapults shoot the nearest enemy building in their range, then the next one. Fire ballistas
+  shoot the nearest enemy troops or workers in their range, and buildings when no one is near.
+  The range is the game's own for each engine. With nothing in range they carry on towards the
+  castle as before.
 diagnostics_group: Diagnostics
 diagnostics_group_descr: |
   For testing.

@@ -167,6 +167,21 @@ options:
 
 - display: GroupBox
   category: [Outpost Control]
+  header: '{{siege_group}}'
+  text: '{{siege_group_descr}}'
+  hasHeader: true
+  children:
+  - url: outpost-control.siege.enabled
+    name: outpost-control-siege-enabled
+    text: '{{siege_enabled}}'
+    tooltip: '{{siege_enabled_tooltip}}'
+    display: Switch
+    contents:
+      type: boolean
+      value: true
+
+- display: GroupBox
+  category: [Outpost Control]
   header: '{{diagnostics_group}}'
   text: '{{diagnostics_group_descr}}'
   hasHeader: true

@@ -38,8 +38,17 @@ local templates = require("templates")
 
 -- Jobs.
 K.JOB_NONE, K.JOB_ENGAGE, K.JOB_BUILDINGS, K.JOB_MOAT, K.JOB_WALLS, K.JOB_LORD, K.JOB_PATROL = 0, 1, 2, 3, 4, 5, 6
+K.JOB_SIEGE = 7
+K.JOB_LAST = K.JOB_SIEGE
 K.JOB_NAMES = { [0] = "as the game does", "fight troops", "attack buildings", "fill the moat",
-  "attack walls and gates", "hunt the lord", "ride round the castle" }
+  "attack walls and gates", "hunt the lord", "ride round the castle", "shoot on the way" }
+
+-- Siege engines an outpost sends (catapults, and fire ballistas at an Arabian one; trebuchets
+-- and mangonels if a map's outposts were made to send them): like the AI's raid engines they are
+-- ordered at whatever is in their range on their way. Fire ballistas take troops first.
+K.SIEGE = { [39] = "catapult", [40] = "catapult", [41] = "catapult", [77] = "ballista" }
+-- Their projectile, whose range (in tiles, straight line) the game's range table holds.
+K.SIEGE_PROJECTILE = { [39] = 2, [40] = 3, [41] = 4, [77] = 0x25 }
 
 -- Each unit type an outpost sends: the first job, its default share in percent, the job of the
 -- rest, and the setting that holds the share.
@@ -61,6 +70,7 @@ K.DEFAULTS = {
   defenders = { enabled = true },
   growth = { enabled = true },
   jobs = { enabled = true },
+  siege = { enabled = true },
   diagnostics = { log = false },
 }
 for _, plan in ipairs(K.PLANS) do K.DEFAULTS.jobs[plan.name] = plan.share end
@@ -104,6 +114,7 @@ K.OUTPOST_EURO, K.OUTPOST_ARAB = 106, 107
 K.KIND_RANGED, K.KIND_MELEE = 0xB6, 0xB8
 K.STANCE_AGGRESSIVE = 2
 K.ORDER_ATTACK_UNIT, K.ORDER_ATTACK_WALL_AT, K.ORDER_DIG_MOAT = 4, 7, 0x23
+K.ORDER_ATTACK_BUILDING = 9
 K.TEXT_BUTTON = 332           -- the outpost's own text button picture
 -- The page button, over the panel's title (the title is drawn at 25, 463).
 K.TOGGLE_X, K.TOGGLE_Y, K.TOGGLE_W, K.TOGGLE_H = 18, 456, 125, 30
@@ -216,6 +227,15 @@ K.AOB_REMOVE_FROM_TRIBE = "53 55 56 8B 74 24 10 8B D9 8B CE 69 C9 90 04 00 00 66
 K.AOB_CREATE_TRIBE = "53 55 8B 6C 24 0C 56 57 BF ? ? 00 00 2B FD 33 DB 3B FB 7E"
 K.AOB_INSTRUCTION = "83 EC 1C 8B 44 24 20 69 C0 ? ? 00 00 53 8B 5C 24 30 55 8D 2C 08 33 D2 56 0F BF 75 5C"
 K.AOB_STANCE = "8B 44 24 04 66 8B 54 24 08 69 C0 ? ? 00 00 66 89 94 08 ? ? 00 00 C7 05"
+-- The team table (lord-hunt's pattern): dword per player.
+K.AOB_TEAMS = "8B 0C 85 ? ? ? ? 8B 44 24 30 3B 0C 85 ? ? ? ?"
+K.TEAMS_OPERAND = 0x03
+-- acquireShootTarget: where it reads the range table (mov eax,[eax*4+ranges]). The Rebalancer
+-- puts a jump there to its own code, which reads the same table: then look where it leads.
+K.AOB_ACQUIRE = "83 EC 40 53 56 57 8B 7C 24 50 69 FF 90 04 00 00 8B F1 0F BF 84 37 AA 06 00 00"
+K.ACQUIRE_RANGE = 0x131
+K.RANGE_READ = { 0x8B, 0x04, 0x85 }
+K.RANGE_SEARCH = 0x100
 
 -- MenuItem layout (0x50 bytes) and the outpost's static size slider item, which leads to the
 -- building menu's item table and its constructor.
@@ -230,9 +250,10 @@ K.SIZE_ITEM_FROM_GROUP = 9    -- group header, eight buttons, then the size slid
 ---------------------------------------------------------------------------------------
 
 local U = { STRIDE = 0x490, STATE = 0x8C, TYPE = 0x8E, OWNER = 0x96, UID = 0x98, X = 0xC4, Y = 0xC6,
-  TILE = 0xD4, TRIBE = 0x2D8, STATE_OFFSET = 0x614 }
+  TILE = 0xD4, DYING = 0x2A0, TRIBE = 0x2D8, STATE_OFFSET = 0x614 }
 local T = { OWNER = 0x2C, UID = 0x34, STATE = 0x40, SIZE = 0x5C }
-local B = { STRIDE = 0x32C, TYPE = 0xD2, UID = 0xD8, TRIBE_UID = 0x304, MASK = 0x300 }
+local B = { STRIDE = 0x32C, STATE = 0xD0, TYPE = 0xD2, OWNER = 0xD6, UID = 0xD8, X = 0xEE, Y = 0xF0,
+  SIZE = 0xF8, TRIBE_UID = 0x304, MASK = 0x300 }
 local P = { STRIDE = 0x39F4, CAMP = 0x1D8, LORD = 0x21F8, LORD_UID = 0x21FC }
 K.LORD_TYPE = 55
 K.MAP_SIZE = 400
@@ -358,6 +379,8 @@ local function tileAt(x, y)
   return rd32(G.rows + y * 12) + x
 end
 
+local function team(p) return rd32(G.teams + p * 4) end
+
 local function distance(ax, ay, bx, by)
   local dx, dy = math.abs(ax - bx), math.abs(ay - by)
   return dx > dy and dx or dy
@@ -426,8 +449,10 @@ local function onLaunch()
   end
   for _, kind in ipairs(kinds) do
     local list = byKind[kind]
-    local plan = O.plans[kind]
-    if plan == nil then
+    local plan = O.jobs and O.plans[kind] or nil
+    if O.siege and K.SIEGE[kind] ~= nil then
+      for _, id in ipairs(list) do put(K.JOB_SIEGE, id) end
+    elseif plan == nil then
       for _, id in ipairs(list) do put(K.JOB_NONE, id) end
     else
       local first = (#list * plan.share + 50) // 100
@@ -438,7 +463,7 @@ local function onLaunch()
   -- The wave's own troop keeps whatever the game handles itself (siege engines), else its
   -- largest group.
   local keeper = groups[K.JOB_NONE] and K.JOB_NONE or nil
-  for job = K.JOB_ENGAGE, K.JOB_PATROL do
+  for job = K.JOB_ENGAGE, K.JOB_LAST do
     if keeper == nil and groups[job] then keeper = job end
     if groups[job] and keeper ~= K.JOB_NONE and #groups[job] > #groups[keeper] then keeper = job end
   end
@@ -446,7 +471,7 @@ local function onLaunch()
 
   local kind = rd16(tb + G.tribeKind)
   local made = {}
-  for job = K.JOB_ENGAGE, K.JOB_PATROL do
+  for job = K.JOB_ENGAGE, K.JOB_LAST do
     if groups[job] and job ~= keeper then
       local id = newTribe(owner, groups[job], t, kind)
       if id ~= nil then
@@ -496,6 +521,85 @@ local function patrolPoint(ai, t, cx, cy, step)
   return nil
 end
 
+local function enemies(owner)
+  local list = {}
+  for p = 1, 8 do
+    if p ~= owner and team(p) ~= team(owner) then list[p] = true end
+  end
+  return list
+end
+
+local function squared(ax, ay, bx, by) return (ax - bx) * (ax - bx) + (ay - by) * (ay - by) end
+
+-- The nearest standing enemy building within reach (squared, straight line) of x, y.
+local function nearestBuilding(owner, x, y, reach)
+  local foes = enemies(owner)
+  local best, bestUid, bestDistance = nil, nil, reach + 1
+  for id = 1, K.MAX_BUILDINGS - 1 do
+    local b = building(id)
+    if rd16(b + B.STATE) ~= 0 and foes[rd16(b + B.OWNER)] then
+      local size = rd32(b + B.SIZE)
+      local half = size > 0 and size // 2 or 0
+      local d = squared(x, y, rd16(b + B.X) + half, rd16(b + B.Y) + half)
+      if d < bestDistance then best, bestUid, bestDistance = id, rd32(b + B.UID), d end
+    end
+  end
+  return best, bestUid
+end
+
+-- The nearest living enemy soldier or worker within reach (squared, straight line) of x, y.
+local function nearestUnit(owner, x, y, reach)
+  local foes = enemies(owner)
+  local best, bestUid, bestDistance = nil, nil, reach + 1
+  for id = 1, rd32(G.unitsThis) - 1 do
+    local u = unit(id)
+    if rd16(u + U.STATE) == 2 and foes[rd16(u + U.OWNER)] and rd16(u + U.DYING) == 0 then
+      local d = squared(x, y, rd16(u + U.X), rd16(u + U.Y))
+      if d < bestDistance then best, bestUid, bestDistance = id, rd32(u + U.UID), d end
+    end
+  end
+  return best, bestUid
+end
+
+-- Siege engines on the way: keep shooting what they were told while it stands and is in range,
+-- else take the nearest thing in range (fire ballistas: troops, then buildings), else move on
+-- the way the game has them. The range is the game's own for the engine's projectile, read
+-- each time (the Rebalancer may have changed it).
+local function siegeOrders(ai, t, S, owner, kind, ux, uy)
+  local range = rd32(G.ranges + K.SIEGE_PROJECTILE[kind] * 4)
+  local reach = range * range
+  if S.unit ~= nil then
+    local u = unit(S.unit)
+    if rd32(u + U.UID) == S.unitUid and rd16(u + U.STATE) == 2 and rd16(u + U.DYING) == 0
+        and squared(ux, uy, rd16(u + U.X), rd16(u + U.Y)) <= reach then
+      return
+    end
+    S.unit = nil
+  end
+  if S.building ~= nil then
+    local b = building(S.building)
+    if rd32(b + B.UID) == S.buildingUid and rd16(b + B.STATE) ~= 0 then return end
+    S.building = nil
+  end
+  if K.SIEGE[kind] == "ballista" then
+    local id, uid = nearestUnit(owner, ux, uy, reach)
+    if id ~= nil then
+      F.instruction(G.tribesThis, t, K.ORDER_ATTACK_UNIT, id, uid, 0)
+      S.unit, S.unitUid = id, uid
+      diag("troop %d: fire ballistas shoot unit %d", t, id)
+      return
+    end
+  end
+  local id, uid = nearestBuilding(owner, ux, uy, reach)
+  if id ~= nil then
+    F.instruction(G.tribesThis, t, K.ORDER_ATTACK_BUILDING, id, uid, 0)
+    S.building, S.buildingUid = id, uid
+    diag("troop %d: %ss shoot building %d", t, K.SIEGE[kind], id)
+    return
+  end
+  gameChoice(ai, t, nil)
+end
+
 local function onDecide()
   local t, ai = rd32(G.decideTribe), rd32(G.decideThis)
   local tb = tribe(t)
@@ -511,6 +615,11 @@ local function onDecide()
   local owner = rd32(tb + T.OWNER)
   local target = rd16(tb + G.tribeTarget)
   local lead = F.lead(G.tribesThis, t, 0)
+  if job == K.JOB_SIEGE and lead ~= nil and lead > 0 then
+    local lu = unit(lead)
+    siegeOrders(ai, t, S, owner, rd16(lu + U.TYPE), rd16(lu + U.X), rd16(lu + U.Y))
+    return
+  end
   if target < 1 or target > 8 or lead == nil or lead <= 0 then
     gameChoice(ai, t, nil)
     return
@@ -707,7 +816,7 @@ local function deserialize(handle)
     local size = string.packsize("<I2I4B")
     for offset = 1, #data - size + 1, size do
       local id, uid, job = string.unpack("<I2I4B", data, offset)
-      if id > 0 and id < K.MAX_TRIBES and job <= K.JOB_PATROL and uid == rd32(tribe(id) + T.UID) then
+      if id > 0 and id < K.MAX_TRIBES and job <= K.JOB_LAST and uid == rd32(tribe(id) + T.UID) then
         wr8(G.jobs + id, job)
         wr32(G.jobUids + id * 4, uid)
       end
@@ -732,6 +841,24 @@ local function pad(callback, what)
     return registers
   end, address, 5)
   return address
+end
+
+local function matches(address, bytes)
+  for index, byte in ipairs(bytes) do
+    if (rd8(address + index - 1) & 0xFF) ~= byte then return false end
+  end
+  return true
+end
+
+local function rangeTable(at)
+  if matches(at, K.RANGE_READ) then return rd32(at + #K.RANGE_READ) end
+  if (rd8(at) & 0xFF) == 0xE9 then
+    local code = at + 5 + rd32(at + 1)
+    for offset = 0, K.RANGE_SEARCH do
+      if matches(code + offset, K.RANGE_READ) then return rd32(code + offset + #K.RANGE_READ) end
+    end
+  end
+  error(string.format("%s: the range table at 0x%X is not read the way this module knows", MODULE_NAME, at))
 end
 
 local function resolve()
@@ -805,6 +932,8 @@ local function resolve()
   F.addToTribe = core.exposeCode(scan(K.AOB_ADD_TO_TRIBE, "addUnitToTribe"), 3, 1)
   F.removeFromTribe = core.exposeCode(scan(K.AOB_REMOVE_FROM_TRIBE, "removeUnitFromTribe"), 3, 1)
   F.setStance = core.exposeCode(scan(K.AOB_STANCE, "setUnitStance"), 3, 1)
+  G.teams = rd32(scan(K.AOB_TEAMS, "the team table") + K.TEAMS_OPERAND)
+  G.ranges = rangeTable(scan(K.AOB_ACQUIRE, "acquireShootTarget") + K.ACQUIRE_RANGE)
 end
 
 local function resolvePanel()
@@ -959,7 +1088,7 @@ local function install(self)
     jumpTo(G.growth, assemble(templates.growth, values), K.GROWTH_SIZE)
   end
 
-  if O.jobs then
+  if O.jobs or O.siege then
     values.LAUNCH_TRIBE, values.LAUNCH_THIS, values.REGISTER = G.launchTribe, G.launchThis, G.register
     values.PAD = pad(onLaunch, "splitting waves")
     keep(G.launchSite, 5)
@@ -1036,12 +1165,13 @@ local function enable(self, config)
   O.defenders = setting(config, "defenders", "enabled") == true
   O.growth = setting(config, "growth", "enabled") == true
   O.jobs = setting(config, "jobs", "enabled") == true
+  O.siege = setting(config, "siege", "enabled") == true
   O.log = setting(config, "diagnostics", "log") == true
   O.plans = {}
   for _, plan in ipairs(K.PLANS) do
     O.plans[plan.kind] = { first = plan.first, rest = plan.rest, share = percent(setting(config, "jobs", plan.name)) }
   end
-  if not O.defenders and not O.growth and not O.jobs then
+  if not O.defenders and not O.growth and not O.jobs and not O.siege then
     log(INFO, MODULE_NAME .. ": every part is off")
     return
   end
@@ -1063,9 +1193,10 @@ local function enable(self, config)
   })
 
   install(self)
-  log(INFO, string.format("%s: on (defenders %s, growth %s, jobs %s); buildings 0x%X, troops 0x%X (size 0x%X), "
-    .. "units 0x%X", MODULE_NAME, O.defenders and "on" or "off", O.growth and "on" or "off",
-    O.jobs and "on" or "off", G.buildings, G.tribes, G.tribeStride, G.units))
+  log(INFO, string.format("%s: on (defenders %s, growth %s, jobs %s, siege engines %s); buildings 0x%X, "
+    .. "troops 0x%X (size 0x%X), units 0x%X", MODULE_NAME, O.defenders and "on" or "off",
+    O.growth and "on" or "off", O.jobs and "on" or "off", O.siege and "on" or "off", G.buildings, G.tribes,
+    G.tribeStride, G.units))
 end
 
 local function disable(self, config)
