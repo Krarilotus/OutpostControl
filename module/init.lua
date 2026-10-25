@@ -111,7 +111,7 @@ K.MAX_BUILDINGS = 2000         -- the building array, both exes
 K.MAX_TRIBES = 1250            -- the troop array, both exes
 K.EURO_ARCHER, K.ARAB_ARCHER = 22, 70
 K.OUTPOST_EURO, K.OUTPOST_ARAB = 106, 107
-K.KIND_RANGED, K.KIND_MELEE = 0xB6, 0xB8
+K.KIND_RANGED, K.KIND_MELEE, K.KIND_SIEGE = 0xB6, 0xB8, 0xB9
 K.STANCE_AGGRESSIVE = 2
 K.ORDER_ATTACK_UNIT, K.ORDER_ATTACK_WALL_AT, K.ORDER_DIG_MOAT = 4, 7, 0x23
 K.ORDER_ATTACK_BUILDING = 9
@@ -247,6 +247,13 @@ K.OUTPOST_BEHAVIOUR = 0x32        -- every unit an outpost spawns
 K.SIEGE_EVERY = 15                -- check each engine every 16 ticks (0.4 s at normal speed)
 K.STATE_MOVING = 0x65
 K.UNIT_TYPES = 80
+K.STATE_SHOOT = 8                 -- aim (then 2 load, 4 fire)
+K.SHOOTING = { [8] = true, [2] = true, [4] = true }
+K.SHOOT_BEFORE_STOP = 10          -- what the game's own idle code sets
+K.SIEGE_TRIES = 3                 -- nearest buildings in range offered to acquireShootTarget
+-- The game's "stop walking" (clears the unit's path), used by its attack orders.
+K.AOB_HALT = "8B 44 24 04 69 C0 90 04 00 00 03 C1 33 C9 66 89 88 ? ? 00 00 66 89 88 ? ? 00 00 66 89 88 "
+  .. "? ? 00 00 66 89 88 ? ? 00 00 C2 04 00"
 
 -- MenuItem layout (0x50 bytes) and the outpost's static size slider item, which leads to the
 -- building menu's item table and its constructor.
@@ -262,7 +269,7 @@ K.SIZE_ITEM_FROM_GROUP = 9    -- group header, eight buttons, then the size slid
 
 local U = { STRIDE = 0x490, STATE = 0x8C, TYPE = 0x8E, OWNER = 0x96, UID = 0x98, X = 0xC4, Y = 0xC6,
   TILE = 0xD4, DYING = 0x2A0, ACTION = 0x2C0, TRIBE = 0x2D8, TRIBE_UID = 0x2E4, TARGET_BUILDING = 0x336,
-  SHOOT_UNIT = 0x344, TARGETING = 0x39C, TARGET_UNIT = 0x39E, TARGET_UID = 0x3A0, BEHAVIOUR = 0x42A,
+  SHOOT_UNIT = 0x344, TARGETING = 0x39C, SHOOT_BEFORE_STOP = 0x3D8, TARGET_UNIT = 0x39E, TARGET_UID = 0x3A0, BEHAVIOUR = 0x42A,
   STATE_OFFSET = 0x614 }
 local T = { OWNER = 0x2C, UID = 0x34, STATE = 0x40, SIZE = 0x5C }
 local B = { STRIDE = 0x32C, STATE = 0xD0, TYPE = 0xD2, OWNER = 0xD6, UID = 0xD8, X = 0xEE, Y = 0xF0,
@@ -544,42 +551,62 @@ end
 
 local function squared(ax, ay, bx, by) return (ax - bx) * (ax - bx) + (ay - by) * (ay - by) end
 
--- The nearest standing enemy building within reach (squared, straight line) of x, y.
-local function nearestBuilding(owner, x, y, reach)
+-- Enemy buildings standing within reach (squared, straight line) of x, y, nearest first.
+local function buildingsInReach(owner, x, y, reach)
   local foes = enemies(owner)
-  local best, bestUid, bestDistance = nil, nil, reach + 1
+  local found = {}
   for id = 1, K.MAX_BUILDINGS - 1 do
     local b = building(id)
     if rd16(b + B.STATE) ~= 0 and foes[rd16(b + B.OWNER)] then
       local size = rd32(b + B.SIZE)
       local half = size > 0 and size // 2 or 0
       local d = squared(x, y, rd16(b + B.X) + half, rd16(b + B.Y) + half)
-      if d < bestDistance then best, bestUid, bestDistance = id, rd32(b + B.UID), d end
+      if d <= reach then found[#found + 1] = { id = id, d = d } end
     end
   end
-  return best, bestUid
+  table.sort(found, function(p, q) return p.d < q.d or (p.d == q.d and p.id < q.id) end)
+  return found
 end
 
--- Whether a siege engine is busy with a target that still stands, is alive and belongs to an
--- enemy (another player of another team, the game's own test; nobody's things never count).
-local function liveTarget(u, foes)
-  local kind = rd16(u + U.TARGETING)
-  if kind == K.ORDER_ATTACK_BUILDING then
-    local b = building(rd16(u + U.TARGET_BUILDING))
-    return rd16(b + B.STATE) ~= 0 and rd32(b + B.UID) == rd32(u + U.TARGET_UID) and foes[rd16(b + B.OWNER)] == true
-  elseif kind == K.ORDER_ATTACK_UNIT then
-    local v = unit(rd16(u + U.TARGET_UNIT))
-    return rd16(v + U.STATE) == 2 and rd16(v + U.DYING) == 0 and rd32(v + U.UID) == rd32(u + U.TARGET_UID)
-      and foes[rd16(v + U.OWNER)] == true
-  end
+-- What a player's idle siege engine does with a target (UpdateCatapult, state 0): the game's
+-- acquireShootTarget decides whether it can be shot from here - the game's own range, as the
+-- Rebalancer set it - and aims; then the engine stops and goes into its shooting state. The AI's
+-- own idle code never does this for an engine outside an AI siege, so outpost engines walked
+-- past everything.
+local function startShooting(id, u)
+  F.halt(G.unitsThis, id)
+  wr16(u + U.SHOOT_BEFORE_STOP, K.SHOOT_BEFORE_STOP)
+  wr16(u + U.ACTION, K.STATE_SHOOT)
+end
+
+local function tryBuilding(id, u, b)
+  local targeting, target, uid = rd16(u + U.TARGETING), rd16(u + U.TARGET_BUILDING), rd32(u + U.TARGET_UID)
+  wr16(u + U.TARGETING, K.ORDER_ATTACK_BUILDING)
+  wr16(u + U.TARGET_BUILDING, b)
+  wr32(u + U.TARGET_UID, rd32(building(b) + B.UID))
+  if F.acquire(G.unitsThis, id) ~= 0 then return true end
+  wr16(u + U.TARGETING, targeting)
+  wr16(u + U.TARGET_BUILDING, target)
+  wr32(u + U.TARGET_UID, uid)
   return false
 end
 
--- An outpost siege engine standing or walking without a live target (asm checks every 16
--- ticks): when an enemy comes into the game's own range for its projectile, its troop gets the
--- game's attack order, which stops it and makes it shoot - as a player's order would. Fire
--- ballistas look for troops first with the game's own target search (acquireShootTarget with
--- no target), then buildings; catapults, trebuchets and mangonels take buildings.
+-- The game's own search for an enemy unit in range (acquireShootTarget with no target), which
+-- fire ballistas use when idle.
+local function tryUnits(id, u, foes)
+  local targeting = rd16(u + U.TARGETING)
+  wr16(u + U.TARGETING, 0)
+  if F.acquire(G.unitsThis, id) ~= 0 then
+    local v = rd16(u + U.SHOOT_UNIT)
+    if v > 0 and foes[rd16(unit(v) + U.OWNER)] then return v end
+  end
+  wr16(u + U.TARGETING, targeting)
+  return nil
+end
+
+-- An outpost siege engine standing or walking (asm hands it over every 16 ticks): fire ballistas
+-- shoot enemy troops in range first, then like catapults, trebuchets and mangonels the nearest
+-- enemy building in range. Nothing in range: it walks on.
 local function onSiegeUnit()
   local id = rd32(G.siegeUnit)
   local u = unit(id)
@@ -587,43 +614,32 @@ local function onSiegeUnit()
   if K.SIEGE[kind] == nil or rd16(u + U.STATE) ~= 2 then return end
   local owner = rd16(u + U.OWNER)
   local foes = enemies(owner)
-  if liveTarget(u, foes) then return end
-  local t = rd16(u + U.TRIBE)
-  if t <= 0 or t >= K.MAX_TRIBES or rd32(tribe(t) + T.UID) ~= rd32(u + U.TRIBE_UID) then return end
-  local range = rd32(G.ranges + K.SIEGE_PROJECTILE[kind] * 4)
-  local reach = range * range
-  local x, y = rd16(u + U.X), rd16(u + U.Y)
   if K.SIEGE[kind] == "ballista" then
-    local saved = rd16(u + U.TARGETING)
-    wr16(u + U.TARGETING, 0)
-    local found = F.acquire(G.unitsThis, id) ~= 0
-    local v = rd16(u + U.SHOOT_UNIT)
-    wr16(u + U.TARGETING, saved)
-    if found and v > 0 then
-      local vu = unit(v)
-      if rd16(vu + U.STATE) == 2 and rd16(vu + U.DYING) == 0 and foes[rd16(vu + U.OWNER)]
-          and squared(x, y, rd16(vu + U.X), rd16(vu + U.Y)) <= reach then
-        F.instruction(G.tribesThis, t, K.ORDER_ATTACK_UNIT, v, rd32(vu + U.UID), 0)
-        diag("troop %d: fire ballista %d shoots unit %d", t, id, v)
-        return
-      end
+    local v = tryUnits(id, u, foes)
+    if v ~= nil then
+      startShooting(id, u)
+      diag("fire ballista %d shoots unit %d", id, v)
+      return
     end
   end
-  local b, buid = nearestBuilding(owner, x, y, reach)
-  if b ~= nil then
-    F.instruction(G.tribesThis, t, K.ORDER_ATTACK_BUILDING, b, buid, 0)
-    diag("troop %d: %s %d shoots building %d", t, K.SIEGE[kind], id, b)
+  local range = rd32(G.ranges + K.SIEGE_PROJECTILE[kind] * 4)
+  local candidates = buildingsInReach(owner, rd16(u + U.X), rd16(u + U.Y), range * range)
+  for index = 1, math.min(#candidates, K.SIEGE_TRIES) do
+    local b = candidates[index].id
+    if tryBuilding(id, u, b) then
+      startShooting(id, u)
+      diag("%s %d shoots building %d (range %d)", K.SIEGE[kind], id, b, range)
+      return
+    end
   end
 end
 
--- The game's order round for a siege troop: leave it alone while it shoots, else give it what
--- the AI gives its raid troops - the game's "attack this building" order on a building of the
--- castle it goes for (the melee branch of the outpost logic; the siege branch only walks it to
--- a spot). It then walks into its range and shoots, and on the way the check above stops it
--- for anything nearer.
-local function siegeOrders(ai, t, lead, owner)
-  if liveTarget(unit(lead), enemies(owner)) then return end
-  gameChoice(ai, t, K.KIND_MELEE)
+-- The game's order round for a siege troop: leave it alone while its leader shoots, else the
+-- outpost logic's own siege order - walk up to a building of the castle it goes for. On the way
+-- the check above stops each engine for anything in its range.
+local function siegeOrders(ai, t, lead)
+  if K.SHOOTING[rd16(unit(lead) + U.ACTION)] then return end
+  gameChoice(ai, t, K.KIND_SIEGE)
 end
 
 local function onDecide()
@@ -642,7 +658,7 @@ local function onDecide()
   local target = rd16(tb + G.tribeTarget)
   local lead = F.lead(G.tribesThis, t, 0)
   if job == K.JOB_SIEGE and lead ~= nil and lead > 0 then
-    siegeOrders(ai, t, lead, owner)
+    siegeOrders(ai, t, lead)
     return
   end
   if target < 1 or target > 8 or lead == nil or lead <= 0 then
@@ -966,6 +982,7 @@ local function resolveSiege()
   local acquire = scan(K.AOB_ACQUIRE, "acquireShootTarget")
   G.ranges = rangeTable(acquire + K.ACQUIRE_RANGE)
   F.acquire = core.exposeCode(acquire, 2, 1)
+  F.halt = core.exposeCode(scan(K.AOB_HALT, "the game's stop walking"), 2, 1)
   local call = scan(K.AOB_UPDATE_CALL, "where every unit's update function is called")
   G.updateTable = readOperand(call, K.UPDATE_TABLE, "the update function table")
   G.currentUnit = readOperand(call, K.UPDATE_CURRENT, "the current unit")

@@ -72,11 +72,10 @@ siege_group_descr: |
   siege engines.
 siege_enabled: Shoot targets on the way
 siege_enabled_tooltip: |
-  Catapults and fire ballistas from an outpost stop and shoot as soon as an enemy building (or,
-  for fire ballistas, enemy troops first) comes into their range, while walking or standing,
-  like engines given an attack order. The range is the game's own for each engine. Only enemies
-  are aimed at: players on another team than the outpost's owner, never its allies. With nothing
-  in range they go for a building of the castle they attack, like the AI's raiding siege engines.
+  Catapults and fire ballistas from an outpost walk towards the castle they attack and stop to
+  shoot as soon as an enemy building (for fire ballistas: enemy troops first) is in range. The
+  game itself decides what is in range, with each engine's own range, as for a player's engine.
+  Only enemies are aimed at: players on another team than the outpost's owner, never its allies.
 
 diagnostics_group: Diagnostics
 diagnostics_group_descr: |
