@@ -334,6 +334,35 @@ original:
 jmp DECIDE
 ]]
 
+-- Put in the unit update table for the siege engine types: every 16 ticks (staggered by unit)
+-- an outpost unit standing (state 0) or walking (0x65) goes to lua, which may give it an attack
+-- order. Then whatever update function the table held runs, by the unit's type.
+templates.siegeCheck = [[
+mov eax,[CURRENT_UNIT]
+mov edx,[TICKS]
+add edx,eax
+test edx,SIEGE_EVERY
+jnz go
+imul ecx,eax,U_STRIDE
+cmp word [ecx+U_BEHAVIOUR],OUTPOST_BEHAVIOUR
+jne go
+movzx edx,word [ecx+U_ACTION]
+test edx,edx
+jz check
+cmp edx,STATE_MOVING
+jne go
+check:
+mov [SIEGE_UNIT],eax
+pushad
+call PAD
+popad
+go:
+mov eax,[CURRENT_UNIT]
+imul eax,eax,U_STRIDE
+movsx eax,word [eax+U_TYPE]
+jmp dword [ORIGINAL_UPDATES+eax*4]
+]]
+
 -- The outpost panel's text (prologue: mov eax,[selected], 5 bytes). With growth on, the
 -- attacker page gets its own labels for the moved sliders and the growth slider; the defender
 -- page always has its own labels. Then the page button, when there is a defender page.

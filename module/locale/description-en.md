@@ -1,7 +1,7 @@
 # Outpost Control
 
 **Author**: Monsterfish
-**Version**: 1.0.4
+**Version**: 1.0.5
 
 More say over the European and Arabian outposts you place in the map editor. Every part can be
 switched off in the settings.
@@ -55,13 +55,19 @@ attacks the way the whole wave would have. Every share can be changed in the set
 
 ## Siege engines on the way
 
-Catapults and fire ballistas from an outpost shoot at what they pass, like the AI's raiding
-siege engines: catapults at the nearest enemy building in their range, then the next one; fire
-ballistas at the nearest enemy troops or workers in their range, and at buildings when no one is
-near. The range is the game's own for each engine (changed by the Rebalancer if you use it).
-They only ever aim at enemies: players on another team than the outpost's owner,
-never its allies and never nobody's buildings or animals. With nothing in range they carry on
-towards the castle as before.
+Catapults and fire ballistas from an outpost stop and shoot as soon as something of the enemy
+comes into range, whether they are walking or standing - like siege engines given an attack
+order:
+
+- **Catapults** (and trebuchets or mangonels, if a map's outposts send them) shoot the nearest
+  enemy building in range, then the next one.
+- **Fire ballistas** shoot enemy troops and workers in range first (picked by the game's own
+  target search), and buildings when no one is near.
+
+The range is the game's own for each engine (changed by the Rebalancer if you use it). They only
+ever aim at enemies: players on another team than the outpost's owner, never its allies and
+never nobody's buildings or animals. Once nothing is left in range, they move on towards the
+castle as before.
 
 ## Saves and maps
 
