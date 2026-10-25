@@ -1,7 +1,7 @@
 # Outpost Control
 
 **Author**: Monsterfish
-**Version**: 1.0.1
+**Version**: 1.0.2
 
 More say over the European and Arabian outposts you place in the map editor. Every part can be
 switched off in the settings.
@@ -9,11 +9,12 @@ switched off in the settings.
 ## The outpost panel
 
 Select an outpost in the map editor. The button at the top of its panel now switches between
-two pages:
+two pages. Each slider shows its value to its right.
 
 - **Attackers** - which troops the outpost sends, as in the game, with three sliders:
   - **Size:** how big the waves are (the game's own).
-  - **Start Delay:** how long it waits before the first wave (the game's own).
+  - **Start Delay:** how long it waits before the first wave (the game's own), shown in seconds
+    at normal speed.
   - **Growth:** how fast the attacks build up. Normally every wave makes the next one come
     sooner and fill up faster. None keeps every wave like the first one for the whole game;
     Full (all the way right) is the game's own pace.

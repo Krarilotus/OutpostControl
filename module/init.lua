@@ -86,6 +86,9 @@ K.GAME_SIZE_Y, K.GAME_DELAY_Y = 510, 568
 K.SIZE_Y, K.DELAY_Y, K.GROWTH_Y = 494, 530, 566
 K.LABEL_X, K.LABEL_DROP = 0x19, 7
 K.TEXT_SIZE, K.TEXT_DELAY = 0x12, 0x15     -- the game's own "Size" and "Start Delay"
+K.NUMBER_X = 242                  -- each slider's value, right of it (the troop buttons start at 280)
+K.TICKS_PER_SECOND = 40           -- at normal game speed
+K.SIZE_FIELD, K.DELAY_FIELD = 0x30E, 0x310
 K.KNOB_W, K.KNOB_ABOVE, K.KNOB_H = 15, 5, 36
 
 K.MAX_DEFENDERS = 50
@@ -189,6 +192,7 @@ K.AOB_SLIDER = "8B 4C 24 08 A1 ? ? ? ? 83 C1 FF 83 F9 05 0F 87 ? ? ? ? FF 24 8D 
 K.AOB_SIZE = K.AOB_SLIDER .. "05 00 00 00"
 K.AOB_DELAY = K.AOB_SLIDER .. "C0 5D 00 00"
 K.PANEL_GET_TEXT = 0x43
+K.SLIDER_FIELD = { 0x3A, { 0x0F, 0xBF, 0x80 } }   -- msg 1: movsx eax, word [eax + field]
 K.SLIDER_SIZE = 9
 K.SLIDER_SELECTED = { 0x04, { 0xA1 } }
 -- The game's button picture renderer: the picture index and the draw buffer choice.
@@ -834,6 +838,9 @@ local function resolvePanel()
   G.delaySlider = scan(K.AOB_DELAY, "the outpost's start delay slider")
   same(readOperand(G.sizeSlider, K.SLIDER_SELECTED, "the selected building"), G.selected, "the selected building")
   same(readOperand(G.delaySlider, K.SLIDER_SELECTED, "the selected building"), G.selected, "the selected building")
+  same(readOperand(G.sizeSlider, K.SLIDER_FIELD, "the wave size"), G.buildings + K.SIZE_FIELD, "the wave size")
+  same(readOperand(G.delaySlider, K.SLIDER_FIELD, "the start delay"), G.buildings + K.DELAY_FIELD,
+    "the start delay")
 
   local menuItem = scan(K.AOB_MENU_ITEM, "the menu item handler")
   G.mouse = readOperand(menuItem, K.MENU_ITEM_MOUSE, "the mouse")
@@ -879,6 +886,7 @@ local function allocate()
   G.table = core.allocate(K.MAX_BUILDINGS * 8, true)
   G.slots = core.allocate(K.MAX_BUILDINGS * K.MAX_GUARDS * 8, true)
   G.drag = core.allocate(4, true)
+  G.numberText = core.allocate(16, true)
   G.jobs = core.allocate(K.MAX_TRIBES, true)
   G.jobUids = core.allocate(K.MAX_TRIBES * 4, true)
   G.mode = core.allocate(4, true)
@@ -980,6 +988,12 @@ local function install(self)
     values.TOGGLE_X, values.TOGGLE_Y, values.TOGGLE_W, values.TOGGLE_H = K.TOGGLE_X, K.TOGGLE_Y, K.TOGGLE_W, K.TOGGLE_H
     values.TOGGLE_HALF = K.TOGGLE_W // 2
     values.GROWTH_ON, values.TOGGLE_ON = O.growth and 1 or 0, O.defenders and 1 or 0
+    values.NUMBER_TEXT, values.NUMBER_X, values.TICKS_PER_SECOND = G.numberText, K.NUMBER_X, K.TICKS_PER_SECOND
+    values.B_SIZE, values.B_DELAY = G.buildings + K.SIZE_FIELD, G.buildings + K.DELAY_FIELD
+    values.SIZE_ROW = (O.growth and K.SIZE_Y or K.GAME_SIZE_Y) + K.LABEL_DROP
+    values.DELAY_ROW = (O.growth and K.DELAY_Y or K.GAME_DELAY_Y) + K.LABEL_DROP
+    values.GROWTH_ROW = K.GROWTH_Y + K.LABEL_DROP
+    values.NUMBERS = assemble(templates.numbers, values)
 
     if O.growth then
       values.LABEL_TABLE, values.LABEL_COUNT = G.attackLabels, G.attackLabelCount

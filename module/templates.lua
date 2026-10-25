@@ -346,6 +346,7 @@ call GROWTH_SLIDER
 else
 call usual
 end if
+call NUMBERS
 if TOGGLE_ON <> 0
 jmp TOGGLE
 else
@@ -357,10 +358,100 @@ jmp RESUME
 own:
 if TOGGLE_ON <> 0
 call DEFENDER_LABELS
+call NUMBERS
 jmp TOGGLE
 else
 ret
 end if
+]]
+
+-- Each slider's value, right of it: size as set, start delay in seconds at normal speed, growth
+-- in percent; on the defender page the amount of guards.
+templates.numbers = [[
+push ebx
+push esi
+mov esi,[SELECTED]
+cmp dword [MODE],0
+jne defenders
+imul esi,esi,B_STRIDE
+movsx eax,word [esi+B_SIZE]
+xor ecx,ecx
+mov ebx,SIZE_ROW
+call show
+movsx eax,word [esi+B_DELAY]
+cmp eax,0
+jge delay_ok
+xor eax,eax
+delay_ok:
+xor edx,edx
+mov ecx,TICKS_PER_SECOND
+div ecx
+mov ecx,'s'
+mov ebx,DELAY_ROW
+call show
+if GROWTH_ON <> 0
+mov eax,[SELECTED]
+call ENTRY_GET
+mov edx,100
+test eax,eax
+jz growth_known
+movzx edx,byte [eax+7]
+growth_known:
+mov eax,edx
+mov ecx,'%'
+mov ebx,GROWTH_ROW
+call show
+end if
+jmp done
+defenders:
+if TOGGLE_ON <> 0
+mov eax,esi
+call ENTRY_MAKE
+test eax,eax
+jz done
+movzx eax,byte [eax+6]
+xor ecx,ecx
+mov ebx,SIZE_ROW
+call show
+end if
+done:
+pop esi
+pop ebx
+ret
+show:
+push edi
+mov edi,NUMBER_TEXT+15
+mov byte [edi],0
+test ecx,ecx
+jz digits
+dec edi
+mov [edi],cl
+digits:
+mov ecx,10
+digit:
+xor edx,edx
+div ecx
+add dl,'0'
+dec edi
+mov [edi],dl
+test eax,eax
+jnz digit
+push 0
+push 0
+push 0x12
+push 0
+push 0
+mov eax,[MENU_Y]
+add eax,ebx
+push eax
+mov eax,[MENU_X]
+add eax,NUMBER_X
+push eax
+push edi
+mov ecx,TEXT_MANAGER
+call RENDER_TEXT
+pop edi
+ret
 ]]
 
 -- Slider labels: LABEL_COUNT entries of x, y (from the panel), text, game text id (used when
