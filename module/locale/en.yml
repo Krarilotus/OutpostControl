@@ -76,7 +76,7 @@ siege_enabled_tooltip: |
   for fire ballistas, enemy troops first) comes into their range, while walking or standing,
   like engines given an attack order. The range is the game's own for each engine. Only enemies
   are aimed at: players on another team than the outpost's owner, never its allies. With nothing
-  in range they move on towards the castle as before.
+  in range they go for a building of the castle they attack, like the AI's raiding siege engines.
 
 diagnostics_group: Diagnostics
 diagnostics_group_descr: |

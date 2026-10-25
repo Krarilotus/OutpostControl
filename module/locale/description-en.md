@@ -1,7 +1,7 @@
 # Outpost Control
 
 **Author**: Monsterfish
-**Version**: 1.0.5
+**Version**: 1.0.6
 
 More say over the European and Arabian outposts you place in the map editor. Every part can be
 switched off in the settings.
@@ -66,8 +66,8 @@ order:
 
 The range is the game's own for each engine (changed by the Rebalancer if you use it). They only
 ever aim at enemies: players on another team than the outpost's owner, never its allies and
-never nobody's buildings or animals. Once nothing is left in range, they move on towards the
-castle as before.
+never nobody's buildings or animals. Once nothing is left in range they go for a building of
+the castle they attack, the way the AI's raiding siege engines do, and shoot it from their range.
 
 ## Saves and maps
 

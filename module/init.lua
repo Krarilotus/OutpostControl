@@ -237,9 +237,9 @@ K.ACQUIRE_RANGE = 0x131
 K.RANGE_READ = { 0x8B, 0x04, 0x85 }
 K.RANGE_SEARCH = 0x100
 -- updateUnits, where it calls each unit's update function from the table by unit type.
-K.AOB_UPDATE_CALL = "66 83 B9 A0 06 00 00 04 74 15 0F BF 91 A2 06 00 00 8B 04 95 ? ? ? ? FF D0"
-K.UPDATE_TABLE = { 0x11, { 0x8B, 0x04, 0x95 } }
-K.UPDATE_CURRENT = { -0x0F, { 0xA1 } }        -- mov eax,[current unit] before it
+K.AOB_UPDATE_CALL = "0F BF 91 A2 06 00 00 8B 04 95 ? ? ? ? FF D0"
+K.UPDATE_TABLE = { 0x07, { 0x8B, 0x04, 0x95 } }
+K.UPDATE_CURRENT = { -0x19, { 0xA1 } }        -- mov eax,[current unit], before the patched part
 -- The game tick counter (lord-hunt's pattern).
 K.AOB_TICKS = "8B 87 50 0A 00 00 8B 8F 98 09 00 00 8B 15"
 K.TICKS_OPERAND = 0x0E
@@ -616,11 +616,14 @@ local function onSiegeUnit()
   end
 end
 
--- The game's order round for a siege troop: leave it alone while it shoots, else move on the
--- way the game has it.
+-- The game's order round for a siege troop: leave it alone while it shoots, else give it what
+-- the AI gives its raid troops - the game's "attack this building" order on a building of the
+-- castle it goes for (the melee branch of the outpost logic; the siege branch only walks it to
+-- a spot). It then walks into its range and shoots, and on the way the check above stops it
+-- for anything nearer.
 local function siegeOrders(ai, t, lead, owner)
   if liveTarget(unit(lead), enemies(owner)) then return end
-  gameChoice(ai, t, nil)
+  gameChoice(ai, t, K.KIND_MELEE)
 end
 
 local function onDecide()
@@ -955,6 +958,11 @@ local function resolve()
   F.removeFromTribe = core.exposeCode(scan(K.AOB_REMOVE_FROM_TRIBE, "removeUnitFromTribe"), 3, 1)
   F.setStance = core.exposeCode(scan(K.AOB_STANCE, "setUnitStance"), 3, 1)
   G.teams = rd32(scan(K.AOB_TEAMS, "the team table") + K.TEAMS_OPERAND)
+end
+
+-- Siege engines on the way. smarter-recruits patches the 8 bytes right before the update table
+-- read, so the pattern starts after them.
+local function resolveSiege()
   local acquire = scan(K.AOB_ACQUIRE, "acquireShootTarget")
   G.ranges = rangeTable(acquire + K.ACQUIRE_RANGE)
   F.acquire = core.exposeCode(acquire, 2, 1)
@@ -1220,15 +1228,27 @@ local function enable(self, config)
     return
   end
 
-  local ok, problem = pcall(function()
-    resolve()
-    if O.defenders or O.growth then resolvePanel() end
-    allocate()
-  end)
+  -- A part whose code is not found (another module changed it) stays off on its own.
+  local ok, problem = pcall(resolve)
   if not ok then
     log(WARNING, tostring(problem))
     return
   end
+  if O.defenders or O.growth then
+    ok, problem = pcall(resolvePanel)
+    if not ok then
+      log(WARNING, tostring(problem) .. "; the outpost panel pages, defenders and growth stay off")
+      O.defenders, O.growth = false, false
+    end
+  end
+  if O.siege then
+    ok, problem = pcall(resolveSiege)
+    if not ok then
+      log(WARNING, tostring(problem) .. "; siege engines on the way stay off")
+      O.siege = false
+    end
+  end
+  allocate()
 
   modules["map-extensions"]:registerSection(K.SAVE_SECTION, {
     initialize = function(_) wipe() end,
