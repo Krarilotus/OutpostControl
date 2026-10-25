@@ -1,0 +1,181 @@
+options:
+- display: GroupBox
+  category: [Outpost Control]
+  header: '{{defenders_group}}'
+  text: '{{defenders_group_descr}}'
+  hasHeader: true
+  children:
+  - url: outpost-control.defenders.enabled
+    name: outpost-control-defenders-enabled
+    text: '{{defenders_enabled}}'
+    tooltip: '{{defenders_enabled_tooltip}}'
+    display: Switch
+    contents:
+      type: boolean
+      value: true
+
+- display: GroupBox
+  category: [Outpost Control]
+  header: '{{growth_group}}'
+  text: '{{growth_group_descr}}'
+  hasHeader: true
+  children:
+  - url: outpost-control.growth.enabled
+    name: outpost-control-growth-enabled
+    text: '{{growth_enabled}}'
+    tooltip: '{{growth_enabled_tooltip}}'
+    display: Switch
+    contents:
+      type: boolean
+      value: true
+
+- display: GroupBox
+  category: [Outpost Control]
+  header: '{{jobs_group}}'
+  text: '{{jobs_group_descr}}'
+  hasHeader: true
+  children:
+  - url: outpost-control.jobs.enabled
+    name: outpost-control-jobs-enabled
+    text: '{{jobs_enabled}}'
+    tooltip: '{{jobs_enabled_tooltip}}'
+    display: Switch
+    contents:
+      type: boolean
+      value: true
+  - url: outpost-control.jobs.slaves
+    name: outpost-control-jobs-slaves
+    text: '{{jobs_slaves}}'
+    tooltip: '{{jobs_slaves_tooltip}}'
+    display: Number
+    contents:
+      type: integer
+      value: 50
+      min: 0
+      max: 100
+      step: 5
+  - url: outpost-control.jobs.spearmen
+    name: outpost-control-jobs-spearmen
+    text: '{{jobs_spearmen}}'
+    tooltip: '{{jobs_spearmen_tooltip}}'
+    display: Number
+    contents:
+      type: integer
+      value: 50
+      min: 0
+      max: 100
+      step: 5
+  - url: outpost-control.jobs.macemen
+    name: outpost-control-jobs-macemen
+    text: '{{jobs_macemen}}'
+    tooltip: '{{jobs_macemen_tooltip}}'
+    display: Number
+    contents:
+      type: integer
+      value: 30
+      min: 0
+      max: 100
+      step: 5
+  - url: outpost-control.jobs.swordsmen
+    name: outpost-control-jobs-swordsmen
+    text: '{{jobs_swordsmen}}'
+    tooltip: '{{jobs_swordsmen_tooltip}}'
+    display: Number
+    contents:
+      type: integer
+      value: 60
+      min: 0
+      max: 100
+      step: 5
+  - url: outpost-control.jobs.arab_swordsmen
+    name: outpost-control-jobs-arab-swordsmen
+    text: '{{jobs_arab_swordsmen}}'
+    tooltip: '{{jobs_arab_swordsmen_tooltip}}'
+    display: Number
+    contents:
+      type: integer
+      value: 50
+      min: 0
+      max: 100
+      step: 5
+  - url: outpost-control.jobs.knights
+    name: outpost-control-jobs-knights
+    text: '{{jobs_knights}}'
+    tooltip: '{{jobs_knights_tooltip}}'
+    display: Number
+    contents:
+      type: integer
+      value: 40
+      min: 0
+      max: 100
+      step: 5
+  - url: outpost-control.jobs.archers
+    name: outpost-control-jobs-archers
+    text: '{{jobs_archers}}'
+    tooltip: '{{jobs_archers_tooltip}}'
+    display: Number
+    contents:
+      type: integer
+      value: 30
+      min: 0
+      max: 100
+      step: 5
+  - url: outpost-control.jobs.arab_archers
+    name: outpost-control-jobs-arab-archers
+    text: '{{jobs_arab_archers}}'
+    tooltip: '{{jobs_arab_archers_tooltip}}'
+    display: Number
+    contents:
+      type: integer
+      value: 30
+      min: 0
+      max: 100
+      step: 5
+  - url: outpost-control.jobs.slingers
+    name: outpost-control-jobs-slingers
+    text: '{{jobs_slingers}}'
+    tooltip: '{{jobs_slingers_tooltip}}'
+    display: Number
+    contents:
+      type: integer
+      value: 30
+      min: 0
+      max: 100
+      step: 5
+  - url: outpost-control.jobs.horse_archers
+    name: outpost-control-jobs-horse-archers
+    text: '{{jobs_horse_archers}}'
+    tooltip: '{{jobs_horse_archers_tooltip}}'
+    display: Number
+    contents:
+      type: integer
+      value: 100
+      min: 0
+      max: 100
+      step: 5
+  - url: outpost-control.jobs.fire_throwers
+    name: outpost-control-jobs-fire-throwers
+    text: '{{jobs_fire_throwers}}'
+    tooltip: '{{jobs_fire_throwers_tooltip}}'
+    display: Number
+    contents:
+      type: integer
+      value: 60
+      min: 0
+      max: 100
+      step: 5
+
+- display: GroupBox
+  category: [Outpost Control]
+  header: '{{diagnostics_group}}'
+  text: '{{diagnostics_group_descr}}'
+  hasHeader: true
+  children:
+  - url: outpost-control.diagnostics.log
+    name: outpost-control-diagnostics-log
+    text: '{{diagnostics_log}}'
+    tooltip: '{{diagnostics_log_tooltip}}'
+    display: Switch
+    contents:
+      type: boolean
+      value: false

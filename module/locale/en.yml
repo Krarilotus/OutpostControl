@@ -1,0 +1,72 @@
+defenders_group: Outpost defenders
+defenders_group_descr: |
+  Pick which troops guard an outpost and how many, in the outpost's own panel in the map editor.
+defenders_enabled: Choose the defenders
+defenders_enabled_tooltip: |
+  Adds a Defenders page to the outpost panel. Click the button at the top of the panel to switch
+  between the Attackers page (the game's own) and the Defenders page. On the Defenders page the
+  eight troop buttons pick the guards (pick several and they take turns), and the Amount slider
+  sets how many stand around the outpost, from none to 8. Fallen guards come back after a while,
+  as before. With no troop picked the outpost uses archers, as the game does.
+
+growth_group: Wave growth
+growth_group_descr: |
+  How fast an outpost's attacks build up over the game.
+growth_enabled: Choose how fast the waves grow
+growth_enabled_tooltip: |
+  Normally every wave an outpost sends makes the next one come sooner and fill up faster. The
+  Growth slider on the Defenders page sets how much: None keeps every wave like the first one for
+  the whole game, Full is the game's own pace.
+
+jobs_group: Attackers' jobs
+jobs_group_descr: |
+  When a wave leaves an outpost, its troops split up by type and each part gets a job that suits
+  it. The numbers below say how many of each type take the first job; the rest take the second.
+  Catapults and fire ballistas attack as before.
+jobs_enabled: Give the attackers jobs
+jobs_enabled_tooltip: |
+  Without this, a whole wave does one thing: walk up and attack a building, now and then digging
+  at the moat. With it, the wave splits into troops that fill the moat, hack at walls and gates,
+  burn and wreck buildings, shoot the troops they meet, ride round the castle or hunt the lord.
+  A troop with nothing left to do for its job (moat filled, no wall in the way) attacks the way
+  the whole wave would have.
+jobs_slaves: Slaves filling the moat (%)
+jobs_slaves_tooltip: |
+  The rest burn and wreck buildings.
+jobs_spearmen: Spearmen filling the moat (%)
+jobs_spearmen_tooltip: |
+  The rest hack at walls and gates.
+jobs_macemen: Macemen filling the moat (%)
+jobs_macemen_tooltip: |
+  The rest wreck buildings.
+jobs_swordsmen: Swordsmen attacking walls and gates (%)
+jobs_swordsmen_tooltip: |
+  The rest wreck buildings.
+jobs_arab_swordsmen: Arabian swordsmen attacking walls and gates (%)
+jobs_arab_swordsmen_tooltip: |
+  The rest wreck buildings.
+jobs_knights: Knights hunting the lord (%)
+jobs_knights_tooltip: |
+  The rest ride round the castle and cut down whoever is outside the walls. When the lord cannot be reached, the hunters ride round the castle too.
+jobs_archers: Archers filling the moat (%)
+jobs_archers_tooltip: |
+  The rest walk up and shoot the troops they meet.
+jobs_arab_archers: Arabian archers filling the moat (%)
+jobs_arab_archers_tooltip: |
+  The rest walk up and shoot the troops they meet.
+jobs_slingers: Slingers riding round the castle (%)
+jobs_slingers_tooltip: |
+  They walk round the castle and shoot whoever is outside the walls. The rest walk up and shoot the troops they meet.
+jobs_horse_archers: Horse archers riding round the castle (%)
+jobs_horse_archers_tooltip: |
+  They ride round the castle and shoot whoever is outside the walls. The rest walk up and shoot the troops they meet.
+jobs_fire_throwers: Fire throwers burning buildings (%)
+jobs_fire_throwers_tooltip: |
+  The rest walk up and burn the troops they meet.
+
+diagnostics_group: Diagnostics
+diagnostics_group_descr: |
+  For testing.
+diagnostics_log: Write what the waves do to the log
+diagnostics_log_tooltip: |
+  Writes a line to ucp3.log whenever a wave leaves an outpost and splits into jobs.
