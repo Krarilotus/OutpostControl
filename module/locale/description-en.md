@@ -1,7 +1,7 @@
 # Outpost Control
 
 **Author**: Monsterfish
-**Version**: 1.0.10
+**Version**: 1.0.11
 
 More say over the European and Arabian outposts you place in the map editor. Every part can be
 switched off in the settings.
@@ -73,7 +73,16 @@ target:
 Whether something is in range is decided by the game itself, with each engine's own range (the
 one the Rebalancer sets, if you use it), exactly as for a player's engine. They only ever aim at
 enemies: players on another team than the outpost's owner, never its allies and never nobody's
-buildings or animals. When nothing is left in range they walk on.
+buildings or animals. A siege troop holds where it is as long as any of its engines has
+something in range, so they never walk past a target; when nothing is left in range they walk on.
+
+## Outposts reinforce the AI (off by default)
+
+With this switched on, a wave leaving an AI's outpost joins that AI's own attack army instead of
+attacking on its own. Each unit goes into the troop the game itself would use for it: archers,
+crossbowmen, slingers, horse archers and fire throwers into the backup troops, everyone else into
+the main army. They wait for the AI's next attack, fight in it, and count towards the army the AI
+waits for before it attacks. Siege engines stay with the outpost and shoot what they can reach.
 
 ## Saves and maps
 

@@ -182,6 +182,21 @@ options:
 
 - display: GroupBox
   category: [Outpost Control]
+  header: '{{join_group}}'
+  text: '{{join_group_descr}}'
+  hasHeader: true
+  children:
+  - url: outpost-control.join.enabled
+    name: outpost-control-join-enabled
+    text: '{{join_enabled}}'
+    tooltip: '{{join_enabled_tooltip}}'
+    display: Switch
+    contents:
+      type: boolean
+      value: false
+
+- display: GroupBox
+  category: [Outpost Control]
   header: '{{diagnostics_group}}'
   text: '{{diagnostics_group_descr}}'
   hasHeader: true

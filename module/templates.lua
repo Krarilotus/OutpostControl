@@ -340,8 +340,8 @@ jmp DECIDE
 ]]
 
 -- Put in the unit update table for the siege engine types: every 16 ticks (staggered by unit)
--- an outpost unit standing (state 0) or walking (0x65) goes to lua, which may give it an attack
--- order. Then whatever update function the table held runs, by the unit's type.
+-- an outpost unit standing (state 0), walking (0x65) or creeping forward in the AI's siege steps
+-- (9) goes to lua, which may set it shooting. Then whatever update function the table held runs, by the unit's type.
 templates.siegeCheck = [[
 mov eax,[CURRENT_UNIT]
 mov edx,[TICKS]
@@ -355,6 +355,8 @@ movzx edx,word [ecx+U_ACTION]
 test edx,edx
 jz check
 cmp edx,STATE_MOVING
+je check
+cmp edx,STATE_CREEPING
 jne go
 check:
 mov [SIEGE_UNIT],eax

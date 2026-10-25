@@ -79,6 +79,18 @@ siege_enabled_tooltip: |
   game itself decides what is in range, with each engine's own range, as for a player's engine.
   Only enemies are aimed at: players on another team than the outpost's owner, never its allies.
 
+join_group: Outposts reinforce the AI
+join_group_descr: |
+  Waves from an AI's outposts join that AI's own attack army instead of attacking on their own.
+join_enabled: Send outpost waves to the AI's attack army
+join_enabled_tooltip: |
+  When a wave leaves an outpost of an AI player, its troops join that AI's attack army, each in
+  the troop the game itself would use for it: archers, crossbowmen, slingers, horse archers and
+  fire throwers the backup troops, everyone else the main army. They then wait for the AI's next
+  attack and fight in it, and count towards the army the AI waits for before it attacks. Siege
+  engines stay with the outpost and shoot what they can reach. A unit whose troop the AI does not
+  have yet keeps attacking from the outpost.
+
 diagnostics_group: Diagnostics
 diagnostics_group_descr: |
   For testing.

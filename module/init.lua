@@ -50,6 +50,13 @@ K.SIEGE = { [39] = "catapult", [40] = "catapult", [41] = "catapult", [77] = "bal
 -- Their projectile, whose range (in tiles, straight line) the game's range table holds.
 K.SIEGE_PROJECTILE = { [39] = 2, [40] = 3, [41] = 4, [77] = 0x25 }
 
+-- The AI's attack army: behaviour types and their troop slots (aiTribeIDs), lord-hunt's table.
+K.BEHAVIOUR_MAIN, K.BEHAVIOUR_BACKUP = 20, 17
+K.ARMY_SLOTS = { [20] = { 0xC0, 0xC7 }, [17] = { 0xBA, 0xBC } }
+K.RANGED_TROOPS = { [22] = true, [23] = true, [70] = true, [72] = true, [74] = true, [76] = true }
+-- AICState::addUnitToItsTribe(unit, behaviour) (lord-hunt's pattern).
+K.AOB_ADD_TO_ITS_TRIBE = "56 57 8B 7C 24 0C 8B C7 69 C0 90 04 00 00 0F BF 90 ? ? ? ? 8B F2 69 F6 F4 39 00 00"
+
 -- Each unit type an outpost sends: the first job, its default share in percent, the job of the
 -- rest, and the setting that holds the share.
 K.PLANS = {
@@ -71,6 +78,7 @@ K.DEFAULTS = {
   growth = { enabled = true },
   jobs = { enabled = true },
   siege = { enabled = true },
+  join = { enabled = false },
   diagnostics = { log = false },
 }
 for _, plan in ipairs(K.PLANS) do K.DEFAULTS.jobs[plan.name] = plan.share end
@@ -272,6 +280,7 @@ K.TICKS_OPERAND = 0x0E
 K.OUTPOST_BEHAVIOUR = 0x32        -- every unit an outpost spawns
 K.SIEGE_EVERY = 15                -- check each engine every 16 ticks (0.4 s at normal speed)
 K.STATE_MOVING = 0x65
+K.STATE_CREEPING = 9              -- the AI siege code walking an engine forward in steps
 K.UNIT_TYPES = 80
 K.STATE_SHOOT = 8                 -- aim (then 2 load, 4 fire)
 K.SHOOTING = { [8] = true, [2] = true, [4] = true }
@@ -300,7 +309,8 @@ local U = { STRIDE = 0x490, STATE = 0x8C, TYPE = 0x8E, OWNER = 0x96, UID = 0x98,
 local T = { OWNER = 0x2C, UID = 0x34, STATE = 0x40, SIZE = 0x5C }
 local B = { STRIDE = 0x32C, STATE = 0xD0, TYPE = 0xD2, OWNER = 0xD6, UID = 0xD8, X = 0xEE, Y = 0xF0,
   SIZE = 0xF8, TRIBE_UID = 0x304, MASK = 0x300 }
-local P = { STRIDE = 0x39F4, CAMP = 0x1D8, LORD = 0x21F8, LORD_UID = 0x21FC }
+local P = { STRIDE = 0x39F4, CAMP = 0x1D8, LORD = 0x21F8, LORD_UID = 0x21FC, AI_TYPE = 0x2300,
+  TRIBE_IDS = 0x310C, TRIBE_UIDS = 0x329C }
 K.LORD_TYPE = 55
 K.MAP_SIZE = 400
 
@@ -466,6 +476,44 @@ local function newTribe(owner, units, from, kind)
   return id
 end
 
+-- The option to hand a wave to its AI owner's attack army: every unit but the siege engines goes
+-- into the attack troop the game's own reinforcement code (spawnUnitsForAITribe) would give it -
+-- archers, crossbowmen, slingers, horse archers and fire throwers the backup troops, the rest the
+-- main army - with the AI's own addUnitToItsTribe, which takes the smallest such troop. A unit
+-- whose troop the AI does not have stays with the wave.
+local function aiHasTroop(owner, behaviour)
+  local slots = K.ARMY_SLOTS[behaviour]
+  local base = player(owner)
+  for slot = slots[1], slots[2] do
+    local id = rd16(base + P.TRIBE_IDS + slot * 2)
+    if id > 0 and id < K.MAX_TRIBES and rd32(tribe(id) + T.UID) == rd32(base + P.TRIBE_UIDS + slot * 4)
+        and rd16(tribe(id) + T.STATE) == 2 then
+      return true
+    end
+  end
+  return false
+end
+
+local function joinArmy(t, owner)
+  if rd32(player(owner) + P.AI_TYPE) == 0 then return end
+  local joined, kept = 0, 0
+  for id = 1, rd32(G.unitsThis) - 1 do
+    local u = unit(id)
+    if rd16(u + U.TRIBE) == t and rd16(u + U.STATE) == 2 and rd16(u + U.OWNER) == owner
+        and K.SIEGE[rd16(u + U.TYPE)] == nil then
+      local behaviour = K.RANGED_TROOPS[rd16(u + U.TYPE)] and K.BEHAVIOUR_BACKUP or K.BEHAVIOUR_MAIN
+      if aiHasTroop(owner, behaviour) then
+        F.removeFromTribe(G.tribesThis, id, t)
+        F.addToItsTribe(G.aiState, id, behaviour)
+        joined = joined + 1
+      else
+        kept = kept + 1
+      end
+    end
+  end
+  diag("player %d wave (troop %d): %d units to the attack army, %d stay", owner, t, joined, kept)
+end
+
 local function onLaunch()
   local t, ai = rd32(G.launchTribe), rd32(G.launchThis)
   if t <= 0 or t >= K.MAX_TRIBES then return end
@@ -473,6 +521,9 @@ local function onLaunch()
   if rd16(tb + T.STATE) ~= 2 then return end
   setJob(t, K.JOB_NONE)
   local owner = rd32(tb + T.OWNER)
+
+  if O.join then joinArmy(t, owner) end
+  if rd16(tb + T.STATE) ~= 2 then return end
 
   local byKind, kinds = {}, {}
   local count = rd32(G.unitsThis)
@@ -705,11 +756,12 @@ end
 -- An outpost siege engine standing or walking (asm hands it over every 16 ticks): fire ballistas
 -- shoot enemy troops in range first, then like catapults, trebuchets and mangonels the nearest
 -- enemy building in range. Nothing in range: it walks on.
-local function onSiegeUnit()
-  local id = rd32(G.siegeUnit)
+-- Shoot if anything is in range: fire ballistas take enemy troops first, then like catapults,
+-- trebuchets and mangonels the nearest enemy building. True when the engine now shoots.
+local function shootIfInRange(id)
   local u = unit(id)
   local kind = rd16(u + U.TYPE)
-  if K.SIEGE[kind] == nil or rd16(u + U.STATE) ~= 2 then return end
+  if K.SIEGE[kind] == nil or rd16(u + U.STATE) ~= 2 then return false end
   local owner = rd16(u + U.OWNER)
   local foes = enemies(owner)
   if K.SIEGE[kind] == "ballista" then
@@ -717,7 +769,7 @@ local function onSiegeUnit()
     if v ~= nil then
       startShooting(id, u)
       diag("fire ballista %d shoots unit %d", id, v)
-      return
+      return true
     end
   end
   local range = rd32(G.ranges + K.SIEGE_PROJECTILE[kind] * 4)
@@ -727,17 +779,32 @@ local function onSiegeUnit()
     if tryBuilding(id, u, b) then
       startShooting(id, u)
       diag("%s %d shoots building %d (range %d)", K.SIEGE[kind], id, b, range)
-      return
+      return true
     end
   end
+  return false
 end
 
--- The game's order round for a siege troop: leave it alone while its leader shoots, else the
--- outpost logic's own siege order - walk up to a building of the castle it goes for. On the way
--- the check above stops each engine for anything in its range.
-local function siegeOrders(ai, t, lead)
-  if K.SHOOTING[rd16(unit(lead) + U.ACTION)] then return end
-  gameChoice(ai, t, K.KIND_SIEGE)
+-- An outpost siege engine standing, walking, or creeping forward in the AI's siege steps (asm
+-- hands it over every 16 ticks).
+local function onSiegeUnit()
+  shootIfInRange(rd32(G.siegeUnit))
+end
+
+-- The game's order round for a siege troop: while any of its engines shoots or has something in
+-- range (which it then starts shooting), the whole troop holds where it is - like the AI's raid
+-- engines, they never walk past a target. Only with nothing in range anywhere does it get the
+-- outpost logic's own siege order: walk up to a building of the castle it goes for.
+local function siegeOrders(ai, t)
+  local holding = false
+  local size = rd16(tribe(t) + T.SIZE)
+  for index = 0, size - 1 do
+    local id = F.lead(G.tribesThis, t, index)
+    if id ~= nil and id > 0 then
+      if K.SHOOTING[rd16(unit(id) + U.ACTION)] or shootIfInRange(id) then holding = true end
+    end
+  end
+  if not holding then gameChoice(ai, t, K.KIND_SIEGE) end
 end
 
 local function onDecide()
@@ -756,7 +823,7 @@ local function onDecide()
   local target = rd16(tb + G.tribeTarget)
   local lead = F.lead(G.tribesThis, t, 0)
   if job == K.JOB_SIEGE and lead ~= nil and lead > 0 then
-    siegeOrders(ai, t, lead)
+    siegeOrders(ai, t)
     return
   end
   if target < 1 or target > 8 or lead == nil or lead <= 0 then
@@ -1074,6 +1141,7 @@ local function resolve()
   F.setStance = core.exposeCode(scan(K.AOB_STANCE, "setUnitStance"), 3, 1)
   G.teams = rd32(scan(K.AOB_TEAMS, "the team table") + K.TEAMS_OPERAND)
   F.move = core.exposeCode(scan(K.AOB_MOVE, "giveTribeMoveInstruction"), 7, 1)
+  F.addToItsTribe = core.exposeCode(scan(K.AOB_ADD_TO_ITS_TRIBE, "addUnitToItsTribe"), 3, 1)
   F.addPoint = core.exposeCode(scan(K.AOB_ADD_POINT, "addRallyPoint"), 5, 1)
   G.tileFlags = rd32(scan(K.AOB_TILE_FLAGS, "the tile flags") + K.TILE_FLAGS_OPERAND)
   G.buildingLayer = G.tileFlags + K.FLAGS_TO_BUILDINGS
@@ -1249,7 +1317,7 @@ local function install(self)
     jumpTo(G.growth, assemble(templates.growth, values), K.GROWTH_SIZE)
   end
 
-  if O.jobs or O.siege then
+  if O.jobs or O.siege or O.join then
     values.LAUNCH_TRIBE, values.LAUNCH_THIS, values.REGISTER = G.launchTribe, G.launchThis, G.register
     values.PAD = pad(onLaunch, "splitting waves")
     keep(G.launchSite, 5)
@@ -1271,6 +1339,7 @@ local function install(self)
     values.CURRENT_UNIT, values.TICKS, values.SIEGE_EVERY = G.currentUnit, G.ticks, K.SIEGE_EVERY
     values.U_BEHAVIOUR, values.U_ACTION, values.U_TYPE = G.units + U.BEHAVIOUR, G.units + U.ACTION, G.units + U.TYPE
     values.OUTPOST_BEHAVIOUR, values.STATE_MOVING = K.OUTPOST_BEHAVIOUR, K.STATE_MOVING
+    values.STATE_CREEPING = K.STATE_CREEPING
     values.SIEGE_UNIT, values.ORIGINAL_UPDATES = G.siegeUnit, G.originalUpdates
     values.PAD = pad(onSiegeUnit, "siege engines on the way")
     local check = assemble(templates.siegeCheck, values)
@@ -1342,12 +1411,13 @@ local function enable(self, config)
   O.growth = setting(config, "growth", "enabled") == true
   O.jobs = setting(config, "jobs", "enabled") == true
   O.siege = setting(config, "siege", "enabled") == true
+  O.join = setting(config, "join", "enabled") == true
   O.log = setting(config, "diagnostics", "log") == true
   O.plans = {}
   for _, plan in ipairs(K.PLANS) do
     O.plans[plan.kind] = { first = plan.first, rest = plan.rest, share = percent(setting(config, "jobs", plan.name)) }
   end
-  if not O.defenders and not O.growth and not O.jobs and not O.siege then
+  if not O.defenders and not O.growth and not O.jobs and not O.siege and not O.join then
     log(INFO, MODULE_NAME .. ": every part is off")
     return
   end
@@ -1381,9 +1451,9 @@ local function enable(self, config)
   })
 
   install(self)
-  log(INFO, string.format("%s: on (defenders %s, growth %s, jobs %s, siege engines %s); buildings 0x%X, "
+  log(INFO, string.format("%s: on (defenders %s, growth %s, jobs %s, siege engines %s, waves to the AI army %s); buildings 0x%X, "
     .. "troops 0x%X (size 0x%X), units 0x%X", MODULE_NAME, O.defenders and "on" or "off",
-    O.growth and "on" or "off", O.jobs and "on" or "off", O.siege and "on" or "off", G.buildings, G.tribes,
+    O.growth and "on" or "off", O.jobs and "on" or "off", O.siege and "on" or "off", O.join and "on" or "off", G.buildings, G.tribes,
     G.tribeStride, G.units))
 end
 
