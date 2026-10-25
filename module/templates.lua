@@ -302,10 +302,47 @@ call PAD
 ret 8
 ]]
 
--- Replaces makeOutpostTribesAttack's call of decideOnTribeAttackLocation(tribe). Troops
--- with a job "fight troops" or "attack buildings" take the game's own ranged or melee choice;
--- the others are lua's.
+-- Replaces makeOutpostTribesAttack's call of decideOnTribeAttackLocation(tribe). With RETARGET,
+-- a troop whose target player is beaten (his lord is dead) first gets a new one from the game's
+-- own choice (setTargetForTribeBasedOnTargetChoiceLogic: the nearest enemy whose lord lives).
+-- Troops with a job "fight troops" or "attack buildings" take the game's own ranged or melee
+-- choice; the others are lua's.
 templates.decide = [[
+if RETARGET <> 0
+mov eax,[esp+4]
+cmp eax,MAX_TRIBES
+jae checked
+push ecx
+push ebx
+mov ebx,eax
+imul ebx,ebx,TRIBE_STRIDE
+movsx edx,word [ebx+TRIBE_TARGET]
+cmp edx,1
+jl beaten
+cmp edx,8
+jg beaten
+imul edx,edx,P_STRIDE
+mov eax,[edx+P_LORD]
+test eax,eax
+jle beaten
+imul eax,eax,U_STRIDE
+cmp word [eax+U_STATE],2
+jne beaten
+cmp word [eax+U_TYPE],LORD_TYPE
+jne beaten
+mov eax,[eax+U_UID]
+cmp eax,[edx+P_LORD_UID]
+je alive
+beaten:
+push dword [esp+0xC]
+push dword [ebx+TRIBE_OWNER]
+mov ecx,[esp+0xC]
+call SET_TARGET
+alive:
+pop ebx
+pop ecx
+checked:
+end if
 mov eax,[esp+4]
 cmp eax,MAX_TRIBES
 jae original

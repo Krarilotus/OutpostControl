@@ -1,7 +1,7 @@
 # Outpost Control
 
 **Author**: Monsterfish
-**Version**: 1.0.12
+**Version**: 1.0.13
 
 More say over the European and Arabian outposts you place in the map editor. Every part can be
 switched off in the settings.
@@ -75,6 +75,13 @@ one the Rebalancer sets, if you use it), exactly as for a player's engine. They 
 enemies: players on another team than the outpost's owner, never its allies and never nobody's
 buildings or animals. A siege troop holds where it is as long as any of its engines has
 something in range, so they never walk past a target; when nothing is left in range they walk on.
+
+## Next opponent
+
+Each troop an outpost sends out goes for one enemy player. Once that player is beaten (his lord
+is dead), the troop picks the next opponent the way the game picks the first one - the nearest
+enemy whose lord still lives - instead of standing about. Siege engines go on shooting whatever
+enemy is in their range, and when a target is destroyed they take the next one in range.
 
 ## Outposts reinforce the AI (off by default)
 

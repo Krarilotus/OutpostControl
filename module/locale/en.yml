@@ -79,6 +79,16 @@ siege_enabled_tooltip: |
   game itself decides what is in range, with each engine's own range, as for a player's engine.
   Only enemies are aimed at: players on another team than the outpost's owner, never its allies.
 
+retarget_group: Next opponent
+retarget_group_descr: |
+  What an outpost's troops do once the player they attack is beaten.
+retarget_enabled: Go for the next opponent
+retarget_enabled_tooltip: |
+  Each troop an outpost sends out goes for one enemy player. Once that player's lord is dead,
+  the troop picks the next opponent the way the game picks the first one - the nearest enemy
+  whose lord still lives - instead of standing about. Siege engines already shoot any enemy in
+  their range.
+
 join_group: Outposts reinforce the AI
 join_group_descr: |
   Waves from an AI's outposts join that AI's own attack army instead of attacking on their own.

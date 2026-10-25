@@ -79,6 +79,7 @@ K.DEFAULTS = {
   jobs = { enabled = true },
   siege = { enabled = true },
   join = { enabled = false },
+  retarget = { enabled = true },
   diagnostics = { log = false },
 }
 for _, plan in ipairs(K.PLANS) do K.DEFAULTS.jobs[plan.name] = plan.share end
@@ -180,6 +181,7 @@ K.AOB_LAUNCH = "8B 80 ? ? ? ? 50 56 B9 ? ? ? ? E8 ? ? ? ? A1 ? ? ? ? 69 C0 2C 03
 K.LAUNCH_AI = { 0x08, { 0xB9 } }
 K.LAUNCH_CALL = 0x0D
 K.LAUNCH_CURRENT = { 0x12, { 0xA1 } }
+K.REGISTER_SET_TARGET = 0x89      -- aiRegisterTribeAndAssignTarget: call setTargetForTribe...
 -- makeOutpostTribesAttack: every registered outpost troop -> decideOnTribeAttackLocation.
 K.AOB_MAKE = "53 55 56 8B E9 57 8D ? ? ? ? 00 8D ? ? ? ? 00 BB E8 03 00 00 0F BF 06 85 C0 74 ? 8B C8 "
   .. "69 C9 ? ? 00 00 8B 91 ? ? ? ? 3B 17 75 ? 50 8B CD E8"
@@ -1101,6 +1103,7 @@ local function resolve()
   G.aiState = readOperand(launch, K.LAUNCH_AI, "the AI state")
   G.launchSite = launch + K.LAUNCH_CALL
   G.register = readCallTarget(launch, K.LAUNCH_CALL, "aiRegisterTribeAndAssignTarget")
+  G.setTarget = readCallTarget(G.register, K.REGISTER_SET_TARGET, "setTargetForTribeBasedOnTargetChoiceLogic")
   G.current = readOperand(launch, K.LAUNCH_CURRENT, "the current building")
 
   local make = scan(K.AOB_MAKE, "the outpost troops' update")
@@ -1318,7 +1321,7 @@ local function install(self)
     jumpTo(G.growth, assemble(templates.growth, values), K.GROWTH_SIZE)
   end
 
-  if O.jobs or O.siege or O.join then
+  if O.jobs or O.siege or O.join or O.retarget then
     values.LAUNCH_TRIBE, values.LAUNCH_THIS, values.REGISTER = G.launchTribe, G.launchThis, G.register
     values.PAD = pad(onLaunch, "splitting waves")
     keep(G.launchSite, 5)
@@ -1329,6 +1332,10 @@ local function install(self)
     values.JOB_ENGAGE, values.JOB_BUILDINGS = K.JOB_ENGAGE, K.JOB_BUILDINGS
     values.KIND_RANGED, values.KIND_MELEE = K.KIND_RANGED, K.KIND_MELEE
     values.DECIDE_TRIBE, values.DECIDE_THIS, values.DECIDE = G.decideTribe, G.decideThis, G.decide
+    values.RETARGET, values.SET_TARGET = O.retarget and 1 or 0, G.setTarget
+    values.TRIBE_TARGET, values.TRIBE_OWNER = G.tribes + G.tribeTarget, G.tribes + T.OWNER
+    values.P_STRIDE, values.P_LORD, values.P_LORD_UID = P.STRIDE, G.players + P.LORD, G.players + P.LORD_UID
+    values.U_STATE, values.U_TYPE, values.LORD_TYPE = G.units + U.STATE, G.units + U.TYPE, K.LORD_TYPE
     values.PAD = pad(onDecide, "outpost troop orders")
     keep(G.decideSite, 5)
     callTo(G.decideSite, assemble(templates.decide, values))
@@ -1413,12 +1420,13 @@ local function enable(self, config)
   O.jobs = setting(config, "jobs", "enabled") == true
   O.siege = setting(config, "siege", "enabled") == true
   O.join = setting(config, "join", "enabled") == true
+  O.retarget = setting(config, "retarget", "enabled") == true
   O.log = setting(config, "diagnostics", "log") == true
   O.plans = {}
   for _, plan in ipairs(K.PLANS) do
     O.plans[plan.kind] = { first = plan.first, rest = plan.rest, share = percent(setting(config, "jobs", plan.name)) }
   end
-  if not O.defenders and not O.growth and not O.jobs and not O.siege and not O.join then
+  if not O.defenders and not O.growth and not O.jobs and not O.siege and not O.join and not O.retarget then
     log(INFO, MODULE_NAME .. ": every part is off")
     return
   end

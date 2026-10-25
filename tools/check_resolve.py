@@ -4,7 +4,7 @@ import sys, os, re, struct
 sys.path.insert(0, r'C:\Users\Monsterfish_\AppData\Local\Temp\shcw\tunnelers')
 from t import VAN, EXT, CLEANEXT
 import lupa.lua54 as l
-MOD = r'H:\shc-modding\outpost-control\module'
+MOD = os.environ.get('MOD', r'H:\shc-modding\outpost-control\module')
 def run(name, exe):
     L = l.LuaRuntime(encoding=None, unpack_returned_tuples=True)
     mem = {}

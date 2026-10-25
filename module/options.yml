@@ -182,6 +182,21 @@ options:
 
 - display: GroupBox
   category: [Outpost Control]
+  header: '{{retarget_group}}'
+  text: '{{retarget_group_descr}}'
+  hasHeader: true
+  children:
+  - url: outpost-control.retarget.enabled
+    name: outpost-control-retarget-enabled
+    text: '{{retarget_enabled}}'
+    tooltip: '{{retarget_enabled_tooltip}}'
+    display: Switch
+    contents:
+      type: boolean
+      value: true
+
+- display: GroupBox
+  category: [Outpost Control]
   header: '{{join_group}}'
   text: '{{join_group_descr}}'
   hasHeader: true
