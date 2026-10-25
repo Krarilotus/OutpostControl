@@ -280,6 +280,7 @@ K.TICKS_OPERAND = 0x0E
 K.OUTPOST_BEHAVIOUR = 0x32        -- every unit an outpost spawns
 K.SIEGE_EVERY = 15                -- check each engine every 16 ticks (0.4 s at normal speed)
 K.STATE_MOVING = 0x65
+K.STATE_WALKING = 1               -- siege engines walk in state 1 as well as 0x65
 K.STATE_CREEPING = 9              -- the AI siege code walking an engine forward in steps
 K.UNIT_TYPES = 80
 K.STATE_SHOOT = 8                 -- aim (then 2 load, 4 fire)
@@ -785,8 +786,8 @@ local function shootIfInRange(id)
   return false
 end
 
--- An outpost siege engine standing, walking, or creeping forward in the AI's siege steps (asm
--- hands it over every 16 ticks).
+-- An outpost siege engine standing, walking (state 1 or 0x65), or creeping forward in the AI's
+-- siege steps (asm hands it over every 16 ticks).
 local function onSiegeUnit()
   shootIfInRange(rd32(G.siegeUnit))
 end
@@ -1339,7 +1340,7 @@ local function install(self)
     values.CURRENT_UNIT, values.TICKS, values.SIEGE_EVERY = G.currentUnit, G.ticks, K.SIEGE_EVERY
     values.U_BEHAVIOUR, values.U_ACTION, values.U_TYPE = G.units + U.BEHAVIOUR, G.units + U.ACTION, G.units + U.TYPE
     values.OUTPOST_BEHAVIOUR, values.STATE_MOVING = K.OUTPOST_BEHAVIOUR, K.STATE_MOVING
-    values.STATE_CREEPING = K.STATE_CREEPING
+    values.STATE_CREEPING, values.STATE_WALKING = K.STATE_CREEPING, K.STATE_WALKING
     values.SIEGE_UNIT, values.ORIGINAL_UPDATES = G.siegeUnit, G.originalUpdates
     values.PAD = pad(onSiegeUnit, "siege engines on the way")
     local check = assemble(templates.siegeCheck, values)

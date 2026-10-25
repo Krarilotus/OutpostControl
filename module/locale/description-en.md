@@ -1,7 +1,7 @@
 # Outpost Control
 
 **Author**: Monsterfish
-**Version**: 1.0.11
+**Version**: 1.0.12
 
 More say over the European and Arabian outposts you place in the map editor. Every part can be
 switched off in the settings.
