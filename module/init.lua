@@ -101,6 +101,19 @@ K.TICKS_PER_SECOND = 40           -- at normal game speed
 K.SIZE_FIELD, K.DELAY_FIELD = 0x30E, 0x310
 K.KNOB_W, K.KNOB_ABOVE, K.KNOB_H = 15, 5, 36
 
+-- Guards in a troop of their own per outpost, for a stance: melee guards defensive, knights
+-- aggressive, horse archers aggressive and on patrol round the outpost. Archers, crossbowmen,
+-- slingers and fire throwers stay as the game has its archers (no troop).
+K.STANCE_DEFENSIVE, K.STANCE_AGGRESSIVE = 1, 2
+K.GUARD_GROUP = {
+  [24] = "defensive", [25] = "defensive", [26] = "defensive", [27] = "defensive", [37] = "defensive",
+  [71] = "defensive", [73] = "defensive", [75] = "defensive",
+  [28] = "aggressive", [74] = "patrol",
+}
+K.GUARD_STANCE = { defensive = 1, aggressive = 2, patrol = 2 }
+K.GUARD_PATROL_RADIUS = 10        -- tiles from the outpost's middle
+K.GUARD_PATROL_POINTS = 4
+
 K.MAX_DEFENDERS = 50
 K.VANILLA_SLOTS = 8           -- the game's own defender slots
 K.USUAL_DEFENDERS = 7         -- the game rolls 6 or 7 when the field is unset
@@ -227,6 +240,11 @@ K.AOB_REMOVE_FROM_TRIBE = "53 55 56 8B 74 24 10 8B D9 8B CE 69 C9 90 04 00 00 66
 K.AOB_CREATE_TRIBE = "53 55 8B 6C 24 0C 56 57 BF ? ? 00 00 2B FD 33 DB 3B FB 7E"
 K.AOB_INSTRUCTION = "83 EC 1C 8B 44 24 20 69 C0 ? ? 00 00 53 8B 5C 24 30 55 8D 2C 08 33 D2 56 0F BF 75 5C"
 K.AOB_STANCE = "8B 44 24 04 66 8B 54 24 08 69 C0 ? ? 00 00 66 89 94 08 ? ? 00 00 C7 05"
+-- giveTribeMoveInstruction(tribe, x, y, patrol, store as route, speed) and addRallyPoint(tribe,
+-- x, y, step) (lord-hunt's and attack-move's ground): a patrol is a move order flagged 1 plus
+-- route points; the troop walks them in a loop.
+K.AOB_MOVE = "83 EC 34 33 C0 55 8B 6C 24 44 57 8B 7C 24 44 3B F8 89 4C 24 08 89 44 24 18"
+K.AOB_ADD_POINT = "8B 44 24 04 8B D0 69 C0 ? ? 00 00 69 D2 ? ? 00 00 56 8B 74 24 14 57 66 8B 7C 24 10 03 D6"
 -- The team table (lord-hunt's pattern): dword per player.
 K.AOB_TEAMS = "8B 0C 85 ? ? ? ? 8B 44 24 30 3B 0C 85 ? ? ? ?"
 K.TEAMS_OPERAND = 0x03
@@ -381,6 +399,7 @@ local G = {}             -- addresses
 local F = {}             -- the game's functions, exposed to lua
 local O = {}             -- options
 local orders = {}        -- per troop id: what this module last told it
+local guardTroops = {}   -- per outpost and stance group: the guards' troop (id, uid)
 local broken = false
 
 local function diag(fmt, ...)
@@ -604,6 +623,49 @@ local function tryUnits(id, u, foes)
   return nil
 end
 
+-- A new guard of an outpost with settings (asm, when it is put in the outpost's list): melee
+-- guards go into the outpost's defensive troop, knights into its aggressive one, horse archers
+-- into its patrol troop, which is sent round the outpost again with every new rider. A troop
+-- the AI has not registered never gets AI orders, so they stay at their outpost.
+local function patrolRound(t, bid)
+  local b = building(bid)
+  local half = rd32(b + B.SIZE) // 2
+  local cx, cy = rd16(b + B.X) + half, rd16(b + B.Y) + half
+  local points = {}
+  for index = 0, K.GUARD_PATROL_POINTS - 1 do
+    local angle = index * 2 * math.pi / K.GUARD_PATROL_POINTS
+    local x = math.max(1, math.min(K.MAP_SIZE - 2, math.floor(cx + K.GUARD_PATROL_RADIUS * math.cos(angle) + 0.5)))
+    local y = math.max(1, math.min(K.MAP_SIZE - 2, math.floor(cy + K.GUARD_PATROL_RADIUS * math.sin(angle) + 0.5)))
+    local tile = tileAt(x, y)
+    if tile ~= nil and F.reach(G.aiState, t, tile) ~= 0 then points[#points + 1] = { x, y } end
+  end
+  if #points == 0 then return end
+  F.move(G.tribesThis, t, points[1][1], points[1][2], 1, 1, 0)
+  for index = 2, #points do F.addPoint(G.tribesThis, t, points[index][1], points[index][2], index) end
+end
+
+local function onGuard()
+  local id, bid = rd32(G.guardUnit), rd32(G.current)
+  local u = unit(id)
+  local group = K.GUARD_GROUP[rd16(u + U.TYPE)]
+  if group == nil or rd16(u + U.TRIBE) > 0 then return end
+  local owner = rd16(u + U.OWNER)
+  local key = bid * 4 + K.GUARD_STANCE[group] + (group == "patrol" and 1 or 0)
+  local g = guardTroops[key]
+  local buildingUid = rd32(building(bid) + B.UID)
+  if g == nil or g.building ~= buildingUid or rd16(tribe(g.id) + T.STATE) ~= 2
+      or rd32(tribe(g.id) + T.UID) ~= g.uid then
+    local t = F.createTribe(G.tribesThis, owner)
+    if t == nil or t <= 0 or t >= K.MAX_TRIBES then return end
+    F.setStance(G.tribesThis, t, K.GUARD_STANCE[group])
+    g = { id = t, uid = rd32(tribe(t) + T.UID), building = buildingUid }
+    guardTroops[key] = g
+  end
+  F.addToTribe(G.tribesThis, id, g.id)
+  if group == "patrol" then patrolRound(g.id, bid) end
+  diag("outpost %d: %s guard %d in troop %d", bid, group, id, g.id)
+end
+
 -- An outpost siege engine standing or walking (asm hands it over every 16 ticks): fire ballistas
 -- shoot enemy troops in range first, then like catapults, trebuchets and mangonels the nearest
 -- enemy building in range. Nothing in range: it walks on.
@@ -775,6 +837,7 @@ local function wipe()
   core.setMemory(G.table, 0, K.MAX_BUILDINGS * 8)
   core.setMemory(G.slots, 0, K.MAX_BUILDINGS * K.MAX_GUARDS * 8)
   core.setMemory(G.jobs, 0, K.MAX_TRIBES)
+  guardTroops = {}
   core.setMemory(G.jobUids, 0, K.MAX_TRIBES * 4)
   orders = {}
 end
@@ -974,6 +1037,8 @@ local function resolve()
   F.removeFromTribe = core.exposeCode(scan(K.AOB_REMOVE_FROM_TRIBE, "removeUnitFromTribe"), 3, 1)
   F.setStance = core.exposeCode(scan(K.AOB_STANCE, "setUnitStance"), 3, 1)
   G.teams = rd32(scan(K.AOB_TEAMS, "the team table") + K.TEAMS_OPERAND)
+  F.move = core.exposeCode(scan(K.AOB_MOVE, "giveTribeMoveInstruction"), 7, 1)
+  F.addPoint = core.exposeCode(scan(K.AOB_ADD_POINT, "addRallyPoint"), 5, 1)
 end
 
 -- Siege engines on the way. smarter-recruits patches the 8 bytes right before the update table
@@ -1069,6 +1134,7 @@ local function allocate()
   G.slots = core.allocate(K.MAX_BUILDINGS * K.MAX_GUARDS * 8, true)
   G.drag = core.allocate(4, true)
   G.siegeUnit = core.allocate(4, true)
+  G.guardUnit = core.allocate(4, true)
   G.numberText = core.allocate(16, true)
   G.jobs = core.allocate(K.MAX_TRIBES, true)
   G.jobUids = core.allocate(K.MAX_TRIBES * 4, true)
@@ -1130,6 +1196,7 @@ local function install(self)
     jumpTo(G.guardCount, assemble(templates.guardCount, values), K.GUARD_COUNT_SIZE)
     keep(G.guardRecord, K.GUARD_RECORD_SIZE)
     values.DONE, values.RESUME = G.guardRecorded, G.guardRecord + K.GUARD_RECORD_SIZE
+    values.GUARD_UNIT, values.PAD = G.guardUnit, pad(onGuard, "outpost guards")
     jumpTo(G.guardRecord, assemble(templates.guardRecord, values), K.GUARD_RECORD_SIZE)
     keep(G.defenderType, K.DEFENDER_TYPE_SIZE)
     values.RESUME = G.defenderType + K.DEFENDER_TYPE_SIZE

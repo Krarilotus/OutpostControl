@@ -1,7 +1,7 @@
 # Outpost Control
 
 **Author**: Monsterfish
-**Version**: 1.0.7
+**Version**: 1.0.8
 
 More say over the European and Arabian outposts you place in the map editor. Every part can be
 switched off in the settings.
@@ -28,6 +28,11 @@ two pages. Each slider shows its value to its right.
     back one at a time; the more you set, the quicker they come, so a full set takes about as
     long to come back as the game's 8 guards do (a guard every 30 seconds for 8, every 5
     seconds for 50, at normal speed).
+  - **Stances:** foot soldiers who fight hand to hand (spearmen, pikemen, macemen, swordsmen,
+    black monks, slaves, assassins) guard in the defensive stance and go for enemies who come
+    near; knights are aggressive and charge enemies further off; horse archers are aggressive
+    too and ride a patrol round the outpost. Archers, crossbowmen, slingers and fire throwers
+    stand and shoot as the game's own outpost archers do.
 
 ## Attackers' jobs
 
