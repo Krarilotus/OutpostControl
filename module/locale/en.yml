@@ -6,17 +6,19 @@ defenders_enabled_tooltip: |
   Adds a Defenders page to the outpost panel. Click the button at the top of the panel to switch
   between the Attackers page (the game's own) and the Defenders page. On the Defenders page the
   eight troop buttons pick the guards (pick several and they take turns), and the Amount slider
-  sets how many stand around the outpost, from none to 8. Fallen guards come back after a while,
-  as before. With no troop picked the outpost uses archers, as the game does.
+  sets how many stand around the outpost, from none to 50. Fallen guards come back one at a time,
+  quicker the more you set, so a full set comes back in about the time the game's 8 do. With no
+  troop picked the outpost uses archers, as the game does.
 
 growth_group: Wave growth
 growth_group_descr: |
   How fast an outpost's attacks build up over the game.
 growth_enabled: Choose how fast the waves grow
 growth_enabled_tooltip: |
-  Normally every wave an outpost sends makes the next one come sooner and fill up faster. The
-  Growth slider on the Defenders page sets how much: None keeps every wave like the first one for
-  the whole game, Full is the game's own pace.
+  Normally every wave an outpost sends makes the next one come sooner and fill up faster. A
+  Growth slider on the outpost panel's Attackers page, under Size and Start Delay, sets how much:
+  all the way left keeps every wave like the first one for the whole game, all the way right is
+  the game's own pace.
 
 jobs_group: Attackers' jobs
 jobs_group_descr: |

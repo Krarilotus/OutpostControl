@@ -25,7 +25,7 @@ ret
 ]]
 
 -- eax = building id -> eax = its entry, made with the game's own values if it had none (0 for
--- a bad id). Changes edx.
+-- a bad id), its guard list emptied. Changes edx.
 templates.entryMake = [[
 push ecx
 push ebx
@@ -41,6 +41,16 @@ mov ebx,[edx+B_UID]
 xor eax,eax
 test ebx,ebx
 jz done
+push edi
+push ecx
+mov eax,ecx
+imul eax,eax,SLOT_BYTES
+lea edi,[SLOTS+eax]
+mov ecx,SLOT_DWORDS
+xor eax,eax
+rep stosd
+pop ecx
+pop edi
 mov eax,ecx
 shl eax,3
 add eax,TABLE
@@ -77,6 +87,113 @@ jmp SKIP
 usual:
 cmp byte [ecx+B_DEFENDERS],0
 jle ROLL
+jmp RESUME
+]]
+
+-- UpdateOutpostBuilding, every defender check (mov word [ecx+timer],1200, 9 bytes, eax and edi
+-- in use). An outpost with an entry counts its guards in its own list of MAX_GUARDS, waits
+-- GUARD_PACE / amount ticks between guards (so a full refill takes as long as the game's 8)
+-- and goes on to pick the guard's type, or skips the defender part when it has enough.
+templates.guardCount = [[
+push eax
+push edx
+mov eax,[CURRENT_BUILDING]
+call ENTRY_GET
+pop edx
+test eax,eax
+jz usual
+add esp,4
+push ebx
+push edi
+movzx ebx,byte [eax+6]
+test ebx,ebx
+jnz wanted
+inc ebx
+wanted:
+mov eax,[CURRENT_BUILDING]
+imul eax,eax,SLOT_BYTES
+lea edi,[SLOTS+eax]
+xor esi,esi
+mov edx,MAX_GUARDS
+alive:
+movzx eax,word [edi]
+test eax,eax
+jz next_slot
+imul eax,eax,U_STRIDE
+mov eax,[eax+U_UID]
+cmp eax,[edi+4]
+jne next_slot
+inc esi
+next_slot:
+add edi,8
+dec edx
+jnz alive
+mov eax,GUARD_PACE
+xor edx,edx
+div ebx
+cmp eax,LONGEST_WAIT
+jbe short_enough
+mov eax,LONGEST_WAIT
+short_enough:
+cmp eax,SHORTEST_WAIT
+jae long_enough
+mov eax,SHORTEST_WAIT
+long_enough:
+mov word [ecx+B_TIMER],ax
+cmp esi,ebx
+pop edi
+pop ebx
+jge SKIP
+jmp PICK
+usual:
+pop eax
+mov word [ecx+B_TIMER],LONGEST_WAIT
+jmp RESUME
+]]
+
+-- UpdateOutpostBuilding, where it puts a new guard in a free slot (mov ebp,[current], 6 bytes;
+-- ebx = the unit). An outpost with an entry keeps it in its own list instead.
+templates.guardRecord = [[
+push eax
+push edx
+mov eax,[CURRENT_BUILDING]
+call ENTRY_GET
+test eax,eax
+jz usual
+push esi
+push ecx
+mov eax,[CURRENT_BUILDING]
+imul eax,eax,SLOT_BYTES
+lea esi,[SLOTS+eax]
+mov ecx,MAX_GUARDS
+find_slot:
+movzx eax,word [esi]
+test eax,eax
+jz take
+imul eax,eax,U_STRIDE
+mov eax,[eax+U_UID]
+cmp eax,[esi+4]
+jne take
+add esi,8
+dec ecx
+jnz find_slot
+jmp recorded
+take:
+mov [esi],bx
+mov eax,ebx
+imul eax,eax,U_STRIDE
+mov eax,[eax+U_UID]
+mov [esi+4],eax
+recorded:
+pop ecx
+pop esi
+pop edx
+pop eax
+jmp DONE
+usual:
+pop edx
+pop eax
+mov ebp,[CURRENT_BUILDING]
 jmp RESUME
 ]]
 
@@ -217,44 +334,162 @@ original:
 jmp DECIDE
 ]]
 
--- The outpost panel's text (prologue: mov eax,[selected], 5 bytes). Draws the defender page
--- labels instead of the attacker ones, then the page button.
+-- The outpost panel's text (prologue: mov eax,[selected], 5 bytes). With growth on, the
+-- attacker page gets its own labels for the moved sliders and the growth slider; the defender
+-- page always has its own labels. Then the page button, when there is a defender page.
 templates.panel = [[
 cmp dword [MODE],0
 jne own
+if GROWTH_ON <> 0
+call ATTACK_LABELS
+call GROWTH_SLIDER
+else
 call usual
+end if
+if TOGGLE_ON <> 0
 jmp TOGGLE
+else
+ret
+end if
 usual:
 mov eax,[SELECTED]
 jmp RESUME
 own:
-call LABELS
+if TOGGLE_ON <> 0
+call DEFENDER_LABELS
 jmp TOGGLE
+else
+ret
+end if
 ]]
 
--- The defender page's slider labels, where the game writes Size / Small / Large and Start
--- Delay and its ends.
+-- Slider labels: LABEL_COUNT entries of x, y (from the panel), text, game text id (used when
+-- the text is 0, group 0x40, so the game's own words stay in its language).
 templates.labels = [[
 push ebx
-xor ebx,ebx
+push esi
+mov esi,LABEL_TABLE
+mov ebx,LABEL_COUNT
 again:
+mov eax,[esi+8]
+test eax,eax
+jnz have_text
+push dword [esi+12]
+push 0x40
+mov ecx,TEXT_MANAGER
+call GET_TEXT
+have_text:
 push 0
 push 0
 push 0x12
 push 0
 push 0
-mov eax,[MENU_Y]
-add eax,[LABEL_PLACES+ebx*8+4]
+mov ecx,[MENU_Y]
+add ecx,[esi+4]
+push ecx
+mov ecx,[MENU_X]
+add ecx,[esi]
+push ecx
 push eax
-mov eax,[MENU_X]
-add eax,[LABEL_PLACES+ebx*8]
-push eax
-push dword [LABEL_TEXTS+ebx*4]
 mov ecx,TEXT_MANAGER
 call RENDER_TEXT
-inc ebx
-cmp ebx,6
-jb again
+add esi,16
+dec ebx
+jnz again
+pop esi
+pop ebx
+ret
+]]
+
+-- The growth slider on the attacker page, drawn by the game's slider renderer. A left click on
+-- it starts a drag that lasts while the button is held; the value is 0 to 100.
+templates.growthSlider = [[
+push ebx
+push esi
+push edi
+mov eax,[SELECTED]
+call ENTRY_GET
+mov edi,100
+test eax,eax
+jz have
+movzx edi,byte [eax+7]
+have:
+mov ebx,[MENU_X]
+add ebx,GROWTH_X
+mov esi,[MENU_Y]
+add esi,GROWTH_Y
+cmp dword [MOUSE+LEFT_CLICK],0
+je no_start
+mov eax,[MOUSE+MOUSE_X]
+sub eax,ebx
+cmp eax,GROWTH_W
+jae no_start
+mov eax,[MOUSE+MOUSE_Y]
+sub eax,esi
+add eax,KNOB_ABOVE
+cmp eax,KNOB_H
+jae no_start
+mov dword [DRAG],1
+no_start:
+cmp dword [MOUSE+LEFT_HELD],0
+jne held
+mov dword [DRAG],0
+held:
+cmp dword [DRAG],0
+je draw
+mov eax,[MOUSE+MOUSE_X]
+sub eax,ebx
+sub eax,KNOB_HALF
+imul eax,eax,100
+cdq
+mov ecx,KNOB_SPAN
+idiv ecx
+cmp eax,0
+jge low_ok
+xor eax,eax
+low_ok:
+cmp eax,100
+jle high_ok
+mov eax,100
+high_ok:
+cmp eax,edi
+je draw
+mov edi,eax
+mov eax,[SELECTED]
+call ENTRY_MAKE
+test eax,eax
+jz draw
+mov ecx,edi
+mov [eax+7],cl
+draw:
+push dword [BUTTON_X]
+push dword [BUTTON_X+4]
+push dword [BUTTON_X+8]
+push dword [BUTTON_X+12]
+push dword [DRAW_CHOICE]
+mov [BUTTON_X],ebx
+mov [BUTTON_X+4],esi
+mov dword [BUTTON_X+8],GROWTH_W
+mov dword [BUTTON_X+12],GROWTH_H
+mov eax,edi
+imul eax,eax,KNOB_SPAN
+cdq
+mov ecx,100
+idiv ecx
+push 0
+push KNOB_W
+push edi
+push eax
+push 0
+call SLIDER_RENDER
+add esp,20
+pop dword [DRAW_CHOICE]
+pop dword [BUTTON_X+12]
+pop dword [BUTTON_X+8]
+pop dword [BUTTON_X+4]
+pop dword [BUTTON_X]
+pop edi
+pop esi
 pop ebx
 ret
 ]]
@@ -427,9 +662,10 @@ done:
 ret
 ]]
 
--- The two sliders (prologue: mov ecx,[esp+8] / mov eax,[selected], 9 bytes). Messages: 1 set
--- up (min, max, value), 2 and 3 set the value, 4 read it, 5 one step less, 6 one more. FIELD is
--- the entry byte (6 defenders, 7 growth); SYNC 1 also writes the game's own defender count.
+-- The size slider, which is the amount on the defender page (prologue: mov ecx,[esp+8] / mov
+-- eax,[selected], 9 bytes). Messages: 1 set up (min, max, value), 2 and 3 set the value, 4 read
+-- it, 5 one step less, 6 one more. FIELD is the entry byte (6 defenders); SYNC 1 also writes the
+-- game's own defender count (1 to its 8 slots).
 templates.slider = [[
 cmp dword [MODE],0
 jne own
@@ -495,6 +731,10 @@ test ecx,ecx
 jnz some
 mov ecx,1
 some:
+cmp ecx,VANILLA_SLOTS
+jbe fits
+mov ecx,VANILLA_SLOTS
+fits:
 mov edx,[SELECTED]
 imul edx,edx,B_STRIDE
 mov [edx+B_DEFENDERS],cl

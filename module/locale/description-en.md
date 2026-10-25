@@ -1,29 +1,32 @@
 # Outpost Control
 
 **Author**: Monsterfish
-**Version**: 1.0.0
+**Version**: 1.0.1
 
 More say over the European and Arabian outposts you place in the map editor. Every part can be
 switched off in the settings.
 
-## The Defenders page
+## The outpost panel
 
 Select an outpost in the map editor. The button at the top of its panel now switches between
 two pages:
 
-- **Attackers** - the game's own page: which troops the outpost sends, how big the waves are,
-  and how long it waits before the first one.
-- **Defenders** - the same eight troop buttons and two sliders, with a new meaning:
+- **Attackers** - which troops the outpost sends, as in the game, with three sliders:
+  - **Size:** how big the waves are (the game's own).
+  - **Start Delay:** how long it waits before the first wave (the game's own).
+  - **Growth:** how fast the attacks build up. Normally every wave makes the next one come
+    sooner and fill up faster. None keeps every wave like the first one for the whole game;
+    Full (all the way right) is the game's own pace.
+- **Defenders** - the same eight troop buttons with a new meaning, and one slider:
   - **Troop buttons:** which troops guard the outpost. Pick several and they take turns. A
     European outpost offers archers, crossbowmen, spearmen, pikemen, macemen, swordsmen,
     knights and black monks; an Arabian one Arabian archers, slingers, horse archers, Arabian
     swordsmen, slaves, assassins, fire throwers and crossbowmen. With nothing picked the
     outpost uses archers, as the game does.
-  - **Amount:** how many guards stand around the outpost, from none to 8. Fallen guards come
-    back after a while, as before.
-  - **Growth:** how fast the outpost's attacks build up. Normally every wave makes the next one
-    come sooner and fill up faster. None keeps every wave like the first one for the whole game;
-    Full is the game's own pace.
+  - **Amount:** how many guards stand around the outpost, from none to 50. Fallen guards come
+    back one at a time; the more you set, the quicker they come, so a full set takes about as
+    long to come back as the game's 8 guards do (a guard every 30 seconds for 8, every 5
+    seconds for 50, at normal speed).
 
 ## Attackers' jobs
 

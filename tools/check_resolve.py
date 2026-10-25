@@ -56,6 +56,7 @@ def run(name, exe):
         b'allocateCode': lambda b: alloc(64),
         b'allocateAssembly': allocAsm,
         b'writeCode': writeCode,
+        b'writeCodeInteger': lambda a, v: writeCode(a, L.table_from(list(struct.pack('<I', v & 0xFFFFFFFF)))),
         b'itob': lambda v: L.table_from(list(struct.pack('<I', v & 0xFFFFFFFF))),
         b'getRelativeAddress': lambda f, t, o: (t - f + o) & 0xFFFFFFFF if (t-f+o)>=0 else (t-f+o),
         b'exposeCode': lambda a, n, c: (lambda *args: 0),
@@ -69,18 +70,20 @@ def run(name, exe):
     g.INFO, g.WARNING = 1, 2
     sections = {}
     me = L.table_from({b'registerSection': lambda self, n, cb: sections.__setitem__(n, cb)})
+    g.hooks = L.table_from({b'registerHookCallback': lambda n, f: None})
     g.modules = L.table_from({b'map-extensions': me})
     tpl = L.execute(open(os.path.join(MOD,'templates.lua'),'rb').read())
     g.package.loaded[b'templates'] = tpl
     m = L.execute(open(os.path.join(MOD,'init.lua'),'rb').read())
     self = L.table()
-    m[b'enable'](self, L.table())
+    cfg = L.eval(os.environ.get('CFG','{}'))
+    m[b'enable'](self, cfg)
     for x in logs: print(name, x.decode() if isinstance(x,bytes) else x)
     return scripts, patches, sections
 import lupa
 out = r'C:\Users\Monsterfish_\AppData\Local\Temp\shcw\outpost\asm'
 os.makedirs(out, exist_ok=True)
-for name, exe in (('VAN', VAN), ('EXT', EXT), ('CLEAN', CLEANEXT)):
+for name, exe in [(n,e) for n,e in (('VAN', VAN), ('EXT', EXT), ('CLEAN', CLEANEXT)) if n in os.environ.get('EXES','VAN EXT CLEAN')]:
     scripts, patches, sections = run(name, exe)
     print(name, len(scripts), 'scripts', len(patches), 'patches', list(sections))
     for a, b in patches:
