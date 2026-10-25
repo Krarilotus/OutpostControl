@@ -74,8 +74,9 @@ siege_enabled: Shoot targets on the way
 siege_enabled_tooltip: |
   Catapults shoot the nearest enemy building in their range, then the next one. Fire ballistas
   shoot the nearest enemy troops or workers in their range, and buildings when no one is near.
-  The range is the game's own for each engine. With nothing in range they carry on towards the
-  castle as before.
+  The range is the game's own for each engine. Only enemies are aimed at: players on another
+  team than the outpost's owner, never its allies. With nothing in range they carry on towards
+  the castle as before.
 diagnostics_group: Diagnostics
 diagnostics_group_descr: |
   For testing.

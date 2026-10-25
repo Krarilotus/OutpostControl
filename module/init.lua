@@ -561,24 +561,29 @@ local function nearestUnit(owner, x, y, reach)
   return best, bestUid
 end
 
--- Siege engines on the way: keep shooting what they were told while it stands and is in range,
--- else take the nearest thing in range (fire ballistas: troops, then buildings), else move on
--- the way the game has them. The range is the game's own for the engine's projectile, read
--- each time (the Rebalancer may have changed it).
+-- Siege engines on the way: keep shooting what they were told while it stands, is in range and
+-- still belongs to an enemy, else take the nearest enemy thing in range (fire ballistas: troops,
+-- then buildings), else move on the way the game has them. An enemy is another player of another
+-- team, the same test the game's own targeting makes; nobody's (owner 0) is never a target. The
+-- range is the game's own for the engine's projectile, read each time (the Rebalancer may have
+-- changed it).
 local function siegeOrders(ai, t, S, owner, kind, ux, uy)
   local range = rd32(G.ranges + K.SIEGE_PROJECTILE[kind] * 4)
   local reach = range * range
+  local foes = enemies(owner)
   if S.unit ~= nil then
     local u = unit(S.unit)
     if rd32(u + U.UID) == S.unitUid and rd16(u + U.STATE) == 2 and rd16(u + U.DYING) == 0
-        and squared(ux, uy, rd16(u + U.X), rd16(u + U.Y)) <= reach then
+        and foes[rd16(u + U.OWNER)] and squared(ux, uy, rd16(u + U.X), rd16(u + U.Y)) <= reach then
       return
     end
     S.unit = nil
   end
   if S.building ~= nil then
     local b = building(S.building)
-    if rd32(b + B.UID) == S.buildingUid and rd16(b + B.STATE) ~= 0 then return end
+    if rd32(b + B.UID) == S.buildingUid and rd16(b + B.STATE) ~= 0 and foes[rd16(b + B.OWNER)] then
+      return
+    end
     S.building = nil
   end
   if K.SIEGE[kind] == "ballista" then
