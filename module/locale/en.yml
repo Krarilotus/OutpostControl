@@ -9,7 +9,7 @@ defenders_enabled_tooltip: |
   sets how many stand around the outpost, from none to 50. Fallen guards come back one at a time,
   quicker the more you set, so a full set comes back in about the time the game's 8 do. With no
   troop picked the outpost uses archers, as the game does. Melee guards stand in the defensive
-  stance, knights in the aggressive one, and horse archers are aggressive and patrol round the
+  stance, knights and slaves in the aggressive one, and horse archers are aggressive and patrol round the
   outpost through six random spots, each moved to a free place when something is in the way.
 
 growth_group: Wave growth

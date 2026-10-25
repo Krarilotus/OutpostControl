@@ -101,14 +101,14 @@ K.TICKS_PER_SECOND = 40           -- at normal game speed
 K.SIZE_FIELD, K.DELAY_FIELD = 0x30E, 0x310
 K.KNOB_W, K.KNOB_ABOVE, K.KNOB_H = 15, 5, 36
 
--- Guards in a troop of their own per outpost, for a stance: melee guards defensive, knights
--- aggressive, horse archers aggressive and on patrol round the outpost. Archers, crossbowmen,
+-- Guards in a troop of their own per outpost, for a stance: melee guards defensive, knights and
+-- slaves aggressive, horse archers aggressive and on patrol round the outpost. Archers, crossbowmen,
 -- slingers and fire throwers stay as the game has its archers (no troop).
 K.STANCE_DEFENSIVE, K.STANCE_AGGRESSIVE = 1, 2
 K.GUARD_GROUP = {
   [24] = "defensive", [25] = "defensive", [26] = "defensive", [27] = "defensive", [37] = "defensive",
-  [71] = "defensive", [73] = "defensive", [75] = "defensive",
-  [28] = "aggressive", [74] = "patrol",
+  [73] = "defensive", [75] = "defensive",
+  [28] = "aggressive", [71] = "aggressive", [74] = "patrol",
 }
 K.GUARD_STANCE = { defensive = 1, aggressive = 2, patrol = 2 }
 K.GUARD_PATROL_NEAR, K.GUARD_PATROL_FAR = 7, 15   -- tiles from the outpost's middle
