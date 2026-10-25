@@ -111,8 +111,16 @@ K.GUARD_GROUP = {
   [28] = "aggressive", [74] = "patrol",
 }
 K.GUARD_STANCE = { defensive = 1, aggressive = 2, patrol = 2 }
-K.GUARD_PATROL_RADIUS = 10        -- tiles from the outpost's middle
-K.GUARD_PATROL_POINTS = 4
+K.GUARD_PATROL_NEAR, K.GUARD_PATROL_FAR = 7, 15   -- tiles from the outpost's middle
+K.GUARD_PATROL_POINTS = 6         -- a troop route holds 9 points; the first is where it starts
+K.GUARD_PATROL_TRIES = 12
+K.WALL_FLAG = 0x100               -- tile flag: a wall stands here
+-- The tile flags (lord-hunt's pattern) and, at a fixed distance from them, the building on each
+-- tile and the map rows (both exes).
+K.AOB_TILE_FLAGS = "F7 04 9D ? ? ? ? 00 01 00 00"
+K.TILE_FLAGS_OPERAND = 0x03
+K.FLAGS_TO_BUILDINGS = 0x2029B0 - 0x165160
+K.FLAGS_TO_ROWS = 0x8A40F8 - 0x165160
 
 K.MAX_DEFENDERS = 50
 K.VANILLA_SLOTS = 8           -- the game's own defender slots
@@ -627,17 +635,45 @@ end
 -- guards go into the outpost's defensive troop, knights into its aggressive one, horse archers
 -- into its patrol troop, which is sent round the outpost again with every new rider. A troop
 -- the AI has not registered never gets AI orders, so they stay at their outpost.
+-- A patrol point is free when no building or wall stands on it and the troop can walk there.
+local function freeSpot(t, x, y)
+  local tile = tileAt(x, y)
+  if tile == nil then return false end
+  if rd32(G.tileFlags + tile * 4) & K.WALL_FLAG ~= 0 then return false end
+  if rd16(G.buildingLayer + tile * 2) ~= 0 then return false end
+  return F.reach(G.aiState, t, tile) ~= 0
+end
+
+-- The patrol: GUARD_PATROL_POINTS spots round the outpost, one in each sixth of the circle at a
+-- random angle and distance in it. A blocked spot moves - nearer and further, then round the
+-- circle - until a free one is found. The random numbers come from the game state (outpost,
+-- troop, tick), so every player of a multiplayer game gets the same patrol.
 local function patrolRound(t, bid)
   local b = building(bid)
   local half = rd32(b + B.SIZE) // 2
   local cx, cy = rd16(b + B.X) + half, rd16(b + B.Y) + half
+  local seed = (bid * 7919 + t * 104729 + rd32(G.ticks)) & 0x7FFFFFFF
+  local function random(n)
+    seed = (seed * 1103515245 + 12345) & 0x7FFFFFFF
+    return (seed >> 8) % n
+  end
+  local sector = 2 * math.pi / K.GUARD_PATROL_POINTS
+  local span = K.GUARD_PATROL_FAR - K.GUARD_PATROL_NEAR + 1
   local points = {}
   for index = 0, K.GUARD_PATROL_POINTS - 1 do
-    local angle = index * 2 * math.pi / K.GUARD_PATROL_POINTS
-    local x = math.max(1, math.min(K.MAP_SIZE - 2, math.floor(cx + K.GUARD_PATROL_RADIUS * math.cos(angle) + 0.5)))
-    local y = math.max(1, math.min(K.MAP_SIZE - 2, math.floor(cy + K.GUARD_PATROL_RADIUS * math.sin(angle) + 0.5)))
-    local tile = tileAt(x, y)
-    if tile ~= nil and F.reach(G.aiState, t, tile) ~= 0 then points[#points + 1] = { x, y } end
+    local angle = (index + random(100) / 100) * sector
+    local radius = K.GUARD_PATROL_NEAR + random(span)
+    for try = 0, K.GUARD_PATROL_TRIES - 1 do
+      local r = K.GUARD_PATROL_NEAR + (radius - K.GUARD_PATROL_NEAR + (try % 3) * 3) % span
+      local turn = try // 3
+      local a = angle + (turn + 1) // 2 * sector / 4 * (turn % 2 == 0 and 1 or -1)
+      local x = math.max(1, math.min(K.MAP_SIZE - 2, math.floor(cx + r * math.cos(a) + 0.5)))
+      local y = math.max(1, math.min(K.MAP_SIZE - 2, math.floor(cy + r * math.sin(a) + 0.5)))
+      if freeSpot(t, x, y) then
+        points[#points + 1] = { x, y }
+        break
+      end
+    end
   end
   if #points == 0 then return end
   F.move(G.tribesThis, t, points[1][1], points[1][2], 1, 1, 0)
@@ -1039,6 +1075,10 @@ local function resolve()
   G.teams = rd32(scan(K.AOB_TEAMS, "the team table") + K.TEAMS_OPERAND)
   F.move = core.exposeCode(scan(K.AOB_MOVE, "giveTribeMoveInstruction"), 7, 1)
   F.addPoint = core.exposeCode(scan(K.AOB_ADD_POINT, "addRallyPoint"), 5, 1)
+  G.tileFlags = rd32(scan(K.AOB_TILE_FLAGS, "the tile flags") + K.TILE_FLAGS_OPERAND)
+  G.buildingLayer = G.tileFlags + K.FLAGS_TO_BUILDINGS
+  same(G.rows, G.tileFlags + K.FLAGS_TO_ROWS, "the map layers")
+  G.ticks = rd32(scan(K.AOB_TICKS, "the game tick counter") + K.TICKS_OPERAND)
 end
 
 -- Siege engines on the way. smarter-recruits patches the 8 bytes right before the update table
