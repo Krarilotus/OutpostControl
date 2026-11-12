@@ -13,6 +13,14 @@ options:
     contents:
       type: boolean
       value: true
+  - url: outpost-control.defenders.walls
+    name: outpost-control-defenders-walls
+    text: '{{defenders_walls}}'
+    tooltip: '{{defenders_walls_tooltip}}'
+    display: Switch
+    contents:
+      type: boolean
+      value: true
 
 - display: GroupBox
   category: [Outpost Control]

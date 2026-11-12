@@ -12,6 +12,12 @@ defenders_enabled_tooltip: |
   stance, knights and slaves in the aggressive one, and horse archers are aggressive and patrol round the
   outpost through six random spots, each moved to a free place when something is in the way.
 
+defenders_walls: Guards man nearby walls and towers
+defenders_walls_tooltip: |
+  A new guard on foot goes up onto the outpost owner's walls, stone towers or stone gatehouses
+  within 16 tiles of the outpost, if it can walk there: to the free spot with the fewest guards
+  round it, so they spread out over the walls and fill the places of guards who fell. Knights
+  and horse archers stay on the ground. Works for every outpost, also those without settings.
 growth_group: Wave growth
 growth_group_descr: |
   How fast an outpost's attacks build up over the game.

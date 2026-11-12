@@ -1,7 +1,7 @@
 # Outpost Control
 
 **Author**: Monsterfish
-**Version**: 1.0.13
+**Version**: 1.0.14
 
 More say over the European and Arabian outposts you place in the map editor. Every part can be
 switched off in the settings.
@@ -35,6 +35,11 @@ two pages. Each slider shows its value to its right.
     out, one in each direction, moved to a free spot nearby when a building, a wall or water is
     in the way. Archers, crossbowmen, slingers and fire throwers
     stand and shoot as the game's own outpost archers do.
+  - **On the walls:** guards on foot go up onto the owner's walls, stone towers and stone
+    gatehouses within 16 tiles of the outpost, if they can walk there - each to the free spot
+    with the fewest guards round it, so they spread out and fill the places of guards who fell.
+    Knights and horse archers stay below. This works for every outpost, also those without
+    settings (a setting).
 
 ## Attackers' jobs
 

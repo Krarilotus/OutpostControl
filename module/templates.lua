@@ -152,8 +152,8 @@ jmp RESUME
 ]]
 
 -- UpdateOutpostBuilding, where it puts a new guard in a free slot (mov ebp,[current], 6 bytes;
--- ebx = the unit). An outpost with an entry keeps it in its own list instead, and lua puts the
--- guard in its outpost's troop for its stance.
+-- ebx = the unit). An outpost with an entry keeps it in its own list instead. Either way lua then
+-- sends a foot guard onto nearby walls and puts the guard in its outpost's troop for its stance.
 templates.guardRecord = [[
 push eax
 push edx
@@ -196,6 +196,10 @@ pop edx
 pop eax
 jmp DONE
 usual:
+mov [GUARD_UNIT],ebx
+pushad
+call PAD
+popad
 pop edx
 pop eax
 mov ebp,[CURRENT_BUILDING]

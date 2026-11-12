@@ -74,7 +74,7 @@ K.PLANS = {
 }
 
 K.DEFAULTS = {
-  defenders = { enabled = true },
+  defenders = { enabled = true, walls = true },
   growth = { enabled = true },
   jobs = { enabled = true },
   siege = { enabled = true },
@@ -120,6 +120,23 @@ K.GUARD_GROUP = {
   [28] = "aggressive", [71] = "aggressive", [74] = "patrol",
 }
 K.GUARD_STANCE = { defensive = 1, aggressive = 2, patrol = 2 }
+-- Guards who man walls and towers near their outpost: every foot soldier; riders stay below.
+K.WALL_GUARDS = { [22] = true, [23] = true, [24] = true, [25] = true, [26] = true, [27] = true,
+  [37] = true, [70] = true, [71] = true, [72] = true, [73] = true, [75] = true, [76] = true }
+K.WALL_RADIUS = 16                -- tiles from the outpost's middle
+K.WALL_CROWD = 2                  -- guards closer than this to a spot (tiles) crowd it
+K.WALL_TRIES = 24                 -- least crowded spots offered to the area test
+-- Stone gatehouses and towers, whose tops guards stand on (walls are tiles, not buildings).
+K.WALL_BUILDINGS = { [45] = true, [46] = true, [60] = true, [61] = true, [74] = true, [75] = true,
+  [76] = true, [77] = true, [78] = true }
+K.NOT_WALKABLE_FLAG = 0x2         -- with the wall flag: a wall tile nobody stands on
+K.FLAGS_TO_WALL_OWNER = 0x2C6E50 - 0x165160
+-- UpdateOutpostBuilding, before the guard site: where it sends a new guard (the area map, the
+-- path finder and its area test, setDestinationForUnit).
+K.GUARD_AREA = { -0x99, { 0x0F, 0xBF, 0x04, 0x55 } }
+K.GUARD_PATHS = { -0x67, { 0xB9 } }
+K.GUARD_NAVIGATE = -0x62
+K.GUARD_DESTINATION = -0x05
 K.GUARD_PATROL_NEAR, K.GUARD_PATROL_FAR = 7, 15   -- tiles from the outpost's middle
 K.GUARD_PATROL_POINTS = 6         -- a troop route holds 9 points; the first is where it starts
 K.GUARD_PATROL_TRIES = 12
@@ -306,7 +323,7 @@ K.SIZE_ITEM_FROM_GROUP = 9    -- group header, eight buttons, then the size slid
 ---------------------------------------------------------------------------------------
 
 local U = { STRIDE = 0x490, STATE = 0x8C, TYPE = 0x8E, OWNER = 0x96, UID = 0x98, X = 0xC4, Y = 0xC6,
-  TILE = 0xD4, DYING = 0x2A0, ACTION = 0x2C0, TRIBE = 0x2D8, TRIBE_UID = 0x2E4, TARGET_BUILDING = 0x336,
+  TILE = 0xD4, DYING = 0x2A0, CLIMB = 0x360, ACTION = 0x2C0, TRIBE = 0x2D8, TRIBE_UID = 0x2E4, TARGET_BUILDING = 0x336,
   SHOOT_UNIT = 0x344, TARGETING = 0x39C, SHOOT_BEFORE_STOP = 0x3D8, TARGET_UNIT = 0x39E, TARGET_UID = 0x3A0, BEHAVIOUR = 0x42A,
   STATE_OFFSET = 0x614 }
 local T = { OWNER = 0x2C, UID = 0x34, STATE = 0x40, SIZE = 0x5C }
@@ -421,6 +438,7 @@ local F = {}             -- the game's functions, exposed to lua
 local O = {}             -- options
 local orders = {}        -- per troop id: what this module last told it
 local guardTroops = {}   -- per outpost and stance group: the guards' troop (id, uid)
+local wallSpots = {}     -- per guard sent onto a wall: { uid, x, y }
 local broken = false
 
 local function diag(fmt, ...)
@@ -734,8 +752,91 @@ local function patrolRound(t, bid)
   for index = 2, #points do F.addPoint(G.tribesThis, t, points[index][1], points[index][2], index) end
 end
 
+-- A new foot guard goes up onto the owner's walls, stone towers or stone gatehouses within
+-- WALL_RADIUS of the outpost: the free spot with the fewest guards round it (nearest the outpost
+-- on a tie), which also fills the places of guards who fell. A spot counts only when the guard
+-- can walk there (the game's own area test, as for the outpost's own spot). With none, the guard
+-- keeps the spot the game gave it.
+local function manWalls(id, bid)
+  local u = unit(id)
+  if not K.WALL_GUARDS[rd16(u + U.TYPE)] then return end
+  local owner = rd16(u + U.OWNER)
+  local b = building(bid)
+  local half = rd32(b + B.SIZE) // 2
+  local cx, cy = rd16(b + B.X) + half, rd16(b + B.Y) + half
+  local r = K.WALL_RADIUS
+
+  -- where the owner's people stand or are going, near the outpost
+  local taken = {}
+  local function mark(x, y) local k = y * K.MAP_SIZE + x taken[k] = (taken[k] or 0) + 1 end
+  for other = 1, rd32(G.unitsThis) - 1 do
+    if other ~= id then
+      local o = unit(other)
+      if rd16(o + U.STATE) == 2 and rd16(o + U.OWNER) == owner then
+        local spot = wallSpots[other]
+        if spot ~= nil and spot.uid == rd32(o + U.UID) then
+          mark(spot.x, spot.y)
+        else
+          wallSpots[other] = nil
+          local ox, oy = rd16(o + U.X), rd16(o + U.Y)
+          if math.abs(ox - cx) <= r + K.WALL_CROWD and math.abs(oy - cy) <= r + K.WALL_CROWD then mark(ox, oy) end
+        end
+      end
+    end
+  end
+
+  local spots = {}
+  for y = math.max(1, cy - r), math.min(K.MAP_SIZE - 2, cy + r) do
+    for x = math.max(1, cx - r), math.min(K.MAP_SIZE - 2, cx + r) do
+      local tile = tileAt(x, y)
+      if tile ~= nil and (taken[y * K.MAP_SIZE + x] or 0) == 0 then
+        local flags = rd32(G.tileFlags + tile * 4)
+        local ok = false
+        if flags & K.WALL_FLAG ~= 0 then
+          ok = flags & K.NOT_WALKABLE_FLAG == 0 and (rd8(G.wallOwner + tile) & 7) + 1 == owner
+        else
+          local on = rd16(G.buildingLayer + tile * 2)
+          if on > 0 then
+            local bb = building(on)
+            ok = K.WALL_BUILDINGS[rd16(bb + B.TYPE)] == true and rd16(bb + B.OWNER) == owner
+          end
+        end
+        if ok then
+          local crowd = 0
+          for dy = -K.WALL_CROWD, K.WALL_CROWD do
+            for dx = -K.WALL_CROWD, K.WALL_CROWD do
+              crowd = crowd + (taken[(y + dy) * K.MAP_SIZE + x + dx] or 0)
+            end
+          end
+          spots[#spots + 1] = { x = x, y = y, tile = tile, crowd = crowd, d = distance(x, y, cx, cy) }
+        end
+      end
+    end
+  end
+  if #spots == 0 then return end
+  table.sort(spots, function(p, q)
+    if p.crowd ~= q.crowd then return p.crowd < q.crowd end
+    if p.d ~= q.d then return p.d < q.d end
+    return p.tile < q.tile
+  end)
+
+  local from = rd16(G.area + rd32(u + U.TILE) * 2) & 0xFFFF
+  local climb = rd16(u + U.CLIMB)
+  for index = 1, math.min(#spots, K.WALL_TRIES) do
+    local spot = spots[index]
+    local to = rd16(G.area + spot.tile * 2) & 0xFFFF
+    if to ~= 0 and (to == from or F.navigate(G.pathFinder, owner, from, to, climb) ~= 0) then
+      F.setDestination(G.unitsThis, id, spot.x, spot.y, 0)
+      wallSpots[id] = { uid = rd32(u + U.UID), x = spot.x, y = spot.y }
+      diag("outpost %d: guard %d to the wall at %d,%d", bid, id, spot.x, spot.y)
+      return
+    end
+  end
+end
+
 local function onGuard()
   local id, bid = rd32(G.guardUnit), rd32(G.current)
+  if O.walls then manWalls(id, bid) end
   local u = unit(id)
   local group = K.GUARD_GROUP[rd16(u + U.TYPE)]
   if group == nil or rd16(u + U.TRIBE) > 0 then return end
@@ -756,9 +857,6 @@ local function onGuard()
   diag("outpost %d: %s guard %d in troop %d", bid, group, id, g.id)
 end
 
--- An outpost siege engine standing or walking (asm hands it over every 16 ticks): fire ballistas
--- shoot enemy troops in range first, then like catapults, trebuchets and mangonels the nearest
--- enemy building in range. Nothing in range: it walks on.
 -- Shoot if anything is in range: fire ballistas take enemy troops first, then like catapults,
 -- trebuchets and mangonels the nearest enemy building. True when the engine now shoots.
 local function shootIfInRange(id)
@@ -944,6 +1042,7 @@ local function wipe()
   core.setMemory(G.slots, 0, K.MAX_BUILDINGS * K.MAX_GUARDS * 8)
   core.setMemory(G.jobs, 0, K.MAX_TRIBES)
   guardTroops = {}
+  wallSpots = {}
   core.setMemory(G.jobUids, 0, K.MAX_TRIBES * 4)
   orders = {}
 end
@@ -1086,6 +1185,11 @@ local function resolve()
     G.buildings + K.TIMER_FIELD, "the defender timer")
   G.guardRecord = scan(K.AOB_GUARD_RECORD, "where an outpost puts away a new defender")
   G.guardRecorded = G.guardRecord + K.GUARD_RECORDED
+  G.area = readOperand(G.guardRecord, K.GUARD_AREA, "the area map")
+  G.pathFinder = readOperand(G.guardRecord, K.GUARD_PATHS, "the path finder")
+  F.navigate = core.exposeCode(readCallTarget(G.guardRecord, K.GUARD_NAVIGATE, "the area test"), 5, 1)
+  F.setDestination = core.exposeCode(readCallTarget(G.guardRecord, K.GUARD_DESTINATION,
+    "setDestinationForUnit"), 5, 1)
   expectBytes(G.guardRecorded, { 0x8B, 0x6C, 0x24, 0x10, 0x85, 0xED }, "the end of the defender slots")
 
   G.defenderType = scan(K.AOB_DEFENDER_TYPE, "where an outpost picks its defenders")
@@ -1149,6 +1253,7 @@ local function resolve()
   F.addPoint = core.exposeCode(scan(K.AOB_ADD_POINT, "addRallyPoint"), 5, 1)
   G.tileFlags = rd32(scan(K.AOB_TILE_FLAGS, "the tile flags") + K.TILE_FLAGS_OPERAND)
   G.buildingLayer = G.tileFlags + K.FLAGS_TO_BUILDINGS
+  G.wallOwner = G.tileFlags + K.FLAGS_TO_WALL_OWNER
   same(G.rows, G.tileFlags + K.FLAGS_TO_ROWS, "the map layers")
   G.ticks = rd32(scan(K.AOB_TICKS, "the game tick counter") + K.TICKS_OPERAND)
 end
@@ -1416,6 +1521,7 @@ end
 local function enable(self, config)
   config = config or {}
   O.defenders = setting(config, "defenders", "enabled") == true
+  O.walls = O.defenders and setting(config, "defenders", "walls") == true
   O.growth = setting(config, "growth", "enabled") == true
   O.jobs = setting(config, "jobs", "enabled") == true
   O.siege = setting(config, "siege", "enabled") == true
