@@ -21,6 +21,29 @@ options:
     contents:
       type: boolean
       value: true
+  - url: outpost-control.defenders.knights
+    name: outpost-control-defenders-knights
+    text: '{{defenders_knights}}'
+    tooltip: '{{defenders_knights_tooltip}}'
+    display: Switch
+    contents:
+      type: boolean
+      value: true
+
+- display: GroupBox
+  category: [Outpost Control]
+  header: '{{waves_group}}'
+  text: '{{waves_group_descr}}'
+  hasHeader: true
+  children:
+  - url: outpost-control.waves.exact
+    name: outpost-control-waves-exact
+    text: '{{waves_exact}}'
+    tooltip: '{{waves_exact_tooltip}}'
+    display: Switch
+    contents:
+      type: boolean
+      value: true
 
 - display: GroupBox
   category: [Outpost Control]

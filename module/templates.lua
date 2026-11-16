@@ -1,7 +1,8 @@
 -- Injected code. Every script is assembled on its own (fasm has a small fixed buffer), and
--- the scripts reach each other by address. Building entries are 8 bytes, one per building id:
+-- the scripts reach each other by address. Building entries are 16 bytes, one per building id:
 -- +0 the building's uid (the entry only counts while it matches), +4 the defender troop
--- buttons (bit per button), +6 the number of defenders, +7 the growth in percent.
+-- buttons (bit per button), +6 the number of defenders, +7 the growth in percent, +8 the exact
+-- wave size (0xFFFF: not set, the game's own size slider counts).
 
 local templates = {}
 
@@ -12,7 +13,7 @@ jae none
 mov edx,eax
 imul edx,edx,B_STRIDE
 mov edx,[edx+B_UID]
-shl eax,3
+shl eax,ENTRY_SHIFT
 add eax,TABLE
 test edx,edx
 jz none
@@ -52,9 +53,10 @@ rep stosd
 pop ecx
 pop edi
 mov eax,ecx
-shl eax,3
+shl eax,ENTRY_SHIFT
 add eax,TABLE
 mov [eax],ebx
+mov word [eax+8],0xFFFF
 mov word [eax+4],1
 movsx ebx,byte [edx+B_DEFENDERS]
 cmp ebx,1
@@ -266,6 +268,189 @@ go:
 jmp RESUME
 ]]
 
+-- eax = building id -> eax = the average wave of the outpost's first picked troop kind at
+-- multiplier 1 (base + (range - 1) / 2, at least 1). Changes ecx and edx.
+templates.kindAverage = [[
+imul eax,eax,B_STRIDE
+movzx ecx,word [eax+B_MASK]
+and ecx,0xFF
+bsf ecx,ecx
+jnz picked
+xor ecx,ecx
+picked:
+cmp word [eax+B_TYPE],ARAB_OUTPOST
+jne euro
+add ecx,8
+euro:
+imul ecx,ecx,KIND_STRIDE
+mov eax,[KINDS+ecx+KIND_RANGE]
+dec eax
+sar eax,1
+add eax,[KINDS+ecx+KIND_BASE]
+cmp eax,1
+jge fine
+mov eax,1
+fine:
+ret
+]]
+
+-- eax = building id -> eax = its wave size: the exact one set, else what the game's own size
+-- slider makes on average. Keeps every register but eax.
+templates.waveValue = [[
+push ecx
+push edx
+push ebx
+mov ebx,eax
+call ENTRY_GET
+test eax,eax
+jz average
+movzx edx,word [eax+8]
+cmp edx,0xFFFF
+je average
+mov eax,edx
+jmp known
+average:
+mov eax,ebx
+call KIND_AVERAGE
+imul ebx,ebx,B_STRIDE
+movsx edx,word [ebx+B_SIZE]
+inc edx
+imul eax,edx
+known:
+pop ebx
+pop edx
+pop ecx
+ret
+]]
+
+-- The size slider on the attacker page: the exact wave size, 0 (no waves) to WAVE_MAX. The
+-- game's own size field gets the multiplier nearest to it, so the map means about the same
+-- without the module.
+templates.waveSlider = [[
+mov eax,[SELECTED]
+call ENTRY_MAKE
+test eax,eax
+jz done
+mov ecx,[esp+8]
+cmp ecx,1
+jne not_setup
+mov edx,[esp+0xC]
+mov dword [edx],0
+mov edx,[esp+0x10]
+mov dword [edx],WAVE_MAX
+jmp report
+not_setup:
+cmp ecx,2
+je take
+cmp ecx,3
+je take
+cmp ecx,5
+je less
+cmp ecx,6
+je more
+jmp report
+take:
+mov edx,[esp+0x14]
+mov ecx,[edx]
+cmp ecx,0
+jge low_ok
+xor ecx,ecx
+low_ok:
+cmp ecx,WAVE_MAX
+jle set_size
+mov ecx,WAVE_MAX
+jmp set_size
+less:
+push eax
+mov eax,[SELECTED]
+call WAVE_VALUE
+mov ecx,eax
+pop eax
+dec ecx
+jge set_size
+xor ecx,ecx
+jmp set_size
+more:
+push eax
+mov eax,[SELECTED]
+call WAVE_VALUE
+mov ecx,eax
+pop eax
+inc ecx
+cmp ecx,WAVE_MAX
+jle set_size
+mov ecx,WAVE_MAX
+set_size:
+mov [eax+8],cx
+push eax
+push ecx
+mov eax,[SELECTED]
+call KIND_AVERAGE
+mov ecx,eax
+mov eax,[esp]
+mov edx,ecx
+sar edx,1
+add eax,edx
+xor edx,edx
+div ecx
+dec eax
+jge size_low
+xor eax,eax
+size_low:
+cmp eax,VANILLA_TOP
+jle size_high
+mov eax,VANILLA_TOP
+size_high:
+mov edx,[SELECTED]
+imul edx,edx,B_STRIDE
+mov [edx+B_SIZE],ax
+pop ecx
+pop eax
+report:
+mov eax,[SELECTED]
+call WAVE_VALUE
+mov edx,[esp+0x14]
+mov [edx],eax
+done:
+ret
+]]
+
+-- UpdateOutpostBuilding, where a new wave troop gets its size (mov [ecx+wave size],dx, 7
+-- bytes; ecx = building id * stride): an outpost with an exact size takes that.
+templates.waveSize = [[
+push eax
+push edx
+mov eax,[CURRENT_BUILDING]
+call ENTRY_GET
+pop edx
+test eax,eax
+jz usual
+movzx eax,word [eax+8]
+cmp eax,0xFFFF
+je usual
+mov edx,eax
+usual:
+pop eax
+mov word [ecx+B_WAVE],dx
+jmp RESUME
+]]
+
+-- UpdateOutpostBuilding, where its wave part starts (test ebp,ebp / jne, 8 bytes; ebp = the
+-- forming wave troop): an outpost set to waves of 0 sends none.
+templates.waveStart = [[
+mov eax,[CURRENT_BUILDING]
+call ENTRY_GET
+test eax,eax
+jz usual
+cmp word [eax+8],0
+jne usual
+jmp UPDATE_END
+usual:
+test ebp,ebp
+jne FORMING
+jmp RESUME
+]]
+
 -- UpdateOutpostBuilding, after a wave has left (16 bytes, eax = building id * stride). The
 -- game shortens the wave wait by 100 and the unit wait by 4 each time; this scales both.
 templates.growth = [[
@@ -452,8 +637,14 @@ push esi
 mov esi,[SELECTED]
 cmp dword [MODE],0
 jne defenders
+if WAVES_ON <> 0
+mov eax,esi
+call WAVE_VALUE
+imul esi,esi,B_STRIDE
+else
 imul esi,esi,B_STRIDE
 movsx eax,word [esi+B_SIZE]
+end if
 xor ecx,ecx
 mov ebx,SIZE_ROW
 call show
@@ -832,16 +1023,20 @@ done:
 ret
 ]]
 
--- The size slider, which is the amount on the defender page (prologue: mov ecx,[esp+8] / mov
--- eax,[selected], 9 bytes). Messages: 1 set up (min, max, value), 2 and 3 set the value, 4 read
+-- The size slider, which is the amount on the defender page and with WAVES_ON the exact wave
+-- size on the attacker page (prologue: mov ecx,[esp+8] / mov eax,[selected], 9 bytes). Messages: 1 set up (min, max, value), 2 and 3 set the value, 4 read
 -- it, 5 one step less, 6 one more. FIELD is the entry byte (6 defenders); SYNC 1 also writes the
 -- game's own defender count (1 to its 8 slots).
 templates.slider = [[
 cmp dword [MODE],0
 jne own
+if WAVES_ON <> 0
+jmp WAVE_SLIDER
+else
 mov ecx,[esp+8]
 mov eax,[SELECTED]
 jmp RESUME
+end if
 own:
 mov eax,[SELECTED]
 call ENTRY_MAKE

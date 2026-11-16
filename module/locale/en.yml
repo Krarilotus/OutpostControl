@@ -9,7 +9,7 @@ defenders_enabled_tooltip: |
   sets how many stand around the outpost, from none to 50. Fallen guards come back one at a time,
   quicker the more you set, so a full set comes back in about the time the game's 8 do. With no
   troop picked the outpost uses archers, as the game does. Melee guards stand in the defensive
-  stance, knights and slaves in the aggressive one, and horse archers are aggressive and patrol round the
+  stance, slaves in the aggressive one, knights are aggressive and patrol like horse archers, and horse archers are aggressive and patrol round the
   outpost through six random spots, each moved to a free place when something is in the way.
 
 defenders_walls: Guards man nearby walls and towers
@@ -18,6 +18,21 @@ defenders_walls_tooltip: |
   within 16 tiles of the outpost, if it can walk there: to the free spot with the fewest guards
   round it, so they spread out over the walls and fill the places of guards who fell. Knights
   and horse archers stay on the ground. Works for every outpost, also those without settings.
+defenders_knights: Patrolling knights attack nearby buildings
+defenders_knights_tooltip: |
+  Knight guards ride a patrol round their outpost in the aggressive stance, like horse archers,
+  and fight the enemy troops they meet. With this on they also attack enemy buildings that come
+  within 10 tiles of them, and ride their patrol again once the building is down.
+
+waves_group: Wave size
+waves_group_descr: |
+  How many troops each wave of an outpost has.
+waves_exact: Set the exact number of troops per wave
+waves_exact_tooltip: |
+  The Size slider on the outpost panel's Attackers page sets exactly how many troops each wave
+  has, instead of the game's 6 steps of random group sizes. It goes from 0, which switches the
+  outpost's waves off, to the most the game itself ever sends at its biggest size. Without the
+  module the map keeps the nearest of the game's own sizes.
 growth_group: Wave growth
 growth_group_descr: |
   How fast an outpost's attacks build up over the game.

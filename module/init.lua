@@ -33,6 +33,7 @@ K.SAVE_SECTION = "outpost-control"
 K.SAVE_BUILDINGS = "buildings.bin"
 K.SAVE_JOBS = "jobs.bin"
 K.SAVE_GUARDS = "guards.bin"
+K.SAVE_WAVES = "waves.bin"
 
 local templates = require("templates")
 
@@ -74,7 +75,8 @@ K.PLANS = {
 }
 
 K.DEFAULTS = {
-  defenders = { enabled = true, walls = true },
+  defenders = { enabled = true, walls = true, knights = true },
+  waves = { exact = true },
   growth = { enabled = true },
   jobs = { enabled = true },
   siege = { enabled = true },
@@ -108,18 +110,32 @@ K.TEXT_SIZE, K.TEXT_DELAY = 0x12, 0x15     -- the game's own "Size" and "Start D
 K.NUMBER_X = 242                  -- each slider's value, right of it (the troop buttons start at 280)
 K.TICKS_PER_SECOND = 40           -- at normal game speed
 K.SIZE_FIELD, K.DELAY_FIELD = 0x30E, 0x310
+K.WAVE_FIELD = 0x30A              -- the size the forming wave troop leaves at
+K.VANILLA_TOP = 5                 -- the game's size slider: multiplier 1 to 6
+-- The outpost troop kinds: 16 x 0x34 (8 European, 8 Arabian): +8 base size, +0xC size range.
+K.KIND_STRIDE, K.KIND_BASE, K.KIND_RANGE, K.KINDS = 0x34, 8, 0xC, 16
+-- UpdateOutpostBuilding: a new wave troop's size, (rand % range + base) * (size + 1).
+K.AOB_WAVE_SIZE = "66 8B 81 ? ? ? ? 66 05 01 00 66 C7 86 ? ? ? ? ? 00 66 03 97 ? ? ? ? 66 0F AF D0 66 89 91"
+K.WAVE_SIZE_AT, K.WAVE_SIZE_SIZE = 0x1F, 7
+K.WAVE_SIZE_KINDS = { 0x14, { 0x66, 0x03, 0x97 } }
+K.WAVE_START_AT, K.WAVE_START_SIZE = 4, 8  -- from the end of the guard slots: test ebp,ebp / jne
 K.KNOB_W, K.KNOB_ABOVE, K.KNOB_H = 15, 5, 36
 
--- Guards in a troop of their own per outpost, for a stance: melee guards defensive, knights and
--- slaves aggressive, horse archers aggressive and on patrol round the outpost. Archers, crossbowmen,
+-- Guards in a troop of their own per outpost, for a stance: melee guards defensive, slaves
+-- aggressive, knights aggressive and on patrol round the outpost (attacking enemy buildings they
+-- come near), horse archers aggressive and on patrol round the outpost. Archers, crossbowmen,
 -- slingers and fire throwers stay as the game has its archers (no troop).
 K.STANCE_DEFENSIVE, K.STANCE_AGGRESSIVE = 1, 2
 K.GUARD_GROUP = {
   [24] = "defensive", [25] = "defensive", [26] = "defensive", [27] = "defensive", [37] = "defensive",
   [73] = "defensive", [75] = "defensive",
-  [28] = "aggressive", [71] = "aggressive", [74] = "patrol",
+  [71] = "aggressive", [74] = "patrol", [28] = "knights",
 }
-K.GUARD_STANCE = { defensive = 1, aggressive = 2, patrol = 2 }
+K.GUARD_STANCE = { defensive = 1, aggressive = 2, patrol = 2, knights = 2 }
+K.GUARD_INDEX = { defensive = 1, aggressive = 2, patrol = 3, knights = 4 }
+K.GUARD_PATROLS = { patrol = true, knights = true }
+K.RIDER_REACH = 10                -- tiles: an enemy building this close draws a patrolling knight troop
+K.KNIGHT = 28
 -- Guards who man walls and towers near their outpost: every foot soldier; riders stay below.
 K.WALL_GUARDS = { [22] = true, [23] = true, [24] = true, [25] = true, [26] = true, [27] = true,
   [37] = true, [70] = true, [71] = true, [72] = true, [73] = true, [75] = true, [76] = true }
@@ -154,6 +170,7 @@ K.USUAL_DEFENDERS = 7         -- the game rolls 6 or 7 when the field is unset
 K.MAX_GUARDS = K.MAX_DEFENDERS  -- the module's guard list, per outpost: unit id, unit uid
 K.GUARD_PACE = 9600           -- ticks for a full refill (the game: 8 guards, 1200 each)
 K.LONGEST_WAIT, K.SHORTEST_WAIT = 1200, 100
+K.ENTRY_SIZE, K.ENTRY_SHIFT = 16, 4  -- per building: uid, troop bits, amount, growth, wave size
 K.MAX_BUILDINGS = 2000         -- the building array, both exes
 K.MAX_TRIBES = 1250            -- the troop array, both exes
 K.EURO_ARCHER, K.ARAB_ARCHER = 22, 70
@@ -439,6 +456,7 @@ local O = {}             -- options
 local orders = {}        -- per troop id: what this module last told it
 local guardTroops = {}   -- per outpost and stance group: the guards' troop (id, uid)
 local wallSpots = {}     -- per guard sent onto a wall: { uid, x, y }
+local guardInfo = {}     -- per guard troop id: { uid, outpost, group, attack = { id, uid } }
 local broken = false
 
 local function diag(fmt, ...)
@@ -841,7 +859,7 @@ local function onGuard()
   local group = K.GUARD_GROUP[rd16(u + U.TYPE)]
   if group == nil or rd16(u + U.TRIBE) > 0 then return end
   local owner = rd16(u + U.OWNER)
-  local key = bid * 4 + K.GUARD_STANCE[group] + (group == "patrol" and 1 or 0)
+  local key = bid * 8 + K.GUARD_INDEX[group]
   local g = guardTroops[key]
   local buildingUid = rd32(building(bid) + B.UID)
   if g == nil or g.building ~= buildingUid or rd16(tribe(g.id) + T.STATE) ~= 2
@@ -851,9 +869,10 @@ local function onGuard()
     F.setStance(G.tribesThis, t, K.GUARD_STANCE[group])
     g = { id = t, uid = rd32(tribe(t) + T.UID), building = buildingUid }
     guardTroops[key] = g
+    guardInfo[t] = { uid = g.uid, outpost = bid, group = group }
   end
   F.addToTribe(G.tribesThis, id, g.id)
-  if group == "patrol" then patrolRound(g.id, bid) end
+  if K.GUARD_PATROLS[group] then patrolRound(g.id, bid) end
   diag("outpost %d: %s guard %d in troop %d", bid, group, id, g.id)
 end
 
@@ -884,6 +903,40 @@ local function shootIfInRange(id)
     end
   end
   return false
+end
+
+-- A patrolling knight guard, standing or riding (asm hands it over every 16 ticks): its troop
+-- attacks the nearest enemy building within RIDER_REACH with the game's own attack order, and
+-- rides its patrol again once that building is down. Enemy troops it meets it fights anyway
+-- (aggressive stance).
+local function onRider()
+  local id = rd32(G.riderUnit)
+  local u = unit(id)
+  if rd16(u + U.TYPE) ~= K.KNIGHT or rd16(u + U.STATE) ~= 2 then return end
+  local t = rd16(u + U.TRIBE)
+  local info = guardInfo[t]
+  if info == nil or info.group ~= "knights" or rd32(tribe(t) + T.UID) ~= info.uid
+      or rd32(u + U.TRIBE_UID) ~= info.uid then
+    return
+  end
+  local owner = rd16(u + U.OWNER)
+  local foes = enemies(owner)
+  if info.attack ~= nil then
+    local b = building(info.attack.id)
+    if rd16(b + B.STATE) ~= 0 and rd32(b + B.UID) == info.attack.uid and foes[rd16(b + B.OWNER)] then return end
+    info.attack = nil
+    patrolRound(t, info.outpost)
+    diag("outpost %d: knights back on patrol", info.outpost)
+    return
+  end
+  local near = buildingsInReach(owner, rd16(u + U.X), rd16(u + U.Y), K.RIDER_REACH * K.RIDER_REACH)
+  if #near > 0 then
+    local b = near[1].id
+    local buid = rd32(building(b) + B.UID)
+    F.instruction(G.tribesThis, t, K.ORDER_ATTACK_BUILDING, b, buid, 0)
+    info.attack = { id = b, uid = buid }
+    diag("outpost %d: patrolling knights attack building %d", info.outpost, b)
+  end
 end
 
 -- An outpost siege engine standing, walking (state 1 or 0x65), or creeping forward in the AI's
@@ -1038,11 +1091,12 @@ end
 ---------------------------------------------------------------------------------------
 
 local function wipe()
-  core.setMemory(G.table, 0, K.MAX_BUILDINGS * 8)
+  core.setMemory(G.table, 0, K.MAX_BUILDINGS * K.ENTRY_SIZE)
   core.setMemory(G.slots, 0, K.MAX_BUILDINGS * K.MAX_GUARDS * 8)
   core.setMemory(G.jobs, 0, K.MAX_TRIBES)
   guardTroops = {}
   wallSpots = {}
+  guardInfo = {}
   core.setMemory(G.jobUids, 0, K.MAX_TRIBES * 4)
   orders = {}
 end
@@ -1055,7 +1109,7 @@ end
 local function serialize(handle)
   local entries = {}
   for id = 1, K.MAX_BUILDINGS - 1 do
-    local entry = G.table + id * 8
+    local entry = G.table + id * K.ENTRY_SIZE
     local uid = rd32(entry)
     if uid ~= 0 and uid == rd32(building(id) + B.UID) then
       entries[#entries + 1] = string.pack("<I2I4I2BB", id, uid, rd16(entry + 4) & 0xFFFF, rd8(entry + 6) & 0xFF,
@@ -1074,7 +1128,7 @@ local function serialize(handle)
   handle:put(K.SAVE_JOBS, table.concat(jobs))
   local guards = {}
   for id = 1, K.MAX_BUILDINGS - 1 do
-    local uid = rd32(G.table + id * 8)
+    local uid = rd32(G.table + id * K.ENTRY_SIZE)
     if uid ~= 0 and uid == rd32(building(id) + B.UID) then
       local slots = G.slots + id * K.MAX_GUARDS * 8
       for slot = 0, K.MAX_GUARDS - 1 do
@@ -1087,6 +1141,16 @@ local function serialize(handle)
     end
   end
   handle:put(K.SAVE_GUARDS, table.concat(guards))
+  local waves = {}
+  for id = 1, K.MAX_BUILDINGS - 1 do
+    local entry = G.table + id * K.ENTRY_SIZE
+    local uid = rd32(entry)
+    local size = rd16(entry + 8) & 0xFFFF
+    if uid ~= 0 and uid == rd32(building(id) + B.UID) and size ~= 0xFFFF then
+      waves[#waves + 1] = string.pack("<I2I2", id, size)
+    end
+  end
+  handle:put(K.SAVE_WAVES, table.concat(waves))
 end
 
 local function deserialize(handle)
@@ -1097,11 +1161,22 @@ local function deserialize(handle)
     for offset = 1, #data - size + 1, size do
       local id, _, mask, defenders, growth = string.unpack("<I2I4I2BB", data, offset)
       if id > 0 and id < K.MAX_BUILDINGS and isOutpost(id) then
-        local entry = G.table + id * 8
+        local entry = G.table + id * K.ENTRY_SIZE
         wr32(entry, rd32(building(id) + B.UID))
+        wr16(entry + 8, 0xFFFF)
         wr16(entry + 4, mask)
         wr8(entry + 6, math.min(defenders, K.MAX_DEFENDERS))
         wr8(entry + 7, math.min(growth, 100))
+      end
+    end
+  end
+  if handle:exists(K.SAVE_WAVES) then
+    local data = handle:get(K.SAVE_WAVES)
+    local size = string.packsize("<I2I2")
+    for offset = 1, #data - size + 1, size do
+      local id, wave = string.unpack("<I2I2", data, offset)
+      if id > 0 and id < K.MAX_BUILDINGS and rd32(G.table + id * K.ENTRY_SIZE) ~= 0 then
+        wr16(G.table + id * K.ENTRY_SIZE + 8, math.min(wave, G.waveMax or wave))
       end
     end
   end
@@ -1112,7 +1187,7 @@ local function deserialize(handle)
     for offset = 1, #data - size + 1, size do
       local id, u, unitUid = string.unpack("<I2I2I4", data, offset)
       local slot = used[id] or 0
-      if id > 0 and id < K.MAX_BUILDINGS and slot < K.MAX_GUARDS and rd32(G.table + id * 8) ~= 0 then
+      if id > 0 and id < K.MAX_BUILDINGS and slot < K.MAX_GUARDS and rd32(G.table + id * K.ENTRY_SIZE) ~= 0 then
         local at = G.slots + (id * K.MAX_GUARDS + slot) * 8
         wr16(at, u)
         wr32(at + 4, unitUid)
@@ -1191,6 +1266,22 @@ local function resolve()
   F.setDestination = core.exposeCode(readCallTarget(G.guardRecord, K.GUARD_DESTINATION,
     "setDestinationForUnit"), 5, 1)
   expectBytes(G.guardRecorded, { 0x8B, 0x6C, 0x24, 0x10, 0x85, 0xED }, "the end of the defender slots")
+
+  local wave = scan(K.AOB_WAVE_SIZE, "where an outpost sizes its waves")
+  G.waveSize = wave + K.WAVE_SIZE_AT
+  same(readOperand(wave, { K.WAVE_SIZE_AT, { 0x66, 0x89, 0x91 } }, "the wave size"), G.buildings + K.WAVE_FIELD,
+    "the wave size")
+  G.kinds = readOperand(wave, K.WAVE_SIZE_KINDS, "the outpost troop kinds") - K.KIND_BASE
+  G.waveMax = 0
+  for kind = 0, K.KINDS - 1 do
+    local at = G.kinds + kind * K.KIND_STRIDE
+    local most = (rd32(at + K.KIND_BASE) + rd32(at + K.KIND_RANGE) - 1) * (K.VANILLA_TOP + 1)
+    if most > G.waveMax then G.waveMax = most end
+  end
+  G.waveStart = G.guardRecorded + K.WAVE_START_AT
+  expectBytes(G.waveStart, { 0x85, 0xED, 0x0F, 0x85 }, "the start of the wave part")
+  G.forming = G.waveStart + 8 + rd32(G.waveStart + 4)
+  G.waveResume = G.waveStart + K.WAVE_START_SIZE
 
   G.defenderType = scan(K.AOB_DEFENDER_TYPE, "where an outpost picks its defenders")
   same(readOperand(G.defenderType, { 0x00, { 0x66, 0x83, 0xB9 } }, "the outpost type"), G.buildings + B.TYPE,
@@ -1347,10 +1438,11 @@ local function resolvePanel()
 end
 
 local function allocate()
-  G.table = core.allocate(K.MAX_BUILDINGS * 8, true)
+  G.table = core.allocate(K.MAX_BUILDINGS * K.ENTRY_SIZE, true)
   G.slots = core.allocate(K.MAX_BUILDINGS * K.MAX_GUARDS * 8, true)
   G.drag = core.allocate(4, true)
   G.siegeUnit = core.allocate(4, true)
+  G.riderUnit = core.allocate(4, true)
   G.guardUnit = core.allocate(4, true)
   G.numberText = core.allocate(16, true)
   G.jobs = core.allocate(K.MAX_TRIBES, true)
@@ -1388,7 +1480,7 @@ local function install(self)
     MAX_BUILDINGS = K.MAX_BUILDINGS, MAX_TRIBES = K.MAX_TRIBES, B_STRIDE = B.STRIDE,
     B_UID = G.buildings + B.UID, B_TYPE = G.buildings + B.TYPE, B_DEFENDERS = G.defendersField,
     B_WAVES = G.buildings + K.WAVES_FIELD, B_PACE = G.buildings + K.PACE_FIELD,
-    TABLE = G.table, MAX_DEFENDERS = K.MAX_DEFENDERS, USUAL_DEFENDERS = K.USUAL_DEFENDERS,
+    TABLE = G.table, ENTRY_SHIFT = K.ENTRY_SHIFT, MAX_DEFENDERS = K.MAX_DEFENDERS, USUAL_DEFENDERS = K.USUAL_DEFENDERS,
     CURRENT_BUILDING = G.current, ARAB_OUTPOST = K.OUTPOST_ARAB, EURO_ARCHER = K.EURO_ARCHER,
     ARAB_ARCHER = K.ARAB_ARCHER, DEFENDER_TYPES = G.defenderTypes,
     SLOTS = G.slots, SLOT_BYTES = K.MAX_GUARDS * 8, SLOT_DWORDS = K.MAX_GUARDS * 2, MAX_GUARDS = K.MAX_GUARDS,
@@ -1420,6 +1512,23 @@ local function install(self)
     jumpTo(G.defenderType, assemble(templates.defenderType, values), K.DEFENDER_TYPE_SIZE)
   end
 
+  values.WAVES_ON = O.waves and 1 or 0
+  if O.waves then
+    values.KINDS, values.KIND_STRIDE = G.kinds, K.KIND_STRIDE
+    values.KIND_BASE, values.KIND_RANGE = K.KIND_BASE, K.KIND_RANGE
+    values.B_MASK, values.B_SIZE = G.buildings + B.MASK, G.buildings + K.SIZE_FIELD
+    values.B_WAVE, values.WAVE_MAX, values.VANILLA_TOP = G.buildings + K.WAVE_FIELD, G.waveMax, K.VANILLA_TOP
+    values.KIND_AVERAGE = assemble(templates.kindAverage, values)
+    values.WAVE_VALUE = assemble(templates.waveValue, values)
+    keep(G.waveSize, K.WAVE_SIZE_SIZE)
+    values.RESUME = G.waveSize + K.WAVE_SIZE_SIZE
+    jumpTo(G.waveSize, assemble(templates.waveSize, values), K.WAVE_SIZE_SIZE)
+    keep(G.waveStart, K.WAVE_START_SIZE)
+    values.UPDATE_END, values.FORMING, values.RESUME = G.growth + K.GROWTH_SIZE, G.forming, G.waveResume
+    expectBytes(values.UPDATE_END, { 0x5D, 0x5F, 0x5E, 0x5B }, "the end of the outpost update")
+    jumpTo(G.waveStart, assemble(templates.waveStart, values), K.WAVE_START_SIZE)
+  end
+
   if O.growth then
     keep(G.growth, K.GROWTH_SIZE)
     values.RESUME = G.growth + K.GROWTH_SIZE
@@ -1446,14 +1555,16 @@ local function install(self)
     callTo(G.decideSite, assemble(templates.decide, values))
   end
 
-  if O.siege then
+  if O.siege or O.riders then
     G.originalUpdates = core.allocate(K.UNIT_TYPES * 4, true)
     for kind = 0, K.UNIT_TYPES - 1 do wr32(G.originalUpdates + kind * 4, rd32(G.updateTable + kind * 4)) end
     values.CURRENT_UNIT, values.TICKS, values.SIEGE_EVERY = G.currentUnit, G.ticks, K.SIEGE_EVERY
     values.U_BEHAVIOUR, values.U_ACTION, values.U_TYPE = G.units + U.BEHAVIOUR, G.units + U.ACTION, G.units + U.TYPE
     values.OUTPOST_BEHAVIOUR, values.STATE_MOVING = K.OUTPOST_BEHAVIOUR, K.STATE_MOVING
-    values.STATE_CREEPING, values.STATE_WALKING = K.STATE_CREEPING, K.STATE_WALKING
-    values.SIEGE_UNIT, values.ORIGINAL_UPDATES = G.siegeUnit, G.originalUpdates
+    values.STATE_WALKING, values.ORIGINAL_UPDATES = K.STATE_WALKING, G.originalUpdates
+  end
+  if O.siege then
+    values.STATE_CREEPING, values.SIEGE_UNIT = K.STATE_CREEPING, G.siegeUnit
     values.PAD = pad(onSiegeUnit, "siege engines on the way")
     local check = assemble(templates.siegeCheck, values)
     for kind in pairs(K.SIEGE) do
@@ -1461,8 +1572,15 @@ local function install(self)
       core.writeCodeInteger(G.updateTable + kind * 4, check)
     end
   end
+  if O.riders then
+    -- the same check for knight guards; their states 0, 1 and 0x65 only
+    values.STATE_CREEPING, values.SIEGE_UNIT = K.STATE_MOVING, G.riderUnit
+    values.PAD = pad(onRider, "patrolling knights")
+    keep(G.updateTable + K.KNIGHT * 4, 4)
+    core.writeCodeInteger(G.updateTable + K.KNIGHT * 4, assemble(templates.siegeCheck, values))
+  end
 
-  if O.defenders or O.growth then
+  if O.defenders or O.growth or O.waves then
     values.MODE, values.SELECTED = G.mode, G.selected
     values.MENU_X, values.MENU_Y = G.menuX, G.menuY
     values.TEXT_MANAGER, values.RENDER_TEXT, values.SHADOW_TEXT = G.textManager, G.renderText, G.shadowText
@@ -1506,6 +1624,9 @@ local function install(self)
       keep(G.buttonClick, K.BUTTON_CLICK_SIZE)
       values.RESUME = G.buttonClick + K.BUTTON_CLICK_SIZE
       jumpTo(G.buttonClick, assemble(templates.buttonClick, values), K.BUTTON_CLICK_SIZE)
+    end
+    if O.defenders or O.waves then
+      if O.waves then values.WAVE_SLIDER = assemble(templates.waveSlider, values) end
       keep(G.sizeSlider, K.SLIDER_SIZE)
       values.RESUME, values.FIELD, values.TOP, values.STEP, values.SYNC = G.sizeSlider + K.SLIDER_SIZE, 6,
         K.MAX_DEFENDERS, 1, 1
@@ -1522,6 +1643,8 @@ local function enable(self, config)
   config = config or {}
   O.defenders = setting(config, "defenders", "enabled") == true
   O.walls = O.defenders and setting(config, "defenders", "walls") == true
+  O.waves = setting(config, "waves", "exact") == true
+  O.riders = O.defenders and setting(config, "defenders", "knights") == true
   O.growth = setting(config, "growth", "enabled") == true
   O.jobs = setting(config, "jobs", "enabled") == true
   O.siege = setting(config, "siege", "enabled") == true
@@ -1532,7 +1655,8 @@ local function enable(self, config)
   for _, plan in ipairs(K.PLANS) do
     O.plans[plan.kind] = { first = plan.first, rest = plan.rest, share = percent(setting(config, "jobs", plan.name)) }
   end
-  if not O.defenders and not O.growth and not O.jobs and not O.siege and not O.join and not O.retarget then
+  if not O.defenders and not O.growth and not O.jobs and not O.siege and not O.join and not O.retarget
+      and not O.waves then
     log(INFO, MODULE_NAME .. ": every part is off")
     return
   end
@@ -1543,18 +1667,18 @@ local function enable(self, config)
     log(WARNING, tostring(problem))
     return
   end
-  if O.defenders or O.growth then
+  if O.defenders or O.growth or O.waves then
     ok, problem = pcall(resolvePanel)
     if not ok then
-      log(WARNING, tostring(problem) .. "; the outpost panel pages, defenders and growth stay off")
-      O.defenders, O.growth = false, false
+      log(WARNING, tostring(problem) .. "; the outpost panel pages, defenders, growth and wave sizes stay off")
+      O.defenders, O.growth, O.waves, O.walls, O.riders = false, false, false, false, false
     end
   end
-  if O.siege then
+  if O.siege or O.riders then
     ok, problem = pcall(resolveSiege)
     if not ok then
-      log(WARNING, tostring(problem) .. "; siege engines on the way stay off")
-      O.siege = false
+      log(WARNING, tostring(problem) .. "; siege engines on the way and knights attacking buildings stay off")
+      O.siege, O.riders = false, false
     end
   end
   allocate()

@@ -1,7 +1,7 @@
 # Outpost Control
 
 **Author**: Monsterfish
-**Version**: 1.0.14
+**Version**: 1.0.15
 
 More say over the European and Arabian outposts you place in the map editor. Every part can be
 switched off in the settings.
@@ -12,7 +12,10 @@ Select an outpost in the map editor. The button at the top of its panel now swit
 two pages. Each slider shows its value to its right.
 
 - **Attackers** - which troops the outpost sends, as in the game, with three sliders:
-  - **Size:** how big the waves are (the game's own).
+  - **Size:** exactly how many troops each wave has, from 0 (no waves at all) up to the most the
+    game itself ever sends at its biggest size. (With "Set the exact number of troops per wave"
+    off it is the game's own slider again: 6 steps of random group sizes.) Without the module the
+    map keeps the nearest of the game's own sizes.
   - **Start Delay:** how long it waits before the first wave (the game's own), shown in seconds
     at normal speed.
   - **Growth:** how fast the attacks build up. Normally every wave makes the next one come
@@ -30,7 +33,8 @@ two pages. Each slider shows its value to its right.
     seconds for 50, at normal speed).
   - **Stances:** foot soldiers who fight hand to hand (spearmen, pikemen, macemen, swordsmen,
     black monks, assassins) guard in the defensive stance and go for enemies who come near;
-    knights and slaves are aggressive and charge enemies further off; horse archers are aggressive
+    slaves are aggressive and charge enemies further off; knights are aggressive and ride a patrol
+    round the outpost, attacking enemy troops and any enemy building that comes within 10 tiles; horse archers are aggressive
     too and ride a patrol round the outpost: six spots at random places 7 to 15 tiles
     out, one in each direction, moved to a free spot nearby when a building, a wall or water is
     in the way. Archers, crossbowmen, slingers and fire throwers
