@@ -12,9 +12,9 @@
      game's own defender count field gets the amount (1 to 8), so the map still means about
      the same without the module.
   2. Growth. A third slider on the attacker page (the size and start delay sliders move up to
-     make room): how fast the waves come quicker over the game. The game shortens the wait
-     between waves by 100 ticks and the wait between units by 4 after every wave; this scales
-     both, 0 to 100 percent (100 = the game).
+     make room): how much bigger each wave gets, 0 to 100 percent of the first wave per wave
+     sent (0 = the game: every wave the same size). The game's own speed-up of the waves (100
+     ticks less wait per wave, 4 less between units) is left as it is.
   3. Jobs. When a wave leaves, its troops are split by unit type into troops with a job of
      their own: filling the moat, hacking at walls and gates, burning or wrecking buildings,
      fighting the troops they meet, riding round the castle, or hunting the lord. Each troop
@@ -34,6 +34,7 @@ K.SAVE_BUILDINGS = "buildings.bin"
 K.SAVE_JOBS = "jobs.bin"
 K.SAVE_GUARDS = "guards.bin"
 K.SAVE_WAVES = "waves.bin"
+K.SAVE_GROWTH = "growth.bin"      -- the size growth (buildings.bin keeps a 0 where 1.0.15 kept speed)
 
 local templates = require("templates")
 
@@ -112,6 +113,7 @@ K.TICKS_PER_SECOND = 40           -- at normal game speed
 K.SIZE_FIELD, K.DELAY_FIELD = 0x30E, 0x310
 K.WAVE_FIELD = 0x30A              -- the size the forming wave troop leaves at
 K.VANILLA_TOP = 5                 -- the game's size slider: multiplier 1 to 6
+K.GROWTH_CAP = 999                -- the biggest a grown wave gets
 -- The outpost troop kinds: 16 x 0x34 (8 European, 8 Arabian): +8 base size, +0xC size range.
 K.KIND_STRIDE, K.KIND_BASE, K.KIND_RANGE, K.KINDS = 0x34, 8, 0xC, 16
 -- UpdateOutpostBuilding: a new wave troop's size, (rand % range + base) * (size + 1).
@@ -1151,6 +1153,15 @@ local function serialize(handle)
     end
   end
   handle:put(K.SAVE_WAVES, table.concat(waves))
+  local growth = {}
+  for id = 1, K.MAX_BUILDINGS - 1 do
+    local entry = G.table + id * K.ENTRY_SIZE
+    local uid = rd32(entry)
+    if uid ~= 0 and uid == rd32(building(id) + B.UID) and (rd8(entry + 7) & 0xFF) ~= 0 then
+      growth[#growth + 1] = string.pack("<I2B", id, rd8(entry + 7) & 0xFF)
+    end
+  end
+  handle:put(K.SAVE_GROWTH, table.concat(growth))
 end
 
 local function deserialize(handle)
@@ -1166,7 +1177,17 @@ local function deserialize(handle)
         wr16(entry + 8, 0xFFFF)
         wr16(entry + 4, mask)
         wr8(entry + 6, math.min(defenders, K.MAX_DEFENDERS))
-        wr8(entry + 7, math.min(growth, 100))
+        wr8(entry + 7, 0)          -- older saves held a speed growth: see growth.bin
+      end
+    end
+  end
+  if handle:exists(K.SAVE_GROWTH) then
+    local data = handle:get(K.SAVE_GROWTH)
+    local size = string.packsize("<I2B")
+    for offset = 1, #data - size + 1, size do
+      local id, growth = string.unpack("<I2B", data, offset)
+      if id > 0 and id < K.MAX_BUILDINGS and rd32(G.table + id * K.ENTRY_SIZE) ~= 0 then
+        wr8(G.table + id * K.ENTRY_SIZE + 7, math.min(growth, 100))
       end
     end
   end
@@ -1512,7 +1533,13 @@ local function install(self)
     jumpTo(G.defenderType, assemble(templates.defenderType, values), K.DEFENDER_TYPE_SIZE)
   end
 
-  values.WAVES_ON = O.waves and 1 or 0
+  values.WAVES_ON, values.GROWTH_ON = O.waves and 1 or 0, O.growth and 1 or 0
+  values.B_WAVE, values.GROWTH_CAP = G.buildings + K.WAVE_FIELD, K.GROWTH_CAP
+  if O.waves or O.growth then
+    keep(G.waveSize, K.WAVE_SIZE_SIZE)
+    values.RESUME = G.waveSize + K.WAVE_SIZE_SIZE
+    jumpTo(G.waveSize, assemble(templates.waveSize, values), K.WAVE_SIZE_SIZE)
+  end
   if O.waves then
     values.KINDS, values.KIND_STRIDE = G.kinds, K.KIND_STRIDE
     values.KIND_BASE, values.KIND_RANGE = K.KIND_BASE, K.KIND_RANGE
@@ -1520,20 +1547,12 @@ local function install(self)
     values.B_WAVE, values.WAVE_MAX, values.VANILLA_TOP = G.buildings + K.WAVE_FIELD, G.waveMax, K.VANILLA_TOP
     values.KIND_AVERAGE = assemble(templates.kindAverage, values)
     values.WAVE_VALUE = assemble(templates.waveValue, values)
-    keep(G.waveSize, K.WAVE_SIZE_SIZE)
-    values.RESUME = G.waveSize + K.WAVE_SIZE_SIZE
-    jumpTo(G.waveSize, assemble(templates.waveSize, values), K.WAVE_SIZE_SIZE)
     keep(G.waveStart, K.WAVE_START_SIZE)
     values.UPDATE_END, values.FORMING, values.RESUME = G.growth + K.GROWTH_SIZE, G.forming, G.waveResume
     expectBytes(values.UPDATE_END, { 0x5D, 0x5F, 0x5E, 0x5B }, "the end of the outpost update")
     jumpTo(G.waveStart, assemble(templates.waveStart, values), K.WAVE_START_SIZE)
   end
 
-  if O.growth then
-    keep(G.growth, K.GROWTH_SIZE)
-    values.RESUME = G.growth + K.GROWTH_SIZE
-    jumpTo(G.growth, assemble(templates.growth, values), K.GROWTH_SIZE)
-  end
 
   if O.jobs or O.siege or O.join or O.retarget then
     values.LAUNCH_TRIBE, values.LAUNCH_THIS, values.REGISTER = G.launchTribe, G.launchThis, G.register

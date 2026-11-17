@@ -67,7 +67,7 @@ usual:
 mov ebx,USUAL_DEFENDERS
 keep:
 mov [eax+6],bl
-mov byte [eax+7],100
+mov byte [eax+7],0
 done:
 pop ebx
 pop ecx
@@ -416,7 +416,9 @@ ret
 ]]
 
 -- UpdateOutpostBuilding, where a new wave troop gets its size (mov [ecx+wave size],dx, 7
--- bytes; ecx = building id * stride): an outpost with an exact size takes that.
+-- bytes; ecx = building id * stride, dx = the game's size): an outpost with an exact size takes
+-- that, and with growth each wave is that many percent of it bigger per wave already sent (the
+-- game's wave counter, 100 per wave), up to GROWTH_CAP.
 templates.waveSize = [[
 push eax
 push edx
@@ -425,10 +427,39 @@ call ENTRY_GET
 pop edx
 test eax,eax
 jz usual
-movzx eax,word [eax+8]
-cmp eax,0xFFFF
-je usual
+push ebx
+if WAVES_ON <> 0
+movzx ebx,word [eax+8]
+cmp ebx,0xFFFF
+je not_exact
+mov edx,ebx
+not_exact:
+end if
+if GROWTH_ON <> 0
+movzx ebx,byte [eax+7]
+test ebx,ebx
+jz grown
+push ecx
+push edx
+movzx eax,word [ecx+B_WAVES]
+xor edx,edx
+mov ecx,100
+div ecx
+imul eax,ebx
+add eax,100
+pop edx
+imul eax,edx
+xor edx,edx
+div ecx
+cmp eax,GROWTH_CAP
+jbe capped
+mov eax,GROWTH_CAP
+capped:
 mov edx,eax
+pop ecx
+grown:
+end if
+pop ebx
 usual:
 pop eax
 mov word [ecx+B_WAVE],dx
@@ -448,33 +479,6 @@ jmp UPDATE_END
 usual:
 test ebp,ebp
 jne FORMING
-jmp RESUME
-]]
-
--- UpdateOutpostBuilding, after a wave has left (16 bytes, eax = building id * stride). The
--- game shortens the wave wait by 100 and the unit wait by 4 each time; this scales both.
-templates.growth = [[
-push ecx
-push edx
-mov ecx,eax
-mov eax,[CURRENT_BUILDING]
-call ENTRY_GET
-mov edx,100
-test eax,eax
-jz grow
-movzx edx,byte [eax+7]
-grow:
-add word [ecx+B_WAVES],dx
-movzx eax,word [ecx+B_WAVES]
-xor edx,edx
-push ecx
-mov ecx,25
-div ecx
-pop ecx
-mov word [ecx+B_PACE],ax
-mov eax,ecx
-pop edx
-pop ecx
 jmp RESUME
 ]]
 
@@ -662,7 +666,7 @@ call show
 if GROWTH_ON <> 0
 mov eax,[SELECTED]
 call ENTRY_GET
-mov edx,100
+xor edx,edx
 test eax,eax
 jz growth_known
 movzx edx,byte [eax+7]
@@ -762,7 +766,8 @@ pop ebx
 ret
 ]]
 
--- The growth slider on the attacker page, drawn by the game's slider renderer. A left click on
+-- The growth slider on the attacker page (percent of the first wave added per wave), drawn by
+-- the game's slider renderer. A left click on
 -- it starts a drag that lasts while the button is held; the value is 0 to 100.
 templates.growthSlider = [[
 push ebx
@@ -770,7 +775,7 @@ push esi
 push edi
 mov eax,[SELECTED]
 call ENTRY_GET
-mov edi,100
+xor edi,edi
 test eax,eax
 jz have
 movzx edi,byte [eax+7]

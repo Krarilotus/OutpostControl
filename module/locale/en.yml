@@ -35,14 +35,15 @@ waves_exact_tooltip: |
   module the map keeps the nearest of the game's own sizes.
 growth_group: Wave growth
 growth_group_descr: |
-  How fast an outpost's attacks build up over the game.
-growth_enabled: Choose how fast the waves grow
+  How much bigger an outpost's waves get over the game.
+growth_enabled: Choose how much the waves grow
 growth_enabled_tooltip: |
-  Normally every wave an outpost sends makes the next one come sooner and fill up faster. A
-  Growth slider on the outpost panel's Attackers page, under Size and Start Delay, sets how much:
-  all the way left keeps every wave like the first one for the whole game, all the way right is
-  the game's own pace.
-
+  The Growth slider on the outpost panel's Attackers page, under Size and Start Delay: how much
+  bigger each wave is than the one before, in percent of the first wave. 0 keeps every wave as
+  big as the first, as the game does; 50 adds half the first wave each time; 100 adds a whole
+  first wave each time (the 3rd wave is three times the first). Waves stop growing at 999
+  troops, and the game still sends no more than the army limit allows. How fast the waves come
+  stays as in the game: a little sooner after every wave.
 jobs_group: Attackers' jobs
 jobs_group_descr: |
   When a wave leaves an outpost, its troops split up by type and each part gets a job that suits

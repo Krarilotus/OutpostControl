@@ -1,7 +1,7 @@
 # Outpost Control
 
 **Author**: Monsterfish
-**Version**: 1.0.15
+**Version**: 1.0.16
 
 More say over the European and Arabian outposts you place in the map editor. Every part can be
 switched off in the settings.
@@ -18,9 +18,10 @@ two pages. Each slider shows its value to its right.
     map keeps the nearest of the game's own sizes.
   - **Start Delay:** how long it waits before the first wave (the game's own), shown in seconds
     at normal speed.
-  - **Growth:** how fast the attacks build up. Normally every wave makes the next one come
-    sooner and fill up faster. None keeps every wave like the first one for the whole game;
-    Full (all the way right) is the game's own pace.
+  - **Growth:** how much bigger each wave gets, in percent of the first wave per wave. 0 (the
+    start) keeps every wave as big as the first, as the game does; 50 adds half the first wave
+    each time; 100 adds a whole first wave each time. Waves stop growing at 999 troops. How fast
+    the waves come stays as in the game: a little sooner after every wave.
 - **Defenders** - the same eight troop buttons with a new meaning, and one slider:
   - **Troop buttons:** which troops guard the outpost. Pick several and they take turns. A
     European outpost offers archers, crossbowmen, spearmen, pikemen, macemen, swordsmen,
@@ -104,4 +105,4 @@ waits for before it attacks. Siege engines stay with the outpost and shoot what 
 
 What you set for each outpost is kept in the map and in saves (through the Map Extensions
 module). Played without this module, the map still works: the outpost keeps the number of
-guards you set (at least one, as archers), and its waves grow at the game's own pace.
+guards you set (at least one, as archers), and its waves are the game's own size and do not grow.
