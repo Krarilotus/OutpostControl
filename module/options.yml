@@ -1,257 +1,337 @@
 options:
 - display: GroupBox
-  category: [Outpost Control]
+  category:
+  - '{{ai}}'
+  - '{{improvements}}'
   header: '{{defenders_group}}'
   text: '{{defenders_group_descr}}'
   hasHeader: true
   children:
   - url: outpost-control.defenders.enabled
     name: outpost-control-defenders-enabled
-    text: '{{defenders_enabled}}'
-    tooltip: '{{defenders_enabled_tooltip}}'
-    display: Switch
+    text: '{{defenders_enabled_tooltip}}'
+    display: UCP2Switch
     contents:
       type: boolean
       value: true
+    header: '{{defenders_enabled}}'
   - url: outpost-control.defenders.walls
     name: outpost-control-defenders-walls
-    text: '{{defenders_walls}}'
-    tooltip: '{{defenders_walls_tooltip}}'
-    display: Switch
+    text: '{{defenders_walls_tooltip}}'
+    display: UCP2Switch
     contents:
       type: boolean
       value: true
+    header: '{{defenders_walls}}'
   - url: outpost-control.defenders.knights
     name: outpost-control-defenders-knights
-    text: '{{defenders_knights}}'
-    tooltip: '{{defenders_knights_tooltip}}'
-    display: Switch
+    text: '{{defenders_knights_tooltip}}'
+    display: UCP2Switch
     contents:
       type: boolean
       value: true
-
+    header: '{{defenders_knights}}'
 - display: GroupBox
-  category: [Outpost Control]
+  category:
+  - '{{balance_changes}}'
   header: '{{waves_group}}'
-  text: '{{waves_group_descr}}'
+  text: '{{wave_details}}'
   hasHeader: true
   children:
-  - url: outpost-control.waves.exact
-    name: outpost-control-waves-exact
-    text: '{{waves_exact}}'
-    tooltip: '{{waves_exact_tooltip}}'
-    display: Switch
-    contents:
-      type: boolean
-      value: true
-
+  - name: wave_rules
+    display: Group
+    table:
+      rowHeader: '{{wave_rule}}'
+      columns:
+      - name: enabled
+        header: '{{wave_setting}}'
+    children:
+    - name: outpost-control-waves-exact_row
+      display: GroupBox
+      header: '{{waves_exact}}'
+      children:
+      - url: outpost-control.waves.exact
+        name: outpost-control-waves-exact
+        text: '{{waves_exact_tooltip}}'
+        display: UCP2Switch
+        contents:
+          type: boolean
+          value: true
+        header: '{{waves_exact}}'
+      columns: 1
+    - name: outpost-control-growth-enabled_row
+      display: GroupBox
+      header: '{{growth_enabled}}'
+      children:
+      - url: outpost-control.growth.enabled
+        name: outpost-control-growth-enabled
+        text: '{{growth_enabled_tooltip}}'
+        display: UCP2Switch
+        contents:
+          type: boolean
+          value: true
+        header: '{{growth_enabled}}'
+      columns: 1
 - display: GroupBox
-  category: [Outpost Control]
-  header: '{{growth_group}}'
-  text: '{{growth_group_descr}}'
-  hasHeader: true
-  children:
-  - url: outpost-control.growth.enabled
-    name: outpost-control-growth-enabled
-    text: '{{growth_enabled}}'
-    tooltip: '{{growth_enabled_tooltip}}'
-    display: Switch
-    contents:
-      type: boolean
-      value: true
-
-- display: GroupBox
-  category: [Outpost Control]
+  category:
+  - '{{ai}}'
+  - '{{improvements}}'
   header: '{{jobs_group}}'
   text: '{{jobs_group_descr}}'
   hasHeader: true
   children:
   - url: outpost-control.jobs.enabled
     name: outpost-control-jobs-enabled
-    text: '{{jobs_enabled}}'
-    tooltip: '{{jobs_enabled_tooltip}}'
-    display: Switch
+    text: '{{jobs_enabled_tooltip}}'
+    display: UCP2Switch
     contents:
       type: boolean
       value: true
-  - url: outpost-control.jobs.slaves
-    name: outpost-control-jobs-slaves
-    text: '{{jobs_slaves}}'
-    tooltip: '{{jobs_slaves_tooltip}}'
-    display: Number
-    contents:
-      type: integer
-      value: 50
-      min: 0
-      max: 100
-      step: 5
-  - url: outpost-control.jobs.spearmen
-    name: outpost-control-jobs-spearmen
-    text: '{{jobs_spearmen}}'
-    tooltip: '{{jobs_spearmen_tooltip}}'
-    display: Number
-    contents:
-      type: integer
-      value: 50
-      min: 0
-      max: 100
-      step: 5
-  - url: outpost-control.jobs.macemen
-    name: outpost-control-jobs-macemen
-    text: '{{jobs_macemen}}'
-    tooltip: '{{jobs_macemen_tooltip}}'
-    display: Number
-    contents:
-      type: integer
-      value: 30
-      min: 0
-      max: 100
-      step: 5
-  - url: outpost-control.jobs.swordsmen
-    name: outpost-control-jobs-swordsmen
-    text: '{{jobs_swordsmen}}'
-    tooltip: '{{jobs_swordsmen_tooltip}}'
-    display: Number
-    contents:
-      type: integer
-      value: 60
-      min: 0
-      max: 100
-      step: 5
-  - url: outpost-control.jobs.arab_swordsmen
-    name: outpost-control-jobs-arab-swordsmen
-    text: '{{jobs_arab_swordsmen}}'
-    tooltip: '{{jobs_arab_swordsmen_tooltip}}'
-    display: Number
-    contents:
-      type: integer
-      value: 50
-      min: 0
-      max: 100
-      step: 5
-  - url: outpost-control.jobs.knights
-    name: outpost-control-jobs-knights
-    text: '{{jobs_knights}}'
-    tooltip: '{{jobs_knights_tooltip}}'
-    display: Number
-    contents:
-      type: integer
-      value: 40
-      min: 0
-      max: 100
-      step: 5
-  - url: outpost-control.jobs.archers
-    name: outpost-control-jobs-archers
-    text: '{{jobs_archers}}'
-    tooltip: '{{jobs_archers_tooltip}}'
-    display: Number
-    contents:
-      type: integer
-      value: 30
-      min: 0
-      max: 100
-      step: 5
-  - url: outpost-control.jobs.arab_archers
-    name: outpost-control-jobs-arab-archers
-    text: '{{jobs_arab_archers}}'
-    tooltip: '{{jobs_arab_archers_tooltip}}'
-    display: Number
-    contents:
-      type: integer
-      value: 30
-      min: 0
-      max: 100
-      step: 5
-  - url: outpost-control.jobs.slingers
-    name: outpost-control-jobs-slingers
-    text: '{{jobs_slingers}}'
-    tooltip: '{{jobs_slingers_tooltip}}'
-    display: Number
-    contents:
-      type: integer
-      value: 30
-      min: 0
-      max: 100
-      step: 5
-  - url: outpost-control.jobs.horse_archers
-    name: outpost-control-jobs-horse-archers
-    text: '{{jobs_horse_archers}}'
-    tooltip: '{{jobs_horse_archers_tooltip}}'
-    display: Number
-    contents:
-      type: integer
-      value: 100
-      min: 0
-      max: 100
-      step: 5
-  - url: outpost-control.jobs.fire_throwers
-    name: outpost-control-jobs-fire-throwers
-    text: '{{jobs_fire_throwers}}'
-    tooltip: '{{jobs_fire_throwers_tooltip}}'
-    display: Number
-    contents:
-      type: integer
-      value: 60
-      min: 0
-      max: 100
-      step: 5
-
+    header: '{{jobs_enabled}}'
+  - name: wave_job_shares
+    display: Group
+    table:
+      rowHeader: '{{job_unit}}'
+      columns:
+      - name: share
+        header: '{{job_share}}'
+    children:
+    - name: outpost-control-jobs-slaves_row
+      display: GroupBox
+      header: '{{jobs_slaves}}'
+      children:
+      - url: outpost-control.jobs.slaves
+        name: outpost-control-jobs-slaves
+        display: Slider
+        contents:
+          type: integer
+          value: 50
+          min: 0
+          max: 100
+          step: 5
+        text: '{{jobs_slaves_tooltip}}'
+        enabled: outpost-control.jobs.enabled
+      columns: 1
+    - name: outpost-control-jobs-spearmen_row
+      display: GroupBox
+      header: '{{jobs_spearmen}}'
+      children:
+      - url: outpost-control.jobs.spearmen
+        name: outpost-control-jobs-spearmen
+        display: Slider
+        contents:
+          type: integer
+          value: 50
+          min: 0
+          max: 100
+          step: 5
+        text: '{{jobs_spearmen_tooltip}}'
+        enabled: outpost-control.jobs.enabled
+      columns: 1
+    - name: outpost-control-jobs-macemen_row
+      display: GroupBox
+      header: '{{jobs_macemen}}'
+      children:
+      - url: outpost-control.jobs.macemen
+        name: outpost-control-jobs-macemen
+        display: Slider
+        contents:
+          type: integer
+          value: 30
+          min: 0
+          max: 100
+          step: 5
+        text: '{{jobs_macemen_tooltip}}'
+        enabled: outpost-control.jobs.enabled
+      columns: 1
+    - name: outpost-control-jobs-swordsmen_row
+      display: GroupBox
+      header: '{{jobs_swordsmen}}'
+      children:
+      - url: outpost-control.jobs.swordsmen
+        name: outpost-control-jobs-swordsmen
+        display: Slider
+        contents:
+          type: integer
+          value: 60
+          min: 0
+          max: 100
+          step: 5
+        text: '{{jobs_swordsmen_tooltip}}'
+        enabled: outpost-control.jobs.enabled
+      columns: 1
+    - name: outpost-control-jobs-arab-swordsmen_row
+      display: GroupBox
+      header: '{{jobs_arab_swordsmen}}'
+      children:
+      - url: outpost-control.jobs.arab_swordsmen
+        name: outpost-control-jobs-arab-swordsmen
+        display: Slider
+        contents:
+          type: integer
+          value: 50
+          min: 0
+          max: 100
+          step: 5
+        text: '{{jobs_arab_swordsmen_tooltip}}'
+        enabled: outpost-control.jobs.enabled
+      columns: 1
+    - name: outpost-control-jobs-knights_row
+      display: GroupBox
+      header: '{{jobs_knights}}'
+      children:
+      - url: outpost-control.jobs.knights
+        name: outpost-control-jobs-knights
+        display: Slider
+        contents:
+          type: integer
+          value: 40
+          min: 0
+          max: 100
+          step: 5
+        text: '{{jobs_knights_tooltip}}'
+        enabled: outpost-control.jobs.enabled
+      columns: 1
+    - name: outpost-control-jobs-archers_row
+      display: GroupBox
+      header: '{{jobs_archers}}'
+      children:
+      - url: outpost-control.jobs.archers
+        name: outpost-control-jobs-archers
+        display: Slider
+        contents:
+          type: integer
+          value: 30
+          min: 0
+          max: 100
+          step: 5
+        text: '{{jobs_archers_tooltip}}'
+        enabled: outpost-control.jobs.enabled
+      columns: 1
+    - name: outpost-control-jobs-arab-archers_row
+      display: GroupBox
+      header: '{{jobs_arab_archers}}'
+      children:
+      - url: outpost-control.jobs.arab_archers
+        name: outpost-control-jobs-arab-archers
+        display: Slider
+        contents:
+          type: integer
+          value: 30
+          min: 0
+          max: 100
+          step: 5
+        text: '{{jobs_arab_archers_tooltip}}'
+        enabled: outpost-control.jobs.enabled
+      columns: 1
+    - name: outpost-control-jobs-slingers_row
+      display: GroupBox
+      header: '{{jobs_slingers}}'
+      children:
+      - url: outpost-control.jobs.slingers
+        name: outpost-control-jobs-slingers
+        display: Slider
+        contents:
+          type: integer
+          value: 30
+          min: 0
+          max: 100
+          step: 5
+        text: '{{jobs_slingers_tooltip}}'
+        enabled: outpost-control.jobs.enabled
+      columns: 1
+    - name: outpost-control-jobs-horse-archers_row
+      display: GroupBox
+      header: '{{jobs_horse_archers}}'
+      children:
+      - url: outpost-control.jobs.horse_archers
+        name: outpost-control-jobs-horse-archers
+        display: Slider
+        contents:
+          type: integer
+          value: 100
+          min: 0
+          max: 100
+          step: 5
+        text: '{{jobs_horse_archers_tooltip}}'
+        enabled: outpost-control.jobs.enabled
+      columns: 1
+    - name: outpost-control-jobs-fire-throwers_row
+      display: GroupBox
+      header: '{{jobs_fire_throwers}}'
+      children:
+      - url: outpost-control.jobs.fire_throwers
+        name: outpost-control-jobs-fire-throwers
+        display: Slider
+        contents:
+          type: integer
+          value: 60
+          min: 0
+          max: 100
+          step: 5
+        text: '{{jobs_fire_throwers_tooltip}}'
+        enabled: outpost-control.jobs.enabled
+      columns: 1
 - display: GroupBox
-  category: [Outpost Control]
+  category:
+  - '{{balance_changes}}'
   header: '{{siege_group}}'
   text: '{{siege_group_descr}}'
   hasHeader: true
   children:
   - url: outpost-control.siege.enabled
     name: outpost-control-siege-enabled
-    text: '{{siege_enabled}}'
-    tooltip: '{{siege_enabled_tooltip}}'
-    display: Switch
+    text: '{{siege_enabled_tooltip}}'
+    display: UCP2Switch
     contents:
       type: boolean
       value: true
-
+    header: '{{siege_enabled}}'
 - display: GroupBox
-  category: [Outpost Control]
+  category:
+  - '{{ai}}'
+  - '{{improvements}}'
   header: '{{retarget_group}}'
   text: '{{retarget_group_descr}}'
   hasHeader: true
   children:
   - url: outpost-control.retarget.enabled
     name: outpost-control-retarget-enabled
-    text: '{{retarget_enabled}}'
-    tooltip: '{{retarget_enabled_tooltip}}'
-    display: Switch
+    text: '{{retarget_enabled_tooltip}}'
+    display: UCP2Switch
     contents:
       type: boolean
       value: true
-
+    header: '{{retarget_enabled}}'
 - display: GroupBox
-  category: [Outpost Control]
+  category:
+  - '{{balance_changes}}'
   header: '{{join_group}}'
   text: '{{join_group_descr}}'
   hasHeader: true
   children:
   - url: outpost-control.join.enabled
     name: outpost-control-join-enabled
-    text: '{{join_enabled}}'
-    tooltip: '{{join_enabled_tooltip}}'
-    display: Switch
+    text: '{{join_enabled_tooltip}}'
+    display: UCP2Switch
     contents:
       type: boolean
       value: false
-
+    header: '{{join_enabled}}'
 - display: GroupBox
-  category: [Outpost Control]
+  category:
+  - '{{misc}}'
   header: '{{diagnostics_group}}'
   text: '{{diagnostics_group_descr}}'
   hasHeader: true
   children:
   - url: outpost-control.diagnostics.log
     name: outpost-control-diagnostics-log
-    text: '{{diagnostics_log}}'
-    tooltip: '{{diagnostics_log_tooltip}}'
-    display: Switch
+    text: '{{diagnostics_log_tooltip}}'
+    display: UCP2Switch
     contents:
       type: boolean
       value: false
+    header: '{{diagnostics_log}}'
+meta:
+  version: 1.0.0
