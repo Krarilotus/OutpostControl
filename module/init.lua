@@ -1109,6 +1109,7 @@ local function isOutpost(id)
 end
 
 local function serialize(handle)
+  local unitCount = math.min(rd32(G.unitsThis), G.unitCapacity)
   local entries = {}
   for id = 1, K.MAX_BUILDINGS - 1 do
     local entry = G.table + id * K.ENTRY_SIZE
@@ -1136,7 +1137,7 @@ local function serialize(handle)
       for slot = 0, K.MAX_GUARDS - 1 do
         local u = rd16(slots + slot * 8) & 0xFFFF
         local unitUid = rd32(slots + slot * 8 + 4)
-        if u > 0 and unitUid == rd32(unit(u) + U.UID) then
+        if u > 0 and u < unitCount and unitUid ~= 0 and unitUid == rd32(unit(u) + U.UID) then
           guards[#guards + 1] = string.pack("<I2I2I4", id, u, unitUid)
         end
       end
@@ -1208,7 +1209,9 @@ local function deserialize(handle)
     for offset = 1, #data - size + 1, size do
       local id, u, unitUid = string.unpack("<I2I2I4", data, offset)
       local slot = used[id] or 0
-      if id > 0 and id < K.MAX_BUILDINGS and slot < K.MAX_GUARDS and rd32(G.table + id * K.ENTRY_SIZE) ~= 0 then
+      if id > 0 and id < K.MAX_BUILDINGS and slot < K.MAX_GUARDS
+          and u > 0 and u < G.unitCapacity and unitUid ~= 0
+          and rd32(G.table + id * K.ENTRY_SIZE) ~= 0 then
         local at = G.slots + (id * K.MAX_GUARDS + slot) * 8
         wr16(at, u)
         wr32(at + 4, unitUid)
@@ -1337,6 +1340,13 @@ local function resolve()
   G.units = readOperand(d, K.DECIDE_UNIT_Y, "the unit array") - U.Y
   G.unitsThis = readOperand(d, K.DECIDE_UNITS_THIS, "the unit state")
   same(G.unitsThis, G.units - U.STATE_OFFSET, "the unit array")
+  -- The reinforcement check subtracts the live unit count from the last unit index.
+  local limit = scan("8D 44 38 06 B9 ? ? ? ? 2B 0D ? ? ? ? 50 51 B9 ? ? ? ? E8", "the unit limit")
+  same(G.unitsThis + 4, readOperand(limit, { 9, { 0x2B, 0x0D } }, "the active unit count"),
+    "the active unit count")
+  local lastUnit = rd32(limit + 5)
+  assert(lastUnit > 0 and lastUnit < 0xFFFF, "invalid unit table limit")
+  G.unitCapacity = lastUnit + 1
   G.paths = readOperand(d, K.DECIDE_PATHS, "the path finder")
   G.rows = readOperand(d, K.DECIDE_ROWS, "the map rows")
   same(readOperand(d, K.DECIDE_BUILDING_UID, "the building uid"), G.buildings + B.UID, "the building array")
@@ -1505,7 +1515,8 @@ local function install(self)
     CURRENT_BUILDING = G.current, ARAB_OUTPOST = K.OUTPOST_ARAB, EURO_ARCHER = K.EURO_ARCHER,
     ARAB_ARCHER = K.ARAB_ARCHER, DEFENDER_TYPES = G.defenderTypes,
     SLOTS = G.slots, SLOT_BYTES = K.MAX_GUARDS * 8, SLOT_DWORDS = K.MAX_GUARDS * 2, MAX_GUARDS = K.MAX_GUARDS,
-    U_STRIDE = U.STRIDE, U_UID = G.units + U.UID, VANILLA_SLOTS = K.VANILLA_SLOTS,
+    U_STRIDE = U.STRIDE, U_UID = G.units + U.UID, UNIT_CAPACITY = G.unitCapacity,
+    UNIT_COUNT = G.unitsThis, VANILLA_SLOTS = K.VANILLA_SLOTS,
   }
   self.saved = {}
   local function keep(address, size)

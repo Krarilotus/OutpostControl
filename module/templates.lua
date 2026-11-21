@@ -121,6 +121,10 @@ alive:
 movzx eax,word [edi]
 test eax,eax
 jz next_slot
+cmp eax,UNIT_CAPACITY
+jae next_slot
+cmp eax,[UNIT_COUNT]
+jae next_slot
 imul eax,eax,U_STRIDE
 mov eax,[eax+U_UID]
 cmp eax,[edi+4]
@@ -173,6 +177,10 @@ find_slot:
 movzx eax,word [esi]
 test eax,eax
 jz take
+cmp eax,UNIT_CAPACITY
+jae take
+cmp eax,[UNIT_COUNT]
+jae take
 imul eax,eax,U_STRIDE
 mov eax,[eax+U_UID]
 cmp eax,[esi+4]
