@@ -1,206 +1,70 @@
-defenders_enabled: Choose the defenders
-defenders_enabled_tooltip: 'Adds a Defenders page to the outpost panel. Click the button at the top of the panel
-  to switch
-
-  between the Attackers page (the game''s own) and the Defenders page. On the Defenders page the
-
-  eight troop buttons pick the guards (pick several and they take turns), and the Amount slider
-
-  sets how many stand around the outpost, from none to 50. Fallen guards come back one at a time,
-
-  quicker the more you set, so a full set comes back in about the time the game''s 8 do. With no
-
-  troop picked the outpost uses archers, as the game does. Melee guards stand in the defensive
-
-  stance, slaves in the aggressive one, knights are aggressive and patrol like horse archers, and horse archers
-  are aggressive and patrol round the
-
-  outpost through six random spots, each moved to a free place when something is in the way.
-
-  '
-defenders_group: Outpost defenders
-defenders_group_descr: 'Pick which troops guard an outpost and how many, in the outpost''s own panel in the map
-  editor.
-
-  '
-defenders_knights: Patrolling knights attack nearby buildings
-defenders_knights_tooltip: 'Knight guards ride a patrol round their outpost in the aggressive stance, like horse
-  archers,
-
-  and fight the enemy troops they meet. With this on they also attack enemy buildings that come
-
-  within 10 tiles of them, and ride their patrol again once the building is down.
-
-  '
-defenders_walls: Guards man nearby walls and towers
-defenders_walls_tooltip: 'A new guard on foot goes up onto the outpost owner''s walls, stone towers or stone gatehouses
-
-  within 16 tiles of the outpost, if it can walk there: to the free spot with the fewest guards
-
-  round it, so they spread out over the walls and fill the places of guards who fell. Knights
-
-  and horse archers stay on the ground. Works for every outpost, also those without settings.
-
-  '
-diagnostics_group: Diagnostics
-diagnostics_group_descr: 'For testing.
-
-  '
-diagnostics_log: Write what the waves do to the log
-diagnostics_log_tooltip: 'Writes a line to ucp3.log whenever a wave leaves an outpost and splits into jobs.
-
-  '
-growth_enabled: Choose how much the waves grow
-growth_enabled_tooltip: 'The Growth slider on the outpost panel''s Attackers page, under Size and Start Delay: how
-  much
-
-  bigger each wave is than the one before, in percent of the first wave. 0 keeps every wave as
-
-  big as the first, as the game does; 50 adds half the first wave each time; 100 adds a whole
-
-  first wave each time (the 3rd wave is three times the first). Waves stop growing at 999
-
-  troops, and the game still sends no more than the army limit allows. How fast the waves come
-
-  stays as in the game: a little sooner after every wave.
-
-  '
-job_share: First job (%)
-job_unit: Unit
-jobs_arab_archers: Arabian archers filling the moat (%)
-jobs_arab_archers_tooltip: 'The rest walk up and shoot the troops they meet.
-
-  '
-jobs_arab_swordsmen: Arabian swordsmen attacking walls and gates (%)
-jobs_arab_swordsmen_tooltip: 'The rest wreck buildings.
-
-  '
-jobs_archers: Archers filling the moat (%)
-jobs_archers_tooltip: 'The rest walk up and shoot the troops they meet.
-
-  '
-jobs_enabled: Give the attackers jobs
-jobs_enabled_tooltip: 'Without this, a whole wave does one thing: walk up and attack a building, now and then digging
-
-  at the moat. With it, the wave splits into troops that fill the moat, hack at walls and gates,
-
-  burn and wreck buildings, shoot the troops they meet, ride round the castle or hunt the lord.
-
-  A troop with nothing left to do for its job (moat filled, no wall in the way) attacks the way
-
-  the whole wave would have.
-
-  '
-jobs_fire_throwers: Fire throwers burning buildings (%)
-jobs_fire_throwers_tooltip: 'The rest walk up and burn the troops they meet.
-
-  '
-jobs_group: Attackers' jobs
-jobs_group_descr: 'When a wave leaves an outpost, its troops split up by type and each part gets a job that suits
-
-  it. The numbers below say how many of each type take the first job; the rest take the second.
-
-  Catapults and fire ballistas have their own setting below.
-
-  '
-jobs_horse_archers: Horse archers riding round the castle (%)
-jobs_horse_archers_tooltip: 'They ride round the castle and shoot whoever is outside the walls. The rest walk up
-  and shoot the troops they meet.
-
-  '
-jobs_knights: Knights hunting the lord (%)
-jobs_knights_tooltip: 'The rest ride round the castle and cut down whoever is outside the walls. When the lord cannot
-  be reached, the hunters ride round the castle too.
-
-  '
-jobs_macemen: Macemen filling the moat (%)
-jobs_macemen_tooltip: 'The rest wreck buildings.
-
-  '
-jobs_slaves: Slaves filling the moat (%)
-jobs_slaves_tooltip: 'The rest burn and wreck buildings.
-
-  '
-jobs_slingers: Slingers riding round the castle (%)
-jobs_slingers_tooltip: 'They walk round the castle and shoot whoever is outside the walls. The rest walk up and
-  shoot the troops they meet.
-
-  '
-jobs_spearmen: Spearmen filling the moat (%)
-jobs_spearmen_tooltip: 'The rest hack at walls and gates.
-
-  '
-jobs_swordsmen: Swordsmen attacking walls and gates (%)
-jobs_swordsmen_tooltip: 'The rest wreck buildings.
-
-  '
-join_enabled: Send outpost waves to the AI's attack army
-join_enabled_tooltip: 'When a wave leaves an outpost of an AI player, its troops join that AI''s attack army, each
-  in
-
-  the troop the game itself would use for it: archers, crossbowmen, slingers, horse archers and
-
-  fire throwers the backup troops, everyone else the main army. They then wait for the AI''s next
-
-  attack and fight in it, and count towards the army the AI waits for before it attacks. Siege
-
-  engines stay with the outpost and shoot what they can reach. A unit whose troop the AI does not
-
-  have yet keeps attacking from the outpost.
-
-  '
-join_group: Outposts reinforce the AI
-join_group_descr: 'Waves from an AI''s outposts join that AI''s own attack army instead of attacking on their own.
-
-  '
-retarget_enabled: Go for the next opponent
-retarget_enabled_tooltip: 'Each troop an outpost sends out goes for one enemy player. Once that player''s lord is
-  dead,
-
-  the troop picks the next opponent the way the game picks the first one - the nearest enemy
-
-  whose lord still lives - instead of standing about. Siege engines already shoot any enemy in
-
-  their range.
-
-  '
-retarget_group: Next opponent
-retarget_group_descr: 'What an outpost''s troops do once the player they attack is beaten.
-
-  '
-siege_enabled: Shoot targets on the way
-siege_enabled_tooltip: 'Catapults and fire ballistas from an outpost walk towards the castle they attack and stop
-  to
-
-  shoot as soon as an enemy building (for fire ballistas: enemy troops first) is in range. The
-
-  game itself decides what is in range, with each engine''s own range, as for a player''s engine.
-
-  Only enemies are aimed at: players on another team than the outpost''s owner, never its allies.
-
-  '
-siege_group: Siege engines on the way
-siege_group_descr: 'Catapults and fire ballistas from an outpost shoot at what they pass, like the AI''s raiding
-
-  siege engines.
-
-  '
-wave_details: Configure the wave rules available to map authors. Wave size, start delay and growth percentage are
-  edited on each outpost’s Attackers page.
-wave_rule: Wave rule
-wave_setting: Setting
-waves_exact: Set the exact number of troops per wave
-waves_exact_tooltip: 'The Size slider on the outpost panel''s Attackers page sets exactly how many troops each wave
-
-  has, instead of the game''s 6 steps of random group sizes. It goes from 0, which switches the
-
-  outpost''s waves off, to the most the game itself ever sends at its biggest size. Without the
-
-  module the map keeps the nearest of the game''s own sizes.
-
-  '
-waves_group: Wave size
-improvements: Improvements
-ai: AI
-misc: Miscellaneous
-balance_changes: Balance Changes
+defenders_group: Außenposten-Verteidiger
+defenders_group_descr: Wähle direkt im Außenposten-Fenster des Karteneditors, welche Truppen einen Außenposten bewachen und wie viele es sind.
+defenders_enabled: Verteidiger wählen
+defenders_enabled_tooltip: |-
+  Fügt dem Außenposten-Fenster eine Seite „Verteidiger“ hinzu. Klicke oben im Fenster auf den Knopf, um zwischen der Angreifer-Seite (aus dem Originalspiel) und der Verteidiger-Seite zu wechseln. Auf der Verteidiger-Seite wählen die acht Truppenknöpfe die Wachen (bei mehreren wechseln sie sich ab), und der Mengen-Regler stellt ein, wie viele rund um den Außenposten stehen (von 0 bis 50). Gefallene Wachen erscheinen einzeln neu – je höher die Anzahl, desto schneller, sodass ein voller Trupp etwa so lange braucht wie die 8 Wachen im Originalspiel. Ohne gewählte Truppe nutzt der Außenposten Bogenschützen wie im Original. Nahkampfwachen stehen auf defensiv, Sklaven auf aggressiv, Ritter sind aggressiv und patrouillieren wie berittene Bogenschützen, und berittene Bogenschützen sind aggressiv und patrouillieren über sechs zufällige Punkte um den Außenposten (bei Hindernissen auf ein freies Feld versetzt).
+defenders_walls: Wachen besetzen nahe Mauern und Türme
+defenders_walls_tooltip: Neue Wachen zu Fuß steigen auf Mauern, Steintürme oder steinerne Torhäuser des Außenposten-Besitzers innerhalb von 16 Feldern, sofern sie dorthin laufen können – jeweils auf das freie Feld mit den wenigsten Wachen daneben, sodass sie sich auf den Mauern verteilen und Gefallene ersetzen. Ritter und berittene Bogenschützen bleiben am Boden. Gilt für jeden Außenposten, auch ohne eigene Einstellungen.
+defenders_knights: Patrouillierende Ritter greifen nahe Gebäude an
+defenders_knights_tooltip: Ritter-Wachen reiten in aggressiver Haltung Patrouille um ihren Außenposten wie berittene Bogenschützen und bekämpfen feindliche Truppen unterwegs. Mit dieser Option greifen sie auch feindliche Gebäude innerhalb von 10 Feldern an und setzen danach ihre Patrouille fort.
+waves_group: Wellengröße
+waves_group_descr: Wie viele Truppen jede Angriffswelle eines Außenpostens enthält.
+waves_exact: Genaue Truppenzahl pro Welle festlegen
+waves_exact_tooltip: Der Größen-Regler auf der Angreifer-Seite legt die exakte Truppenzahl jeder Welle fest, statt der 6 Stufen zufälliger Gruppengrößen des Spiels. Er reicht von 0 (keine Wellen) bis zur größten im Spiel selbst entsandten Menge. Ohne das Modul behält die Karte die nächstgelegene Standardgröße des Spiels.
+growth_group: Wellenwachstum
+growth_group_descr: Wie stark die Wellen eines Außenpostens im Verlauf des Spiels anwachsen.
+growth_enabled: Wachstum der Wellen festlegen
+growth_enabled_tooltip: |-
+  Der Wachstums-Regler auf der Angreifer-Seite unter Größe und Startverzögerung legt fest, um wie viel Prozent der ersten Welle jede Welle größer wird als die vorherige. 0 belässt alle Wellen gleich groß wie die erste (wie im Original); 50 fügt jedes Mal die Hälfte der ersten Welle hinzu; 100 fügt jedes Mal eine volle erste Welle hinzu (die 3. Welle ist dreimal so groß wie die erste). Das Wachstum endet bei 999 Truppen, und das Spiel sendet nie mehr als das Einheitenlimit erlaubt. Das Tempo der Wellen bleibt wie im Spiel: jede Welle etwas schneller.
+jobs_group: Aufgaben der Angreifer
+jobs_group_descr: Verlässt eine Welle einen Außenposten, teilt sie sich nach Truppentyp auf und jeder Teil erhält eine passende Aufgabe. Die Werte unten bestimmen den Anteil für die erste Aufgabe; der Rest übernimmt die zweite. Katapulte und Feuerballisten haben unten eine eigene Einstellung.
+jobs_enabled: Angreifern Aufgaben zuweisen
+jobs_enabled_tooltip: |-
+  Ohne diese Option macht eine ganze Welle dasselbe: hinlaufen, Gebäude angreifen und ab und zu den Burggraben zuschütten. Mit ihr teilt sich die Welle in Truppen auf, die Gräben füllen, Mauern und Tore einschlagen, Gebäude anzünden und zerstören, gegnerische Truppen beschießen, um die Burg reiten oder den Lord jagen. Eine Truppe ohne offene Aufgabe (Graben voll, keine Mauer im Weg) greift wie die gesamte Welle an.
+jobs_slaves: Sklaven, die den Burggraben zuschütten (%)
+jobs_slaves_tooltip: Der Rest brennt Gebäude nieder und zerstört sie.
+jobs_spearmen: Lanzenträger, die den Burggraben zuschütten (%)
+jobs_spearmen_tooltip: Der Rest schlägt auf Mauern und Tore ein.
+jobs_macemen: Streitkolbenkämpfer, die den Burggraben zuschütten (%)
+jobs_macemen_tooltip: Der Rest zerstört Gebäude.
+jobs_swordsmen: Schwertkämpfer gegen Mauern und Tore (%)
+jobs_swordsmen_tooltip: Der Rest zerstört Gebäude.
+jobs_arab_swordsmen: Arabische Schwertkämpfer gegen Mauern und Tore (%)
+jobs_arab_swordsmen_tooltip: Der Rest zerstört Gebäude.
+jobs_knights: Ritter auf Jagd nach dem Lord (%)
+jobs_knights_tooltip: Der Rest reitet um die Burg herum und schlägt alles außerhalb der Mauern nieder. Ist der Lord unerreichbar, reiten die Jäger ebenfalls um die Burg.
+jobs_archers: Bogenschützen, die den Burggraben zuschütten (%)
+jobs_archers_tooltip: Der Rest marschiert vor und beschießt begegnende Truppen.
+jobs_arab_archers: Arabische Bogenschützen, die den Burggraben zuschütten (%)
+jobs_arab_archers_tooltip: Der Rest marschiert vor und beschießt begegnende Truppen.
+jobs_slingers: Steinschleuderer auf Umrundung der Burg (%)
+jobs_slingers_tooltip: Sie laufen um die Burg und beschießen alles außerhalb der Mauern. Der Rest marschiert vor und beschießt begegnende Truppen.
+jobs_horse_archers: Berittene Bogenschützen auf Umrundung der Burg (%)
+jobs_horse_archers_tooltip: Sie reiten um die Burg und beschießen alles außerhalb der Mauern. Der Rest marschiert vor und beschießt begegnende Truppen.
+jobs_fire_throwers: Feuerwerfer zum Anzünden von Gebäuden (%)
+jobs_fire_throwers_tooltip: Der Rest marschiert vor und bekämpft begegnende Truppen mit Feuer.
+siege_group: Belagerungsgeräte unterwegs
+siege_group_descr: Katapulte und Feuerballisten aus einem Außenposten beschießen Ziele auf ihrem Weg wie die Plünderungs-Belagerungsgeräte der KI.
+siege_enabled: Ziele unterwegs beschießen
+siege_enabled_tooltip: Katapulte und Feuerballisten eines Außenpostens fahren Richtung Zielburg und halten zum Schießen an, sobald ein feindliches Gebäude (bei Feuerballisten zuerst feindliche Truppen) in Reichweite kommt. Das Spiel selbst bestimmt die Reichweite jedes Geräts genau wie bei Spielergeräten. Anvisiert werden nur Feinde (Spieler anderer Teams als der Außenposten-Besitzer), niemals Verbündete.
+retarget_group: Nächster Gegner
+retarget_group_descr: Was die Truppen eines Außenpostens tun, sobald der angegriffene Spieler besiegt ist.
+retarget_enabled: Zum nächsten Gegner weiterziehen
+retarget_enabled_tooltip: Jede ausgesandte Außenposten-Truppe greift einen feindlichen Spieler an. Ist dessen Lord tot, wählt die Truppe den nächsten Gegner nach Spielregel – den nächsten Feind mit noch lebendem Lord –, statt untätig stehen zu bleiben. Belagerungsgeräte beschießen ohnehin jeden Feind in Reichweite.
+join_group: Außenposten verstärken die KI
+join_group_descr: Wellen aus Außenposten einer KI schließen sich deren eigener Angriffsarmee an, statt allein anzugreifen.
+join_enabled: Außenposten-Wellen an die KI-Angriffsarmee senden
+join_enabled_tooltip: Verlässt eine Welle den Außenposten eines KI-Spielers, schließen sich ihre Truppen der Angriffsarmee dieser KI in der spielüblichen Gruppe an – Bogenschützen, Armbrustschützen, Steinschleuderer, berittene Bogenschützen und Feuerwerfer den Reservetruppen, alle anderen der Hauptarmee. Sie warten auf den nächsten KI-Angriff, kämpfen mit und zählen zur nötigen Angriffsgröße. Belagerungsgeräte bleiben beim Außenposten und feuern auf Ziele in Reichweite. Einheiten ohne passende KI-Truppe greifen weiter vom Außenposten aus an.
+diagnostics_group: Diagnose
+diagnostics_group_descr: Für Tests und Fehlersuche.
+diagnostics_log: Wellenverhalten protokollieren
+diagnostics_log_tooltip: Schreibt eine Zeile in ucp3.log, sobald eine Welle einen Außenposten verlässt und in Aufgaben aufgeteilt wird.
+wave_rule: Wellenregel
+wave_setting: Einstellung
+wave_details: Lege fest, welche Wellenregeln Kartenautoren nutzen können. Wellengröße, Startverzögerung und Wachstum in Prozent werden auf der Angreifer-Seite jedes Außenpostens bearbeitet.
+job_unit: Einheit
+job_share: Erste Aufgabe (%)
+improvements: Verbesserungen
+misc: Sonstiges
+balance_changes: Balance-Änderungen
+ai: KI
