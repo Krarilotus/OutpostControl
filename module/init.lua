@@ -1473,18 +1473,17 @@ local function resolvePanel()
   F.sizeSlider = core.exposeCode(G.sizeSlider, 5, 0)
 end
 
----Encodes every panel word from the locale catalog `name` before writing any of them.
-local function writeWords(name)
+---Encodes every panel word from the locale catalog `name` with `encode` before writing any of them.
+local function writeWords(name, encode)
   local file = io.open(K.LOCALE .. name .. ".yml", "rb")
   if file == nil then error("missing locale/" .. name .. ".yml", 0) end
   local source = file:read("a")
   file:close()
-  local catalog, owner, encoded = yaml.eval(source), modules.textResourceModifier, {}
+  local catalog, encoded = yaml.eval(source), {}
   for key in pairs(G.words) do
     local text = type(catalog) == "table" and catalog[key] or nil
     if type(text) ~= "string" then error("locale/" .. name .. ".yml has no " .. key, 0) end
-    encoded[key] = owner:TransformText(text)
-    if encoded[key]:match("^ERROR:") then error("textResourceModifier cannot encode " .. text, 0) end
+    encoded[key] = encode(text)
   end
   for key, at in pairs(G.words) do wr32(at, cString(encoded[key])) end
 end
@@ -1493,7 +1492,12 @@ end
 local function localizeWords()
   local name = K.CATALOGS[data.version.getGameLanguage() or ""]
   if name == nil then return end
-  local ok, problem = pcall(writeWords, name)
+  local owner = modules.textResourceModifier
+  local ok, problem = pcall(writeWords, name, function(text)
+    local encoded = owner:TransformText(text)
+    if encoded:match("^ERROR:") then error("textResourceModifier cannot encode " .. text, 0) end
+    return encoded
+  end)
   if not ok then log(WARNING, "the outpost panel keeps its English words: " .. tostring(problem)) end
 end
 
