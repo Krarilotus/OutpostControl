@@ -18,6 +18,7 @@
      their own: filling the moat, hacking at walls and gates, burning or wrecking buildings,
      holding ground at firing distance, screening another tribe, or flanking the castle.
      Sibling tribes share an approach. Variation changes the split and approach per wave.
+     Ranged troops that cannot split use defensive orders in the original tribe.
   4. Siege engines advance toward fortifications and use the game's shooting code.
      Engines prioritize towers and gatehouses, then walls, then other buildings.
      Fire ballistas look for enemy troops first.
@@ -45,10 +46,11 @@ local templates = require("templates")
 K.JOB_NONE, K.JOB_ENGAGE, K.JOB_BUILDINGS, K.JOB_MOAT, K.JOB_WALLS, K.JOB_LORD, K.JOB_PATROL = 0, 1, 2, 3, 4, 5, 6
 K.JOB_SIEGE = 7
 K.JOB_OVERWATCH, K.JOB_ESCORT, K.JOB_FLANK = 8, 9, 10
-K.JOB_LAST = K.JOB_FLANK
+K.JOB_UNSPLIT_RANGED = 11
+K.JOB_LAST = K.JOB_UNSPLIT_RANGED
 K.JOB_NAMES = { [0] = "as the game does", "fight troops", "attack buildings", "fill the moat",
   "attack walls and gates", "hunt the lord", "ride round the castle", "shoot on the way", "overwatch",
-  "escort", "flank" }
+  "escort", "flank", "defend with ranged troops" }
 K.ANCHOR_PRIORITY = { [K.JOB_SIEGE] = 3, [K.JOB_WALLS] = 2, [K.JOB_MOAT] = 1 }
 
 -- Siege engines an outpost sends (catapults, and fire ballistas at an Arabian one; trebuchets
@@ -629,19 +631,21 @@ local function onLaunch()
   end
   table.sort(kinds)
 
-  local groups = {}
+  local groups, rangedGroups = {}, {}
   local twist = wave and variation >= 20 and wave.seed % 5 == 0
-  local function put(job, id)
+  local function put(job, id, ranged)
     groups[job] = groups[job] or {}
     table.insert(groups[job], id)
+    if ranged then rangedGroups[job] = true end
   end
   for _, kind in ipairs(kinds) do
     local list = byKind[kind]
     local plan = O.jobs and O.plans[kind] or nil
+    local ranged = K.RANGED_PROJECTILE[kind] ~= nil
     if O.siege and K.SIEGE[kind] ~= nil then
       for _, id in ipairs(list) do put(K.JOB_SIEGE, id) end
     elseif plan == nil then
-      for _, id in ipairs(list) do put(K.JOB_NONE, id) end
+      for _, id in ipairs(list) do put(K.JOB_NONE, id, ranged) end
     else
       local jitter = variation > 0 and waveRoll(kind, wave.seed, #list) % (2 * variation + 1) - variation or 0
       local share = math.max(0, math.min(100, plan.share + jitter))
@@ -651,7 +655,7 @@ local function onLaunch()
         rest = kind == 26 and K.JOB_LORD or K.JOB_FLANK
         twist = false
       end
-      for index, id in ipairs(list) do put(index <= first and plan.first or rest, id) end
+      for index, id in ipairs(list) do put(index <= first and plan.first or rest, id, ranged) end
     end
   end
 
@@ -666,6 +670,7 @@ local function onLaunch()
 
   local kind = rd16(tb + G.tribeKind)
   local made = {}
+  local retained, retainedRanged, missedSplit = #groups[keeper], rangedGroups[keeper], false
   local function assign(id, job)
     setJob(id, job)
     if not wave or job == K.JOB_NONE then return end
@@ -683,11 +688,17 @@ local function onLaunch()
         F.register(ai, id, rd32(tribe(id) + T.UID))
         assign(id, job)
         made[#made + 1] = string.format("%d %s (troop %d)", #groups[job], K.JOB_NAMES[job], id)
+      else
+        retained = retained + #groups[job]
+        retainedRanged = retainedRanged or rangedGroups[job]
+        missedSplit = true
       end
     end
   end
-  assign(t, keeper)
-  diag("player %d wave (troop %d): %d %s%s", owner, t, #groups[keeper], K.JOB_NAMES[keeper],
+  local job = keeper
+  if O.jobs and retainedRanged and (missedSplit or keeper == K.JOB_NONE) then job = K.JOB_UNSPLIT_RANGED end
+  assign(t, job)
+  diag("player %d wave (troop %d): %d %s%s", owner, t, retained, K.JOB_NAMES[job],
     #made > 0 and (", " .. table.concat(made, ", ")) or "")
 end
 
@@ -1338,6 +1349,21 @@ local function onDecide()
   local fx, fy = focus and focus.x or cx, focus and focus.y or cy
   if job == K.JOB_SIEGE then
     siegeOrders(t, lead, target, focus)
+    return
+  end
+  if job == K.JOB_UNSPLIT_RANGED then
+    for index = 0, rd16(tb + T.SIZE) - 1 do
+      local id = F.lead(G.tribesThis, t, index)
+      if id and id > 0 then
+        local u = unit(id)
+        local memberKind = rd16(u + U.TYPE)
+        if K.RANGED_PROJECTILE[memberKind] and rd16(u + U.STATE) == 2 then
+          engageRanged(t, memberKind, rd16(u + U.X), rd16(u + U.Y), fx, fy)
+          return
+        end
+      end
+    end
+    moveToward(t, ux, uy, fx, fy, 3)
     return
   end
   if ranged and (job == K.JOB_OVERWATCH or job == K.JOB_ESCORT) and (S.fx ~= fx or S.fy ~= fy) then

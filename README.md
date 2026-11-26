@@ -75,6 +75,8 @@ The other groups in a wave share an approach, and faster assault troops can wait
 a slow sibling group. The Wave variation slider varies shares and approaches without drawing
 from the game's random number generator. Job IDs are kept in saves. Reloaded groups choose
 positions from the target castle when their shared launch state is unavailable.
+If the game has no slot for a split, ranged troops stay with the original tribe and use
+defensive orders.
 
 ## Siege engines on the way
 
