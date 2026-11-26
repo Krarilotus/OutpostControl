@@ -319,7 +319,8 @@ K.UPDATE_TABLE = { 0x07, { 0x8B, 0x04, 0x95 } }
 K.UPDATE_CURRENT = { -0x19, { 0xA1 } }        -- mov eax,[current unit], before the patched part
 -- The game tick counter: mov ecx, [edi+0x998] / mov edx, [ticks] in updateUnits. The mask load
 -- before it is patched by other modules.
-K.AOB_TICKS = "8B 8F 98 09 00 00 8B 15 I(? ? ? ?)"
+K.AOB_TICKS = "8B 8F 98 09 00 00 8B 15 ? ? ? ?"
+K.TICKS_OPERAND = 8
 K.OUTPOST_BEHAVIOUR = 0x32        -- every unit an outpost spawns
 K.SIEGE_EVERY = 15                -- check each engine every 16 ticks (0.4 s at normal speed)
 K.STATE_MOVING = 0x65
@@ -740,6 +741,7 @@ end
 -- circle - until a free one is found. The random numbers come from the game state (outpost,
 -- troop, tick), so every player of a multiplayer game gets the same patrol.
 local function patrolRound(t, bid)
+  if G.ticks == nil then return end
   local b = building(bid)
   local half = rd32(b + B.SIZE) // 2
   local cx, cy = rd16(b + B.X) + half, rd16(b + B.Y) + half
@@ -1617,7 +1619,8 @@ local function install(self)
     callTo(G.decideSite, assemble(templates.decide, values))
   end
 
-  if O.siege or O.riders then
+  local siegeUpdates = O.siege and G.ticks ~= nil
+  if siegeUpdates or O.riders then
     G.originalUpdates = core.allocate(K.UNIT_TYPES * 4, true)
     for kind = 0, K.UNIT_TYPES - 1 do wr32(G.originalUpdates + kind * 4, rd32(G.updateTable + kind * 4)) end
     values.CURRENT_UNIT, values.TICKS, values.SIEGE_EVERY = G.currentUnit, G.ticks, K.SIEGE_EVERY
@@ -1625,7 +1628,7 @@ local function install(self)
     values.OUTPOST_BEHAVIOUR, values.STATE_MOVING = K.OUTPOST_BEHAVIOUR, K.STATE_MOVING
     values.STATE_WALKING, values.ORIGINAL_UPDATES = K.STATE_WALKING, G.originalUpdates
   end
-  if O.siege then
+  if siegeUpdates then
     values.STATE_CREEPING, values.SIEGE_UNIT = K.STATE_CREEPING, G.siegeUnit
     values.PAD = pad(onSiegeUnit, "siege engines on the way")
     local check = assemble(templates.siegeCheck, values)
@@ -1718,12 +1721,15 @@ local function enable(self, config)
   for _, plan in ipairs(K.PLANS) do
     O.plans[plan.kind] = { first = plan.first, rest = plan.rest, share = percent(setting(config, "jobs", plan.name)) }
   end
+  G.ticks = nil
   if O.defenders or O.siege then
-    local found, _, ticks = pcall(utils.AOBExtract, K.AOB_TICKS)
-    G.ticks = found and ticks or nil
-    if G.ticks == nil then
-      log(WARNING, MODULE_NAME .. ": game tick counter not found; defenders and siege engines on the way stay off")
-      O.defenders, O.walls, O.riders, O.siege = false, false, false, false
+    local site, problem = core.AOBScanUnique(K.AOB_TICKS)
+    if site then
+      G.ticks = rd32(site + K.TICKS_OPERAND)
+    else
+      log(WARNING, MODULE_NAME .. ": game tick counter " .. problem
+        .. "; defender patrols and periodic knight and siege updates stay off")
+      O.riders = false
     end
   end
   if not O.defenders and not O.growth and not O.jobs and not O.siege and not O.join and not O.retarget

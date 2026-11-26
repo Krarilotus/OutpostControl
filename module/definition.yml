@@ -1,7 +1,7 @@
 name: outpost-control
 display-name: Outpost Control
 type: module
-version: 1.0.18
+version: 1.0.19
 author: Monsterfish
 dependencies:
   map-extensions: ^1.0.0
