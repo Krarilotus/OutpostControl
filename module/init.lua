@@ -19,6 +19,9 @@
      fighting the troops they meet, riding round the castle, or hunting the lord. Each troop
      is registered with the AI like the wave was, so the outpost's own attack logic keeps
      looking after it; this module only changes what it is told to do.
+  4. Siege engines advance toward fortifications and use the game's shooting code.
+     Engines prioritize towers and gatehouses, then walls, then other buildings.
+     Fire ballistas look for enemy troops first.
 
   The per-outpost settings and the jobs live in the save (and in the map) through the
   map-extensions module. Without this module the game ignores that data.
@@ -52,6 +55,8 @@ K.JOB_NAMES = { [0] = "as the game does", "fight troops", "attack buildings", "f
 K.SIEGE = { [39] = "catapult", [40] = "catapult", [41] = "catapult", [77] = "ballista" }
 -- Their projectile, whose range (in tiles, straight line) the game's range table holds.
 K.SIEGE_PROJECTILE = { [39] = 2, [40] = 3, [41] = 4, [77] = 0x25 }
+
+K.SIEGE_RANGE_KEY = { [39] = "catapult", [40] = "trebuchet", [77] = "fire_ballista" }
 
 -- The AI's attack army: behaviour types and their troop slots (aiTribeIDs), lord-hunt's table.
 K.BEHAVIOUR_MAIN, K.BEHAVIOUR_BACKUP = 20, 17
@@ -338,7 +343,16 @@ K.UNIT_TYPES = 80
 K.STATE_SHOOT = 8                 -- aim (then 2 load, 4 fire)
 K.SHOOTING = { [8] = true, [2] = true, [4] = true }
 K.SHOOT_BEFORE_STOP = 10          -- what the game's own idle code sets
-K.SIEGE_TRIES = 3                 -- nearest buildings in range offered to acquireShootTarget
+K.SIEGE_TRIES, K.SIEGE_REFRESH = 3, 160
+K.SIEGE_WALL_RADIUS, K.SIEGE_WALL_LIMIT = 48, 64
+K.SIEGE_WALL_ORDER = 0x17
+K.SIEGE_GATE = { [47] = true, [48] = true, [49] = true }
+K.MAP_TILES = 80400
+-- acquireShootTarget's attack-at-tile branch.
+K.AOB_SHOOT_WALL = "66 3D 17 00 0F 85 ? ? ? ? 0F B7 84 37 FE 09 00 00 0F B7 8C 37 FC 09 00 00 "
+  .. "0F BF C0 0F BF C9 8D 14 40 8B 1C 95 ? ? ? ? 50 03 D9 51 B9 ? ? ? ? E8 ? ? ? ? 85 C0"
+-- processDamageToBuilding tests health and then the building kind's damageability.
+K.AOB_DAMAGEABLE = "0F B7 8E ? ? ? ? 89 15 ? ? ? ? 0F BF D1 83 3C 95 ? ? ? ? 00 74 ? F7 84 9F"
 -- The game's "stop walking" (clears the unit's path), used by its attack orders.
 K.AOB_HALT = "8B 44 24 04 69 C0 90 04 00 00 03 C1 33 C9 66 89 88 ? ? 00 00 66 89 88 ? ? 00 00 66 89 88 "
   .. "? ? 00 00 66 89 88 ? ? 00 00 C2 04 00"
@@ -357,11 +371,11 @@ K.SIZE_ITEM_FROM_GROUP = 9    -- group header, eight buttons, then the size slid
 
 local U = { STRIDE = 0x490, STATE = 0x8C, TYPE = 0x8E, OWNER = 0x96, UID = 0x98, X = 0xC4, Y = 0xC6,
   TILE = 0xD4, DYING = 0x2A0, CLIMB = 0x360, ACTION = 0x2C0, TRIBE = 0x2D8, TRIBE_UID = 0x2E4, TARGET_BUILDING = 0x336,
-  SHOOT_UNIT = 0x344, TARGETING = 0x39C, SHOOT_BEFORE_STOP = 0x3D8, TARGET_UNIT = 0x39E, TARGET_UID = 0x3A0, BEHAVIOUR = 0x42A,
+  SHOOT_UNIT = 0x344, TARGETING = 0x39C, SHOOT_BEFORE_STOP = 0x3D8, TARGET_UNIT = 0x39E, TARGET_UID = 0x3A0, WALL_X = 0x3E8, WALL_Y = 0x3EA, BEHAVIOUR = 0x42A,
   STATE_OFFSET = 0x614 }
 local T = { OWNER = 0x2C, UID = 0x34, STATE = 0x40, SIZE = 0x5C }
 local B = { STRIDE = 0x32C, STATE = 0xD0, TYPE = 0xD2, OWNER = 0xD6, UID = 0xD8, X = 0xEE, Y = 0xF0,
-  SIZE = 0xF8, TRIBE_UID = 0x304, MASK = 0x300 }
+  SIZE = 0xF8, HEALTH = 0x10C, TRIBE_UID = 0x304, MASK = 0x300 }
 local P = { STRIDE = 0x39F4, CAMP = 0x1D8, LORD = 0x21F8, LORD_UID = 0x21FC, AI_TYPE = 0x2300,
   TRIBE_IDS = 0x310C, TRIBE_UIDS = 0x329C }
 K.LORD_TYPE = 55
@@ -465,6 +479,7 @@ end
 local G = {}             -- addresses
 local F = {}             -- the game's functions, exposed to lua
 local O = {}             -- options
+local siegeCache = {}
 local orders = {}        -- per troop id: what this module last told it
 local guardTroops = {}   -- per outpost and stance group: the guards' troop (id, uid)
 local wallSpots = {}     -- per guard sent onto a wall: { uid, x, y }
@@ -681,6 +696,62 @@ end
 
 local function squared(ax, ay, bx, by) return (ax - bx) * (ax - bx) + (ay - by) * (ay - by) end
 
+local function wallAt(tile, owner)
+  return rd32(G.tileFlags + tile * 4) & K.WALL_FLAG ~= 0 and (rd8(G.wallOwner + tile) & 7) + 1 == owner
+end
+
+local function siegeBuilding(b, owner)
+  local state, kind = rd16(b + B.STATE), rd16(b + B.TYPE)
+  return state ~= 0 and state ~= 3 and rd16(b + B.OWNER) == owner and rd16(b + B.HEALTH) > 0
+    and kind > 0 and kind <= K.OUTPOST_ARAB and rd32(G.damageable + kind * 4) ~= 0
+end
+
+local function siegeTargets(owner)
+  local now = G.ticks and rd32(G.ticks) or 0
+  local thenTick = siegeCache.tick
+  if not thenTick or now - thenTick < 0 or now - thenTick >= K.SIEGE_REFRESH then
+    siegeCache = { tick = now }
+    for p = 1, 8 do siegeCache[p] = { {}, {}, {} } end
+    for id = 1, K.MAX_BUILDINGS - 1 do
+      local b = building(id)
+      local p = rd16(b + B.OWNER)
+      if siegeCache[p] and siegeBuilding(b, p) then
+        local half = rd32(b + B.SIZE) // 2
+        local kind = rd16(b + B.TYPE)
+        local list = siegeCache[p][(K.WALL_BUILDINGS[kind] or K.SIEGE_GATE[kind]) and 1 or 3]
+        list[#list + 1] = { id = id, uid = rd32(b + B.UID), owner = p,
+          x = rd16(b + B.X) + half, y = rd16(b + B.Y) + half }
+      end
+    end
+  end
+
+  local targets = siegeCache[owner]
+  if targets.wallsReady then return targets end
+  targets.wallsReady = true
+  if F.playable and aliveLord(owner) then
+    local cx, cy = rd32(player(owner) + P.CAMP), rd32(player(owner) + P.CAMP + 4)
+    local walls, radius = targets[2], K.SIEGE_WALL_RADIUS
+    local minX, maxX = math.max(0, cx - radius), math.min(K.MAP_SIZE - 1, cx + radius)
+    for y = math.max(0, cy - radius), math.min(K.MAP_SIZE - 1, cy + radius) do
+      local row = rd32(G.rows + y * 12)
+      for x = minX + (y - cy) % 3, maxX, 3 do
+        local tile = row + x
+        if tile >= 0 and tile < K.MAP_TILES and wallAt(tile, owner) and F.playable(G.siegeMap, x, y) ~= 0 then
+          walls[#walls + 1] = { tile = tile, x = x, y = y, owner = owner }
+          if #walls >= K.SIEGE_WALL_LIMIT then return targets end
+        end
+      end
+    end
+  end
+  return targets
+end
+
+local function liveSiegeTarget(target)
+  if target.tile then return wallAt(target.tile, target.owner) end
+  local b = building(target.id)
+  return rd32(b + B.UID) == target.uid and siegeBuilding(b, target.owner)
+end
+
 -- Enemy buildings standing within reach (squared, straight line) of x, y, nearest first.
 local function buildingsInReach(owner, x, y, reach)
   local foes = enemies(owner)
@@ -718,6 +789,18 @@ local function tryBuilding(id, u, b)
   wr16(u + U.TARGETING, targeting)
   wr16(u + U.TARGET_BUILDING, target)
   wr32(u + U.TARGET_UID, uid)
+  return false
+end
+
+local function tryWall(id, u, wall)
+  local order, x, y = rd16(u + U.TARGETING), rd16(u + U.WALL_X), rd16(u + U.WALL_Y)
+  wr16(u + U.TARGETING, K.SIEGE_WALL_ORDER)
+  wr16(u + U.WALL_X, wall.x)
+  wr16(u + U.WALL_Y, wall.y)
+  if F.acquire(G.unitsThis, id) ~= 0 then return true end
+  wr16(u + U.TARGETING, order)
+  wr16(u + U.WALL_X, x)
+  wr16(u + U.WALL_Y, y)
   return false
 end
 
@@ -890,30 +973,63 @@ local function onGuard()
   diag("outpost %d: %s guard %d in troop %d", bid, group, id, g.id)
 end
 
--- Shoot if anything is in range: fire ballistas take enemy troops first, then like catapults,
--- trebuchets and mangonels the nearest enemy building. True when the engine now shoots.
+local function siegeRange(kind)
+  return G.siegeRanges and G.siegeRanges[K.SIEGE_RANGE_KEY[kind]]
+    or rd32(G.ranges + K.SIEGE_PROJECTILE[kind] * 4)
+end
+
+-- Stop an outpost engine when its native shooting code can acquire a target.
 local function shootIfInRange(id)
   local u = unit(id)
   local kind = rd16(u + U.TYPE)
-  if K.SIEGE[kind] == nil or rd16(u + U.STATE) ~= 2 then return false end
+  if not K.SIEGE[kind] or rd16(u + U.STATE) ~= 2 or rd16(u + U.BEHAVIOUR) ~= K.OUTPOST_BEHAVIOUR then
+    return false
+  end
   local owner = rd16(u + U.OWNER)
   local foes = enemies(owner)
   if K.SIEGE[kind] == "ballista" then
-    local v = tryUnits(id, u, foes)
-    if v ~= nil then
+    local enemy = tryUnits(id, u, foes)
+    if enemy then
       startShooting(id, u)
-      diag("fire ballista %d shoots unit %d", id, v)
+      diag("fire ballista %d shoots unit %d", id, enemy)
       return true
     end
   end
-  local range = rd32(G.ranges + K.SIEGE_PROJECTILE[kind] * 4)
-  local candidates = buildingsInReach(owner, rd16(u + U.X), rd16(u + U.Y), range * range)
-  for index = 1, math.min(#candidates, K.SIEGE_TRIES) do
-    local b = candidates[index].id
-    if tryBuilding(id, u, b) then
-      startShooting(id, u)
-      diag("%s %d shoots building %d (range %d)", K.SIEGE[kind], id, b, range)
-      return true
+
+  local x, y = rd16(u + U.X), rd16(u + U.Y)
+  local range = siegeRange(kind)
+  local tries = 0
+  for priority = 1, 3 do
+    local candidates = {}
+    for p = 1, 8 do
+      if foes[p] then
+        for _, target in ipairs(siegeTargets(p)[priority]) do
+          local d = squared(x, y, target.x, target.y)
+          if d <= range * range then candidates[#candidates + 1] = { target = target, d = d } end
+        end
+      end
+    end
+    table.sort(candidates, function(a, b)
+      if a.d ~= b.d then return a.d < b.d end
+      return (a.target.id or a.target.tile) < (b.target.id or b.target.tile)
+    end)
+    for _, candidate in ipairs(candidates) do
+      local target = candidate.target
+      if liveSiegeTarget(target) then
+        local ready
+        if target.tile then ready = tryWall(id, u, target) else ready = tryBuilding(id, u, target.id) end
+        if ready then
+          startShooting(id, u)
+          if target.tile then
+            diag("%s %d shoots wall (%d,%d)", K.SIEGE[kind], id, target.x, target.y)
+          else
+            diag("%s %d shoots building %d (range %d)", K.SIEGE[kind], id, target.id, range)
+          end
+          return true
+        end
+        tries = tries + 1
+        if tries == K.SIEGE_TRIES then return false end
+      end
     end
   end
   return false
@@ -959,20 +1075,43 @@ local function onSiegeUnit()
   shootIfInRange(rd32(G.siegeUnit))
 end
 
--- The game's order round for a siege troop: while any of its engines shoots or has something in
--- range (which it then starts shooting), the whole troop holds where it is - like the AI's raid
--- engines, they never walk past a target. Only with nothing in range anywhere does it get the
--- outpost logic's own siege order: walk up to a building of the castle it goes for.
-local function siegeOrders(ai, t)
-  local holding = false
+-- Advance toward a reachable firing position on the near side of a fortification.
+local function siegeOrders(t, lead, target)
+  if not G.ticks then siegeCache = {} end
   local size = rd16(tribe(t) + T.SIZE)
+  local holding = false
   for index = 0, size - 1 do
     local id = F.lead(G.tribesThis, t, index)
-    if id ~= nil and id > 0 then
-      if K.SHOOTING[rd16(unit(id) + U.ACTION)] or shootIfInRange(id) then holding = true end
+    if id and id > 0 and (K.SHOOTING[rd16(unit(id) + U.ACTION)] or shootIfInRange(id)) then holding = true end
+  end
+  if holding or target < 1 or target > 8 then return end
+
+  local u = unit(lead)
+  local kind = rd16(u + U.TYPE)
+  if not K.SIEGE_PROJECTILE[kind] then return end
+  local x, y = rd16(u + U.X), rd16(u + U.Y)
+  local nearest, d2
+  for priority, list in ipairs(siegeTargets(target)) do
+    if priority == 3 and nearest then break end
+    for _, candidate in ipairs(list) do
+      local d = squared(x, y, candidate.x, candidate.y)
+      if (not nearest or d < d2) and liveSiegeTarget(candidate) then
+        nearest, d2 = candidate, d
+      end
     end
   end
-  if not holding then gameChoice(ai, t, K.KIND_SIEGE) end
+  if not nearest or d2 == 0 then return end
+
+  local range = siegeRange(kind)
+  local scale = math.min(range * 0.8 / math.sqrt(d2), 0.7)
+  local tx = math.floor(nearest.x + (x - nearest.x) * scale + 0.5)
+  local ty = math.floor(nearest.y + (y - nearest.y) * scale + 0.5)
+  for _, step in ipairs({ 0, 2, -2 }) do
+    if freeSpot(t, tx + step, ty - step) then
+      F.command(G.tribesThis, t, tx + step, ty - step, 1)
+      return
+    end
+  end
 end
 
 local function onDecide()
@@ -991,7 +1130,7 @@ local function onDecide()
   local target = rd16(tb + G.tribeTarget)
   local lead = F.lead(G.tribesThis, t, 0)
   if job == K.JOB_SIEGE and lead ~= nil and lead > 0 then
-    siegeOrders(ai, t)
+    siegeOrders(t, lead, target)
     return
   end
   if target < 1 or target > 8 or lead == nil or lead <= 0 then
@@ -1117,6 +1256,7 @@ local function wipe()
   core.setMemory(G.table, 0, K.MAX_BUILDINGS * K.ENTRY_SIZE)
   core.setMemory(G.slots, 0, K.MAX_BUILDINGS * K.MAX_GUARDS * 8)
   core.setMemory(G.jobs, 0, K.MAX_TRIBES)
+  siegeCache = {}
   guardTroops = {}
   wallSpots = {}
   guardInfo = {}
@@ -1428,6 +1568,22 @@ local function resolveSiege()
   G.ranges = rangeTable(acquire + K.ACQUIRE_RANGE)
   F.acquire = core.exposeCode(acquire, 2, 1)
   F.halt = core.exposeCode(scan(K.AOB_HALT, "the game's stop walking"), 2, 1)
+end
+
+local function resolveDamageable()
+  local at, problem = core.AOBScanUnique(K.AOB_DAMAGEABLE)
+  if not at then error("building damageability " .. problem) end
+  same(readOperand(at, { 0, { 0x0F, 0xB7, 0x8E } }, "the damaged building's type"),
+    G.buildings + B.TYPE, "the building array")
+  G.damageable = readOperand(at, { 16, { 0x83, 0x3C, 0x95 } }, "the damageable building kinds")
+end
+
+local function resolveWallShooting()
+  local at, problem = core.AOBScanUnique(K.AOB_SHOOT_WALL)
+  if not at then error("siege attack at wall " .. problem) end
+  same(readOperand(at, { 35, { 0x8B, 0x1C, 0x95 } }, "the wall target's map rows"), G.rows, "the map rows")
+  G.siegeMap = readOperand(at, { 46, { 0xB9 } }, "the shooting map")
+  F.playable = core.exposeCode(readCallTarget(at, 51, "wall target's playable tile test"), 3, 1)
 end
 
 local function resolvePanel()
@@ -1857,6 +2013,23 @@ local function enable(self, config)
       log(WARNING, tostring(problem) .. "; siege engines on the way and knights attacking buildings stay off")
       O.siege, O.riders = false, false
     end
+  end
+  if O.siege then
+    ok, problem = pcall(resolveDamageable)
+    if not ok then
+      log(WARNING, tostring(problem) .. "; siege engines from outposts stay off")
+      O.siege = false
+    end
+  end
+  if O.siege then
+    ok, problem = pcall(resolveWallShooting)
+    if not ok then log(WARNING, tostring(problem) .. "; outpost siege wall targets stay off") end
+    hooks.registerHookCallback("afterInit", function()
+      local rebalancer = modules.rebalancer
+      if rebalancer and type(rebalancer.getSiegeRanges) == "function" then
+        G.siegeRanges = rebalancer:getSiegeRanges()
+      end
+    end)
   end
   if G.ticks and (O.siege or O.riders) then
     ok, problem = pcall(function()

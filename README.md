@@ -80,9 +80,11 @@ Catapults and fire ballistas from an outpost walk towards the castle they attack
 shoot as soon as something of the enemy is in range - like your own siege engines do with a
 target:
 
-- **Catapults** (and trebuchets or mangonels, if a map's outposts send them) shoot the nearest
-  enemy building in range, then the next one.
-- **Fire ballistas** shoot enemy troops and workers in range first, then buildings.
+- **Catapults**, trebuchets and mangonels prefer towers and gatehouses, then walls, then
+  other damageable buildings.
+- **Fire ballistas** shoot enemy troops and workers in range first.
+
+Engines without a shot advance toward a firing position on the near side of a fortification.
 
 Whether something is in range is decided by the game itself, with each engine's own range (the
 one the Rebalancer sets, if you use it), exactly as for a player's engine. They only ever aim at
