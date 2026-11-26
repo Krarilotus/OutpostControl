@@ -1006,8 +1006,8 @@ cmp word [eax+B_TYPE],ARAB_OUTPOST
 jne euro
 add ecx,8
 euro:
-push dword [DEFENDER_TEXTS+ecx*8+4]
-push dword [DEFENDER_TEXTS+ecx*8]
+push dword [DEFENDER_TEXTS+ecx*4]
+push UNIT_HELP_GROUP
 mov ecx,TEXT_MANAGER
 call GET_TEXT
 push eax
