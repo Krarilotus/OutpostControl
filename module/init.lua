@@ -317,9 +317,9 @@ K.RANGE_SEARCH = 0x100
 K.AOB_UPDATE_CALL = "0F BF 91 A2 06 00 00 8B 04 95 ? ? ? ? FF D0"
 K.UPDATE_TABLE = { 0x07, { 0x8B, 0x04, 0x95 } }
 K.UPDATE_CURRENT = { -0x19, { 0xA1 } }        -- mov eax,[current unit], before the patched part
--- The game tick counter (lord-hunt's pattern).
-K.AOB_TICKS = "8B 87 50 0A 00 00 8B 8F 98 09 00 00 8B 15"
-K.TICKS_OPERAND = 0x0E
+-- The game tick counter: mov ecx, [edi+0x998] / mov edx, [ticks] in updateUnits. The mask load
+-- before it is patched by other modules.
+K.AOB_TICKS = "8B 8F 98 09 00 00 8B 15 I(? ? ? ?)"
 K.OUTPOST_BEHAVIOUR = 0x32        -- every unit an outpost spawns
 K.SIEGE_EVERY = 15                -- check each engine every 16 ticks (0.4 s at normal speed)
 K.STATE_MOVING = 0x65
@@ -1376,7 +1376,6 @@ local function resolve()
   G.buildingLayer = G.tileFlags + K.FLAGS_TO_BUILDINGS
   G.wallOwner = G.tileFlags + K.FLAGS_TO_WALL_OWNER
   same(G.rows, G.tileFlags + K.FLAGS_TO_ROWS, "the map layers")
-  G.ticks = rd32(scan(K.AOB_TICKS, "the game tick counter") + K.TICKS_OPERAND)
 end
 
 -- Siege engines on the way. smarter-recruits patches the 8 bytes right before the update table
@@ -1389,7 +1388,6 @@ local function resolveSiege()
   local call = scan(K.AOB_UPDATE_CALL, "where every unit's update function is called")
   G.updateTable = readOperand(call, K.UPDATE_TABLE, "the update function table")
   G.currentUnit = readOperand(call, K.UPDATE_CURRENT, "the current unit")
-  G.ticks = rd32(scan(K.AOB_TICKS, "the game tick counter") + K.TICKS_OPERAND)
 end
 
 local function resolvePanel()
@@ -1719,6 +1717,14 @@ local function enable(self, config)
   O.plans = {}
   for _, plan in ipairs(K.PLANS) do
     O.plans[plan.kind] = { first = plan.first, rest = plan.rest, share = percent(setting(config, "jobs", plan.name)) }
+  end
+  if O.defenders or O.siege then
+    local found, _, ticks = pcall(utils.AOBExtract, K.AOB_TICKS)
+    G.ticks = found and ticks or nil
+    if G.ticks == nil then
+      log(WARNING, MODULE_NAME .. ": game tick counter not found; defenders and siege engines on the way stay off")
+      O.defenders, O.walls, O.riders, O.siege = false, false, false, false
+    end
   end
   if not O.defenders and not O.growth and not O.jobs and not O.siege and not O.join and not O.retarget
       and not O.waves then
