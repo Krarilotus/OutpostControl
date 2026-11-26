@@ -205,6 +205,7 @@ K.SCOPE_X = 148
 
 K.PATROL_RADIUS = 25          -- tiles round the lord
 K.PATROL_ARRIVED = 4
+K.FLANK_MISSES = 3           -- failed moves before a flank turns inward
 K.WAIT = { [K.JOB_MOAT] = 3, [K.JOB_WALLS] = 3, [K.JOB_LORD] = 2, [K.JOB_PATROL] = 10 }
 
 ---------------------------------------------------------------------------------------
@@ -829,6 +830,12 @@ local function rankSiegeTarget(tier, limit, target, d)
   tier[index + 1] = { target = target, d = d }
 end
 
+local function liveSiegeTarget(target)
+  if target.tile then return wallAt(target.tile, target.owner) end
+  local b = building(target.id)
+  return rd32(b + B.UID) == target.uid and siegeBuilding(b, target.owner)
+end
+
 local function inWaveApproach(candidate, wave, cx, cy)
   local x, y = candidate.x - cx, candidate.y - cy
   return x * wave.dx + y * wave.dy >= math.abs(x * wave.dy - y * wave.dx)
@@ -861,7 +868,7 @@ local function siegeApproach(owner, x, y, wave, cx, cy)
   for _, bucket in ipairs(nearestBuckets) do
     if #ranked == limit and bucket.d > ranked[limit].d then break end
     for _, candidate in ipairs(bucket.walls) do
-      if not wave or inWaveApproach(candidate, wave, cx, cy) then
+      if (not wave or inWaveApproach(candidate, wave, cx, cy)) and liveSiegeTarget(candidate) then
         rankSiegeTarget(ranked, limit, candidate, squared(x, y, candidate.x, candidate.y))
       end
     end
@@ -905,12 +912,6 @@ local function siegeShortlist(foes, key, x, y, range)
   end
   siegeCache.shortlists[key] = shortlist
   return shortlist
-end
-
-local function liveSiegeTarget(target)
-  if target.tile then return wallAt(target.tile, target.owner) end
-  local b = building(target.id)
-  return rd32(b + B.UID) == target.uid and siegeBuilding(b, target.owner)
 end
 
 -- Enemy buildings standing within reach (squared, straight line) of x, y, nearest first.
@@ -1416,12 +1417,17 @@ local function flank(t, ux, uy, cx, cy, wave, S)
     local side = wave and wave.side or S.uid % 2 * 2 - 1
     local angle = math.atan(y - cy, x - cx) + side * math.pi * 5 / 12
     local radius = 30 + (wave and wave.seed or S.uid) % 11
-    S.flankX, S.flankY = cx + math.cos(angle) * radius, cy + math.sin(angle) * radius
+    S.flankX = math.max(1, math.min(K.MAP_SIZE - 2, math.floor(cx + math.cos(angle) * radius + 0.5)))
+    S.flankY = math.max(1, math.min(K.MAP_SIZE - 2, math.floor(cy + math.sin(angle) * radius + 0.5)))
+    S.flankMisses = 0
   end
   if distance(ux, uy, S.flankX, S.flankY) <= 8 then
     S.flanked = true
   elseif moveToward(t, ux, uy, S.flankX, S.flankY, 0) then
     S.wait = 2
+  else
+    S.flankMisses = S.flankMisses + 1
+    S.flanked = S.flankMisses >= K.FLANK_MISSES
   end
 end
 
