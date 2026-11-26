@@ -1069,11 +1069,14 @@ add ecx,8
 euro:
 cmp ecx,11
 jne defenderWords
-mov dword [esp+0x14],0x13  ; smaller native font for the Arabian swordsman
-add dword [esp+4],2
+; Use the Arabian Attacker button's shorter native Swordsmen label.
+push 10
+push 0x40
+jmp getDefenderWords
 defenderWords:
 push dword [DEFENDER_TEXTS+ecx*4]
 push UNIT_HELP_GROUP
+getDefenderWords:
 mov ecx,TEXT_MANAGER
 call GET_TEXT
 push eax
