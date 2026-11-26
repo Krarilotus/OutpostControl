@@ -630,7 +630,7 @@ local function onLaunch()
   table.sort(kinds)
 
   local groups = {}
-  local twist = variation >= 20 and wave.seed % 5 == 0
+  local twist = wave and variation >= 20 and wave.seed % 5 == 0
   local function put(job, id)
     groups[job] = groups[job] or {}
     table.insert(groups[job], id)
@@ -1231,31 +1231,37 @@ local function station(t, ux, uy, x, y, focusX, focusY, minRange, maxRange)
     local spot = spots[index]
     if freeSpot(t, spot.x, spot.y) then
       if distance(ux, uy, spot.x, spot.y) > 1 then F.command(G.tribesThis, t, spot.x, spot.y, 1) end
-      return
+      return true
     end
   end
+  return false
 end
 
 local function overwatch(t, kind, ux, uy, x, y, wave)
   local range = rangedRange(kind)
   F.setStance(G.tribesThis, t, K.STANCE_DEFENSIVE)
   if not range then return end
-  if not G.height then
-    moveToward(t, ux, uy, x, y, range * 0.7)
-    return
+  if G.height then
+    local angle = math.atan(uy - y, ux - x)
+    local dx, dy = wave and wave.dx or math.cos(angle), wave and wave.dy or math.sin(angle)
+    if station(t, ux, uy, x + dx * range * 0.75, y + dy * range * 0.75,
+        x, y, range * 0.65, range * 0.85) then return end
   end
-  local angle = math.atan(uy - y, ux - x)
-  local dx, dy = wave and wave.dx or math.cos(angle), wave and wave.dy or math.sin(angle)
-  station(t, ux, uy, x + dx * range * 0.75, y + dy * range * 0.75, x, y, range * 0.65, range * 0.85)
+  moveToward(t, ux, uy, x, y, range * 0.7)
+end
+
+local function anchorLead(t, wave)
+  local anchor = wave and wave.anchor
+  if not anchor or anchor == t then return nil end
+  local tb = tribe(anchor)
+  if rd16(tb + T.STATE) ~= 2 or rd32(tb + T.UID) ~= wave.anchorUid then return nil end
+  local lead = F.lead(G.tribesThis, anchor, 0)
+  if lead and lead > 0 then return lead end
 end
 
 local function escort(t, ranged, ux, uy, x, y, wave)
-  local anchor = wave and wave.anchor
-  if not anchor or anchor == t then return false end
-  local tb = tribe(anchor)
-  if rd16(tb + T.STATE) ~= 2 or rd32(tb + T.UID) ~= wave.anchorUid then return false end
-  local lead = F.lead(G.tribesThis, anchor, 0)
-  if not lead or lead <= 0 then return false end
+  local lead = anchorLead(t, wave)
+  if not lead then return false end
   local u = unit(lead)
   local ax, ay = rd16(u + U.X), rd16(u + U.Y)
   local angle = math.atan(y - ay, x - ax)
@@ -1264,12 +1270,10 @@ local function escort(t, ranged, ux, uy, x, y, wave)
   if ranged then
     F.setStance(G.tribesThis, t, K.STANCE_DEFENSIVE)
     if G.height then
-      station(t, ux, uy, tx, ty, ax, ay, 3, 5)
-      return true
+      return station(t, ux, uy, tx, ty, ax, ay, 3, 5)
     end
   end
-  moveToward(t, ux, uy, tx, ty, 1)
-  return true
+  return distance(ux, uy, tx, ty) <= 1 or moveToward(t, ux, uy, tx, ty, 1)
 end
 
 local function flank(t, ux, uy, cx, cy, wave, S)
@@ -1280,8 +1284,11 @@ local function flank(t, ux, uy, cx, cy, wave, S)
     local radius = 30 + (wave and wave.seed or S.uid) % 11
     S.flankX, S.flankY = cx + math.cos(angle) * radius, cy + math.sin(angle) * radius
   end
-  return distance(ux, uy, S.flankX, S.flankY) > 8
-    and moveToward(t, ux, uy, S.flankX, S.flankY, 0)
+  if distance(ux, uy, S.flankX, S.flankY) <= 8 then
+    S.flanked = true
+    return false
+  end
+  return moveToward(t, ux, uy, S.flankX, S.flankY, 0)
 end
 
 local function attackBuilding(ai, t, owner, x, y)
@@ -1336,11 +1343,14 @@ local function onDecide()
   if ranged and (job == K.JOB_OVERWATCH or job == K.JOB_ESCORT) and (S.fx ~= fx or S.fy ~= fy) then
     S.fx, S.fy, S.wait = fx, fy, 0
   end
+  if job == K.JOB_FLANK and S.target ~= target then
+    S.target, S.flankX, S.flankY, S.flanked, S.wait = target, nil, nil, nil, 0
+  end
 
   if not S.rallied then
     S.rallied = true
-    if wave and wave.rank >= 2 and wave.anchor ~= t and (kind == 24 or kind == 26)
-        and job ~= K.JOB_FLANK and job ~= K.JOB_PATROL then
+    if wave and wave.rank >= 2 and (kind == 24 or kind == 26) and job ~= K.JOB_FLANK
+        and job ~= K.JOB_PATROL and anchorLead(t, wave) then
       S.wait = wave.seed % 2
       return
     end
@@ -1387,7 +1397,6 @@ local function onDecide()
       S.wait = 2
       return
     end
-    S.flanked = true
     job = kind == K.KNIGHT and K.JOB_LORD or K.JOB_BUILDINGS
   end
 
