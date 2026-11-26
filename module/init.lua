@@ -1383,16 +1383,11 @@ local function resolve()
   same(G.rows, G.tileFlags + K.FLAGS_TO_ROWS, "the map layers")
 end
 
--- Siege engines on the way. smarter-recruits patches the 8 bytes right before the update table
--- read, so the pattern starts after them.
 local function resolveSiege()
   local acquire = scan(K.AOB_ACQUIRE, "acquireShootTarget")
   G.ranges = rangeTable(acquire + K.ACQUIRE_RANGE)
   F.acquire = core.exposeCode(acquire, 2, 1)
   F.halt = core.exposeCode(scan(K.AOB_HALT, "the game's stop walking"), 2, 1)
-  local call = scan(K.AOB_UPDATE_CALL, "where every unit's update function is called")
-  G.updateTable = readOperand(call, K.UPDATE_TABLE, "the update function table")
-  G.currentUnit = readOperand(call, K.UPDATE_CURRENT, "the current unit")
 end
 
 local function resolvePanel()
@@ -1622,7 +1617,7 @@ local function install(self)
     callTo(G.decideSite, assemble(templates.decide, values))
   end
 
-  local siegeUpdates = O.siege and G.ticks ~= nil
+  local siegeUpdates = O.siege and G.updateTable ~= nil
   if siegeUpdates or O.riders then
     G.originalUpdates = core.allocate(K.UNIT_TYPES * 4, true)
     for kind = 0, K.UNIT_TYPES - 1 do wr32(G.originalUpdates + kind * 4, rd32(G.updateTable + kind * 4)) end
@@ -1724,7 +1719,7 @@ local function enable(self, config)
   for _, plan in ipairs(K.PLANS) do
     O.plans[plan.kind] = { first = plan.first, rest = plan.rest, share = percent(setting(config, "jobs", plan.name)) }
   end
-  G.ticks = nil
+  G.ticks, G.updateTable = nil, nil
   if O.defenders or O.siege then
     local site, problem = core.AOBScanUnique(K.AOB_TICKS)
     if site then
@@ -1759,6 +1754,18 @@ local function enable(self, config)
     if not ok then
       log(WARNING, tostring(problem) .. "; siege engines on the way and knights attacking buildings stay off")
       O.siege, O.riders = false, false
+    end
+  end
+  if G.ticks and (O.siege or O.riders) then
+    ok, problem = pcall(function()
+      -- smarter-recruits patches the 8 bytes before the update table read.
+      local call = scan(K.AOB_UPDATE_CALL, "where every unit's update function is called")
+      G.currentUnit = readOperand(call, K.UPDATE_CURRENT, "the current unit")
+      G.updateTable = readOperand(call, K.UPDATE_TABLE, "the update function table")
+    end)
+    if not ok then
+      log(WARNING, tostring(problem) .. "; periodic knight and siege updates stay off")
+      O.riders = false
     end
   end
   allocate()
