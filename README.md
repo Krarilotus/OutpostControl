@@ -1,8 +1,7 @@
 # Outpost Control
 
 A UCP3 module for Stronghold Crusader (Extreme and vanilla) that gives map makers a Defenders
-page in the outpost panel (which troops guard an outpost, up to 50), a Growth slider on its
-Attackers page (how fast its waves speed up) and
+page in the outpost panel (which troops guard an outpost, up to 50), wave size, growth and timing controls, and
 splits each outpost wave into troops with jobs by unit type (fill the moat, attack walls and
 gates, burn buildings, fight troops, ride round the castle, hunt the lord). Per-outpost settings
 and jobs are stored in maps and saves through `map-extensions`. Player-facing description:
@@ -13,7 +12,9 @@ and jobs are stored in maps and saves through `map-extensions`. Player-facing de
 Select an outpost in the map editor. The button at the top of its panel now switches between
 two pages. Each slider shows its value to its right.
 
-- **Attackers** - which troops the outpost sends, as in the game, with three sliders:
+- **Attackers** - the troop buttons choose which troops the outpost sends. When fixed intervals
+  are enabled, the second button switches between Size (Size and Growth) and Timing
+  (Start Delay and Interval).
   - **Size:** exactly how many troops each wave has, from 0 (no waves at all) up to the most the
     game itself ever sends at its biggest size. (With "Set the exact number of troops per wave"
     off it is the game's own slider again: 6 steps of random group sizes.) Without the module the
@@ -22,8 +23,9 @@ two pages. Each slider shows its value to its right.
     at normal speed.
   - **Growth:** how much bigger each wave gets, in percent of the first wave per wave. 0 (the
     start) keeps every wave as big as the first, as the game does; 50 adds half the first wave
-    each time; 100 adds a whole first wave each time. Waves stop growing at 999 troops. How fast
-    the waves come stays as in the game: a little sooner after every wave.
+    each time; 100 adds a whole first wave each time. Waves stop growing at 999 troops.
+  - **Interval:** seconds to wait after a wave launches before forming the next, from 10 to 600.
+    Set it to 0 for the game's timing. Start Delay controls the first wave.
 - **Defenders** - the same eight troop buttons with a new meaning, and one slider:
   - **Troop buttons:** which troops guard the outpost. Pick several and they take turns. A
     European outpost offers archers, crossbowmen, spearmen, pikemen, macemen, swordsmen,
@@ -137,15 +139,13 @@ guards you set (at least one, as archers), and its waves are the game's own size
   "attack buildings" get the game's ranged / melee branch by their kind field; moat, walls, lord
   and patrol jobs are decided in lua with the game's path-to-castle search and tribe orders.
 * Outpost panel: prologue hooks on the panel text, the troop button render/click and the size
-  slider handler; a page button drawn with the game's button renderer over the title. With
-  growth on, the size and start delay slider items move up (y 494/530) and a growth slider is
-  drawn below (y 566) with the game's slider renderer, dragged by its own mouse test; the start
-  delay item is hidden (item +0x36) on the Defenders page.
-* Panel texts: troop names are the game's own unit help texts (group 8), read when drawn. The
-  page names and the Growth and Amount labels are `panel_*` entries of the module's locale
-  catalogs, in UCP's game language and encoded by textResourceModifier; all four or none.
-* Per-building entries (uid, troop bits, amount, growth) and the job table go into the
-  `outpost-control` map-extensions section.
+  slider handler. The page and scope buttons use the native button renderer. Attackers uses
+  one pair of slider rows per scope when intervals are enabled. Defenders shows only Amount.
+* Panel texts use the game's unit help texts and the module's `panel_*` locale entries,
+  encoded by textResourceModifier.
+* Per-building settings and jobs go into the `outpost-control` Map Extensions section.
+  Fixed intervals are stored in the optional `interval.bin` file. Older maps and saves use
+  the game's timing.
 
 ## Vanilla and Recommended
 

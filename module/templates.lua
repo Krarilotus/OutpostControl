@@ -2,7 +2,7 @@
 -- the scripts reach each other by address. Building entries are 16 bytes, one per building id:
 -- +0 the building's uid (the entry only counts while it matches), +4 the defender troop
 -- buttons (bit per button), +6 the number of defenders, +7 the growth in percent, +8 the exact
--- wave size (0xFFFF: not set, the game's own size slider counts).
+-- wave size (0xFFFF: game size), +10 the interval in seconds (0: game timing).
 
 local templates = {}
 
@@ -57,6 +57,7 @@ shl eax,ENTRY_SHIFT
 add eax,TABLE
 mov [eax],ebx
 mov word [eax+8],0xFFFF
+mov word [eax+10],0
 mov word [eax+4],1
 movsx ebx,byte [edx+B_DEFENDERS]
 cmp ebx,1
@@ -610,19 +611,53 @@ movsx eax,word [eax+U_TYPE]
 jmp dword [ORIGINAL_UPDATES+eax*4]
 ]]
 
--- The outpost panel's text (prologue: mov eax,[selected], 5 bytes). With growth on, the
--- attacker page gets its own labels for the moved sliders and the growth slider; the defender
--- page always has its own labels. Then the page button, when there is a defender page.
+-- UpdateOutpostBuilding's idle branch: replace the wait in ecx after the first launch.
+templates.intervalWait = [[
+cmp word [eax+B_WAVES],0
+je original
+push eax
+mov eax,[CURRENT_BUILDING]
+call ENTRY_GET
+test eax,eax
+jz saved_index
+movzx edx,word [eax+INTERVAL_FIELD]
+test edx,edx
+jz saved_index
+imul ecx,edx,TICKS_PER_SECOND
+saved_index:
+pop eax
+original:
+add word [eax+B_IDLE_TIMER],1
+jmp RESUME
+]]
+
+-- The outpost panel's text (prologue: mov eax,[selected], 5 bytes).
 templates.panel = [[
 cmp dword [MODE],0
-jne own
-if GROWTH_ON <> 0
+jne defenders
+if INTERVAL_ON <> 0
+cmp dword [SCOPE],1
+je timing
+end if
+if GROWTH_ON <> 0 | INTERVAL_ON <> 0
 call ATTACK_LABELS
+if GROWTH_ON <> 0
 call GROWTH_SLIDER
+end if
 else
 call usual
 end if
+jmp numbers
+if INTERVAL_ON <> 0
+timing:
+call TIMING_LABELS
+call INTERVAL_SLIDER
+end if
+numbers:
 call NUMBERS
+if INTERVAL_ON <> 0
+call SCOPE_TOGGLE
+end if
 if TOGGLE_ON <> 0
 jmp TOGGLE
 else
@@ -631,7 +666,7 @@ end if
 usual:
 mov eax,[SELECTED]
 jmp RESUME
-own:
+defenders:
 if TOGGLE_ON <> 0
 call DEFENDER_LABELS
 call NUMBERS
@@ -649,6 +684,10 @@ push esi
 mov esi,[SELECTED]
 cmp dword [MODE],0
 jne defenders
+if INTERVAL_ON <> 0
+cmp dword [SCOPE],1
+je delay
+end if
 if WAVES_ON <> 0
 mov eax,esi
 call WAVE_VALUE
@@ -660,6 +699,11 @@ end if
 xor ecx,ecx
 mov ebx,SIZE_ROW
 call show
+if INTERVAL_ON <> 0
+jmp growth
+delay:
+imul esi,esi,B_STRIDE
+end if
 movsx eax,word [esi+B_DELAY]
 cmp eax,0
 jge delay_ok
@@ -671,6 +715,21 @@ div ecx
 mov ecx,'s'
 mov ebx,DELAY_ROW
 call show
+if INTERVAL_ON <> 0
+mov eax,[SELECTED]
+call ENTRY_GET
+xor edx,edx
+test eax,eax
+jz interval_known
+movzx edx,word [eax+INTERVAL_FIELD]
+interval_known:
+mov eax,edx
+mov ecx,'s'
+mov ebx,INTERVAL_ROW
+call show
+jmp done
+growth:
+end if
 if GROWTH_ON <> 0
 mov eax,[SELECTED]
 call ENTRY_GET
@@ -774,10 +833,8 @@ pop ebx
 ret
 ]]
 
--- The growth slider on the attacker page (percent of the first wave added per wave), drawn by
--- the game's slider renderer. A left click on
--- it starts a drag that lasts while the button is held; the value is 0 to 100.
-templates.growthSlider = [[
+-- A slider backed by an outpost entry field, drawn by the native slider renderer.
+templates.entrySlider = [[
 push ebx
 push esi
 push edi
@@ -786,17 +843,21 @@ call ENTRY_GET
 xor edi,edi
 test eax,eax
 jz have
-movzx edi,byte [eax+7]
+if WIDE <> 0
+movzx edi,word [eax+ENTRY_FIELD]
+else
+movzx edi,byte [eax+ENTRY_FIELD]
+end if
 have:
 mov ebx,[MENU_X]
-add ebx,GROWTH_X
+add ebx,SLIDER_X
 mov esi,[MENU_Y]
-add esi,GROWTH_Y
+add esi,SLIDER_Y
 cmp dword [MOUSE+LEFT_CLICK],0
 je no_start
 mov eax,[MOUSE+MOUSE_X]
 sub eax,ebx
-cmp eax,GROWTH_W
+cmp eax,SLIDER_W
 jae no_start
 mov eax,[MOUSE+MOUSE_Y]
 sub eax,esi
@@ -814,7 +875,7 @@ je draw
 mov eax,[MOUSE+MOUSE_X]
 sub eax,ebx
 sub eax,KNOB_HALF
-imul eax,eax,100
+imul eax,eax,STEPS
 cdq
 mov ecx,KNOB_SPAN
 idiv ecx
@@ -822,10 +883,11 @@ cmp eax,0
 jge low_ok
 xor eax,eax
 low_ok:
-cmp eax,100
+cmp eax,STEPS
 jle high_ok
-mov eax,100
+mov eax,STEPS
 high_ok:
+imul eax,eax,STEP
 cmp eax,edi
 je draw
 mov edi,eax
@@ -834,7 +896,11 @@ call ENTRY_MAKE
 test eax,eax
 jz draw
 mov ecx,edi
-mov [eax+7],cl
+if WIDE <> 0
+mov [eax+ENTRY_FIELD],cx
+else
+mov [eax+ENTRY_FIELD],cl
+end if
 draw:
 push dword [BUTTON_X]
 push dword [BUTTON_X+4]
@@ -843,12 +909,12 @@ push dword [BUTTON_X+12]
 push dword [DRAW_CHOICE]
 mov [BUTTON_X],ebx
 mov [BUTTON_X+4],esi
-mov dword [BUTTON_X+8],GROWTH_W
-mov dword [BUTTON_X+12],GROWTH_H
+mov dword [BUTTON_X+8],SLIDER_W
+mov dword [BUTTON_X+12],SLIDER_H
 mov eax,edi
 imul eax,eax,KNOB_SPAN
 cdq
-mov ecx,100
+mov ecx,STEPS*STEP
 idiv ecx
 push 0
 push KNOB_W
@@ -890,7 +956,7 @@ mov ecx,1
 cmp dword [MOUSE+LEFT_CLICK],0
 je draw
 mov dword [MOUSE+LEFT_CLICK],0
-xor dword [MODE],1
+xor dword [TOGGLE_STATE],1
 push ecx
 push CLICK_SOUND
 mov ecx,SOUNDS
@@ -931,8 +997,8 @@ lea eax,[esi+7]
 push eax
 lea eax,[ebx+TOGGLE_HALF]
 push eax
-mov eax,[MODE]
-push dword [PAGE_TEXTS+eax*4]
+mov eax,[TOGGLE_STATE]
+push dword [TOGGLE_TEXTS+eax*4]
 mov ecx,TEXT_MANAGER
 call SHADOW_TEXT
 pop dword [DRAW_CHOICE]

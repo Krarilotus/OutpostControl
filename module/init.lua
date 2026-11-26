@@ -11,10 +11,9 @@
      of its own, and waits 9600 / amount ticks between guards (the game: 1200 for its 8). The
      game's own defender count field gets the amount (1 to 8), so the map still means about
      the same without the module.
-  2. Growth. A third slider on the attacker page (the size and start delay sliders move up to
-     make room): how much bigger each wave gets, 0 to 100 percent of the first wave per wave
-     sent (0 = the game: every wave the same size). The game's own speed-up of the waves (100
-     ticks less wait per wave, 4 less between units) is left as it is.
+  2. Wave settings. The Attackers panel has Size and Timing views when fixed intervals
+     are enabled. Growth sets how much each wave grows, and Interval sets the wait before
+     the next wave starts forming. Zero interval uses the game's timing.
   3. Jobs. When a wave leaves, its troops are split by unit type into troops with a job of
      their own: filling the moat, hacking at walls and gates, burning or wrecking buildings,
      fighting the troops they meet, riding round the castle, or hunting the lord. Each troop
@@ -35,6 +34,8 @@ K.SAVE_JOBS = "jobs.bin"
 K.SAVE_GUARDS = "guards.bin"
 K.SAVE_WAVES = "waves.bin"
 K.SAVE_GROWTH = "growth.bin"      -- the size growth (buildings.bin keeps a 0 where 1.0.15 kept speed)
+
+K.SAVE_INTERVAL = "interval.bin"
 
 local templates = require("templates")
 
@@ -77,7 +78,7 @@ K.PLANS = {
 
 K.DEFAULTS = {
   defenders = { enabled = false, walls = false, knights = false },
-  waves = { exact = false },
+  waves = { exact = false, interval = false },
   growth = { enabled = false },
   jobs = { enabled = false },
   siege = { enabled = false },
@@ -111,6 +112,8 @@ K.CATALOGS = { german = "de", french = "fr", russian = "ru", hungarian = "hu", t
 K.SLIDER_X, K.SLIDER_W, K.SLIDER_H = 130, 104, 26
 K.GAME_SIZE_Y, K.GAME_DELAY_Y = 510, 568
 K.SIZE_Y, K.DELAY_Y, K.GROWTH_Y = 494, 530, 566
+K.SECOND_ROW_Y = 530
+K.INTERVAL_FIELD, K.INTERVAL_MAX, K.INTERVAL_STEP = 10, 600, 10
 K.LABEL_X, K.LABEL_DROP = 0x19, 7
 K.TEXT_SIZE, K.TEXT_DELAY = 0x12, 0x15     -- the game's own "Size" and "Start Delay"
 K.NUMBER_X = 242                  -- each slider's value, right of it (the troop buttons start at 280)
@@ -189,6 +192,7 @@ K.ORDER_ATTACK_BUILDING = 9
 K.TEXT_BUTTON = 332           -- the outpost's own text button picture
 -- The page button, over the panel's title (the title is drawn at 25, 463).
 K.TOGGLE_X, K.TOGGLE_Y, K.TOGGLE_W, K.TOGGLE_H = 18, 456, 125, 30
+K.SCOPE_X = 148
 
 K.PATROL_RADIUS = 25          -- tiles round the lord
 K.PATROL_ARRIVED = 4
@@ -217,6 +221,10 @@ K.DEFENDER_TYPE_SIZE = 20
 K.AOB_GROWTH = "66 83 80 ? ? ? ? 64 66 83 80 ? ? ? ? 04 5D 5F 5E 5B 83 C4 1C C3"
 K.GROWTH_SIZE = 16
 K.WAVES_FIELD, K.PACE_FIELD = 0x316, 0x318
+-- The idle wait after the game applies either of its mode-dependent minimums.
+K.AOB_INTERVAL = "83 F9 64 7D 05 B9 64 00 00 00 66 83 80 ? ? ? ? 01 0F B7 90 ? ? ? ? 0F BF D2 3B D1 0F 8C"
+K.INTERVAL_AT, K.INTERVAL_SIZE = 10, 8
+K.IDLE_TIMER_FIELD = 0x308
 -- UpdateOutpostBuilding: aiRegisterTribeAndAssignTarget(tribe, uid) sends the wave.
 K.AOB_LAUNCH = "8B 80 ? ? ? ? 50 56 B9 ? ? ? ? E8 ? ? ? ? A1 ? ? ? ? 69 C0 2C 03 00 00 66 C7 80 ? ? ? ? 00 00 66 83"
 K.LAUNCH_AI = { 0x08, { 0xB9 } }
@@ -1067,24 +1075,33 @@ local function liveSliders(each)
   end
 end
 
--- After the page switched: the size slider asks again what it shows, and the start delay
--- slider is hidden on the defender page.
+-- Refresh the live slider items and keep the static items in sync for newly opened menus.
 local function refreshSliders()
-  local mode = rd32(G.mode)
+  local defenders = rd32(G.mode) ~= 0
+  local timing = O.interval and rd32(G.scope) == 1
+  local sizeHidden = not defenders and timing and 1 or 0
+  local delayHidden = (defenders or (O.interval and not timing)) and 1 or 0
+  if O.interval then
+    core.writeCodeSmallInteger(G.sizeItem + K.ITEM_HIDDEN, sizeHidden)
+    core.writeCodeSmallInteger(G.delayItem + K.ITEM_HIDDEN, delayHidden)
+    wr32(G.drag, 0)
+  end
   liveSliders(function(item, action)
     if action == G.sizeSlider then
-      F.sizeSlider(rd32(item + K.ITEM_PARAM), 1, item + K.ITEM_MIN, item + K.ITEM_MAX, item + K.ITEM_VALUE)
+      if O.interval then wr16(item + K.ITEM_HIDDEN, sizeHidden) end
+      if sizeHidden == 0 then
+        F.sizeSlider(rd32(item + K.ITEM_PARAM), 1, item + K.ITEM_MIN, item + K.ITEM_MAX, item + K.ITEM_VALUE)
+      end
     else
-      wr16(item + K.ITEM_HIDDEN, mode)
+      wr16(item + K.ITEM_HIDDEN, delayHidden)
     end
   end)
 end
 
--- With growth on, the size and start delay sliders move up to make room for the growth slider:
--- in the static item table (a menu built later) and in the live menu.
+-- Move the native sliders in both the static item table and the live menu.
 local function moveSliders()
   local function move(item, action)
-    local y = action == G.sizeSlider and K.SIZE_Y or K.DELAY_Y
+    local y = (action == G.sizeSlider or O.interval) and K.SIZE_Y or K.DELAY_Y
     if rd32(item + K.ITEM_Y) ~= y then core.writeCodeInteger(item + K.ITEM_Y, y) end
   end
   move(G.sizeItem, G.sizeSlider)
@@ -1148,16 +1165,19 @@ local function serialize(handle)
     end
   end
   handle:put(K.SAVE_GUARDS, table.concat(guards))
-  local waves = {}
+  local waves, intervals = {}, {}
   for id = 1, K.MAX_BUILDINGS - 1 do
     local entry = G.table + id * K.ENTRY_SIZE
     local uid = rd32(entry)
     local size = rd16(entry + 8) & 0xFFFF
-    if uid ~= 0 and uid == rd32(building(id) + B.UID) and size ~= 0xFFFF then
-      waves[#waves + 1] = string.pack("<I2I2", id, size)
+    if uid ~= 0 and uid == rd32(building(id) + B.UID) then
+      if size ~= 0xFFFF then waves[#waves + 1] = string.pack("<I2I2", id, size) end
+      local interval = rd16(entry + K.INTERVAL_FIELD) & 0xFFFF
+      if interval ~= 0 then intervals[#intervals + 1] = string.pack("<I2I2", id, interval) end
     end
   end
   handle:put(K.SAVE_WAVES, table.concat(waves))
+  if #intervals > 0 then handle:put(K.SAVE_INTERVAL, table.concat(intervals)) end
   local growth = {}
   for id = 1, K.MAX_BUILDINGS - 1 do
     local entry = G.table + id * K.ENTRY_SIZE
@@ -1203,6 +1223,16 @@ local function deserialize(handle)
       local id, wave = string.unpack("<I2I2", data, offset)
       if id > 0 and id < K.MAX_BUILDINGS and rd32(G.table + id * K.ENTRY_SIZE) ~= 0 then
         wr16(G.table + id * K.ENTRY_SIZE + 8, math.min(wave, G.waveMax or wave))
+      end
+    end
+  end
+  if handle:exists(K.SAVE_INTERVAL) then
+    local data = handle:get(K.SAVE_INTERVAL)
+    local size = string.packsize("<I2I2")
+    for offset = 1, #data - size + 1, size do
+      local id, interval = string.unpack("<I2I2", data, offset)
+      if id > 0 and id < K.MAX_BUILDINGS and rd32(G.table + id * K.ENTRY_SIZE) ~= 0 then
+        wr16(G.table + id * K.ENTRY_SIZE + K.INTERVAL_FIELD, math.min(interval, K.INTERVAL_MAX))
       end
     end
   end
@@ -1383,6 +1413,16 @@ local function resolve()
   same(G.rows, G.tileFlags + K.FLAGS_TO_ROWS, "the map layers")
 end
 
+local function resolveInterval()
+  local at, problem = core.AOBScanUnique(K.AOB_INTERVAL)
+  if not at then error("idle wave wait " .. problem) end
+  local site = at + K.INTERVAL_AT
+  local timer = G.buildings + K.IDLE_TIMER_FIELD
+  same(readOperand(site, { 0, { 0x66, 0x83, 0x80 } }, "the idle wave timer"), timer, "the idle wave timer")
+  same(readOperand(site, { 8, { 0x0F, 0xB7, 0x90 } }, "the idle wave timer"), timer, "the idle wave timer")
+  G.interval = site
+end
+
 local function resolveSiege()
   local acquire = scan(K.AOB_ACQUIRE, "acquireShootTarget")
   G.ranges = rangeTable(acquire + K.ACQUIRE_RANGE)
@@ -1474,12 +1514,14 @@ local function writeWords(name, encode)
   local catalog, encoded = yaml.eval(source), {}
   for key in pairs(G.words) do
     local text = type(catalog) == "table" and catalog[key] or nil
+    if text == nil and name ~= "en" and G.intervalWords[key] then goto continue end
     if type(text) ~= "string" then error("locale/" .. name .. ".yml has no " .. key, 0) end
     encoded[key] = encode(text)
+    ::continue::
   end
-  for key, at in pairs(G.words) do
-    local text = core.CString(encoded[key])
-    wr32(at, text.address)
+  for key, value in pairs(encoded) do
+    local text = core.CString(value)
+    wr32(G.words[key], text.address)
     words[key] = text
   end
 end
@@ -1508,6 +1550,7 @@ local function allocate()
   G.jobs = core.allocate(K.MAX_TRIBES, true)
   G.jobUids = core.allocate(K.MAX_TRIBES * 4, true)
   G.mode = core.allocate(4, true)
+  if O.interval then G.scope = core.allocate(4, true) end
   G.launchTribe = core.allocate(4, true)
   G.launchThis = core.allocate(4, true)
   G.decideTribe = core.allocate(4, true)
@@ -1526,15 +1569,27 @@ local function allocate()
     end
     return at, #list
   end
-  G.attackLabels, G.attackLabelCount = labels({
-    { K.LABEL_X, K.SIZE_Y + K.LABEL_DROP, 0, K.TEXT_SIZE }, { K.LABEL_X, K.DELAY_Y + K.LABEL_DROP, 0, K.TEXT_DELAY },
-    { K.LABEL_X, K.GROWTH_Y + K.LABEL_DROP, 0, 0 },
-  })
-  local sizeY = O.growth and K.SIZE_Y or K.GAME_SIZE_Y
+  local attack = { { K.LABEL_X, K.SIZE_Y + K.LABEL_DROP, 0, K.TEXT_SIZE } }
+  if not O.interval then attack[2] = { K.LABEL_X, K.DELAY_Y + K.LABEL_DROP, 0, K.TEXT_DELAY } end
+  if O.growth then
+    attack[#attack + 1] = { K.LABEL_X, (O.interval and K.SECOND_ROW_Y or K.GROWTH_Y) + K.LABEL_DROP, 0, 0 }
+  end
+  G.attackLabels, G.attackLabelCount = labels(attack)
+  local sizeY = (O.growth or O.interval) and K.SIZE_Y or K.GAME_SIZE_Y
   G.defendLabels, G.defendLabelCount = labels({ { K.LABEL_X, sizeY + K.LABEL_DROP, 0, 0 } })
-  -- where each of the panel's own words is read from
-  G.words = { panel_attackers = G.pageTexts, panel_defenders = G.pageTexts + 4,
-    panel_growth = G.attackLabels + 2 * 16 + 8, panel_amount = G.defendLabels + 8 }
+  G.words = { panel_attackers = G.pageTexts, panel_defenders = G.pageTexts + 4, panel_amount = G.defendLabels + 8 }
+  if O.growth then G.words.panel_growth = G.attackLabels + (#attack - 1) * 16 + 8 end
+  G.intervalWords = {}
+  if O.interval then
+    G.scopeTexts = core.allocate(8, true)
+    G.timingLabels, G.timingLabelCount = labels({
+      { K.LABEL_X, K.SIZE_Y + K.LABEL_DROP, 0, K.TEXT_DELAY },
+      { K.LABEL_X, K.SECOND_ROW_Y + K.LABEL_DROP, 0, 0 },
+    })
+    G.intervalWords = { panel_size = G.scopeTexts, panel_timing = G.scopeTexts + 4,
+      panel_interval = G.timingLabels + 16 + 8 }
+    for key, address in pairs(G.intervalWords) do G.words[key] = address end
+  end
   writeWords("en", function(text) return text end)
 end
 
@@ -1578,6 +1633,12 @@ local function install(self)
 
   values.WAVES_ON, values.GROWTH_ON = O.waves and 1 or 0, O.growth and 1 or 0
   values.B_WAVE, values.GROWTH_CAP = G.buildings + K.WAVE_FIELD, K.GROWTH_CAP
+  if O.interval then
+    keep(G.interval, K.INTERVAL_SIZE)
+    values.INTERVAL_FIELD, values.TICKS_PER_SECOND = K.INTERVAL_FIELD, K.TICKS_PER_SECOND
+    values.B_IDLE_TIMER, values.RESUME = G.buildings + K.IDLE_TIMER_FIELD, G.interval + K.INTERVAL_SIZE
+    jumpTo(G.interval, assemble(templates.intervalWait, values), K.INTERVAL_SIZE)
+  end
   if O.waves or O.growth then
     keep(G.waveSize, K.WAVE_SIZE_SIZE)
     values.RESUME = G.waveSize + K.WAVE_SIZE_SIZE
@@ -1643,7 +1704,7 @@ local function install(self)
     core.writeCodeInteger(G.updateTable + K.KNIGHT * 4, assemble(templates.siegeCheck, values))
   end
 
-  if O.defenders or O.growth or O.waves then
+  if O.defenders or O.growth or O.waves or O.interval then
     values.MODE, values.SELECTED = G.mode, G.selected
     values.MENU_X, values.MENU_Y = G.menuX, G.menuY
     values.TEXT_MANAGER, values.RENDER_TEXT, values.SHADOW_TEXT = G.textManager, G.renderText, G.shadowText
@@ -1659,28 +1720,57 @@ local function install(self)
     values.GROWTH_ON, values.TOGGLE_ON = O.growth and 1 or 0, O.defenders and 1 or 0
     values.NUMBER_TEXT, values.NUMBER_X, values.TICKS_PER_SECOND = G.numberText, K.NUMBER_X, K.TICKS_PER_SECOND
     values.B_SIZE, values.B_DELAY = G.buildings + K.SIZE_FIELD, G.buildings + K.DELAY_FIELD
-    values.SIZE_ROW = (O.growth and K.SIZE_Y or K.GAME_SIZE_Y) + K.LABEL_DROP
-    values.DELAY_ROW = (O.growth and K.DELAY_Y or K.GAME_DELAY_Y) + K.LABEL_DROP
-    values.GROWTH_ROW = K.GROWTH_Y + K.LABEL_DROP
+    values.INTERVAL_ON, values.SCOPE = O.interval and 1 or 0, G.scope
+    values.SIZE_ROW = ((O.growth or O.interval) and K.SIZE_Y or K.GAME_SIZE_Y) + K.LABEL_DROP
+    values.DELAY_ROW = (O.interval and K.SIZE_Y or O.growth and K.DELAY_Y or K.GAME_DELAY_Y) + K.LABEL_DROP
+    values.GROWTH_ROW = (O.interval and K.SECOND_ROW_Y or K.GROWTH_Y) + K.LABEL_DROP
+    values.INTERVAL_ROW = K.SECOND_ROW_Y + K.LABEL_DROP
     values.NUMBERS = assemble(templates.numbers, values)
 
-    if O.growth then
+    if O.growth or O.interval then
       values.LABEL_TABLE, values.LABEL_COUNT = G.attackLabels, G.attackLabelCount
       values.ATTACK_LABELS = assemble(templates.labels, values)
-      values.GROWTH_X, values.GROWTH_Y, values.GROWTH_W, values.GROWTH_H = K.SLIDER_X, K.GROWTH_Y, K.SLIDER_W, K.SLIDER_H
+      values.SLIDER_X, values.SLIDER_W, values.SLIDER_H = K.SLIDER_X, K.SLIDER_W, K.SLIDER_H
       values.KNOB_W, values.KNOB_HALF, values.KNOB_SPAN = K.KNOB_W, K.KNOB_W // 2, K.SLIDER_W - K.KNOB_W
       values.KNOB_ABOVE, values.KNOB_H = K.KNOB_ABOVE, K.KNOB_H
       values.DRAG, values.SLIDER_RENDER = G.drag, G.sliderRender
-      values.GROWTH_SLIDER = assemble(templates.growthSlider, values)
+      if O.growth then
+        values.SLIDER_Y, values.STEPS = O.interval and K.SECOND_ROW_Y or K.GROWTH_Y, 100
+        values.ENTRY_FIELD, values.STEP, values.WIDE = 7, 1, 0
+        values.GROWTH_SLIDER = assemble(templates.entrySlider, values)
+      end
+      if O.interval then
+        values.LABEL_TABLE, values.LABEL_COUNT = G.timingLabels, G.timingLabelCount
+        values.TIMING_LABELS = assemble(templates.labels, values)
+        values.SLIDER_Y, values.STEPS = K.SECOND_ROW_Y, K.INTERVAL_MAX // K.INTERVAL_STEP
+        values.ENTRY_FIELD, values.STEP, values.WIDE = K.INTERVAL_FIELD, K.INTERVAL_STEP, 1
+        values.INTERVAL_SLIDER = assemble(templates.entrySlider, values)
+      end
       moveSliders()
-      hooks.registerHookCallback("afterInit", function() moveSliders() end)
+      hooks.registerHookCallback("afterInit", function()
+        moveSliders()
+        if O.interval then refreshSliders() end
+      end)
+    end
+
+    if O.defenders or O.interval then
+      values.PAD = pad(refreshSliders, "the outpost panel")
+      if O.defenders then
+        values.TOGGLE_STATE, values.TOGGLE_TEXTS = G.mode, G.pageTexts
+        values.TOGGLE = assemble(templates.toggle, values)
+      end
+      if O.interval then
+        keep(G.sizeItem + K.ITEM_HIDDEN, 2)
+        keep(G.delayItem + K.ITEM_HIDDEN, 2)
+        values.TOGGLE_X, values.TOGGLE_STATE, values.TOGGLE_TEXTS = K.SCOPE_X, G.scope, G.scopeTexts
+        values.SCOPE_TOGGLE = assemble(templates.toggle, values)
+        refreshSliders()
+      end
     end
 
     if O.defenders then
       values.LABEL_TABLE, values.LABEL_COUNT = G.defendLabels, G.defendLabelCount
       values.DEFENDER_LABELS = assemble(templates.labels, values)
-      values.PAD = pad(refreshSliders, "the outpost panel")
-      values.TOGGLE = assemble(templates.toggle, values)
 
       keep(G.buttonRender, K.BUTTON_RENDER_SIZE)
       values.RESUME = G.buttonRender + K.BUTTON_RENDER_SIZE
@@ -1708,6 +1798,7 @@ local function enable(self, config)
   O.defenders = setting(config, "defenders", "enabled") == true
   O.walls = O.defenders and setting(config, "defenders", "walls") == true
   O.waves = setting(config, "waves", "exact") == true
+  O.interval = setting(config, "waves", "interval") == true
   O.riders = O.defenders and setting(config, "defenders", "knights") == true
   O.growth = setting(config, "growth", "enabled") == true
   O.jobs = setting(config, "jobs", "enabled") == true
@@ -1731,7 +1822,7 @@ local function enable(self, config)
     end
   end
   if not O.defenders and not O.growth and not O.jobs and not O.siege and not O.join and not O.retarget
-      and not O.waves then
+      and not O.waves and not O.interval then
     log(INFO, MODULE_NAME .. ": every part is off")
     return
   end
@@ -1742,11 +1833,22 @@ local function enable(self, config)
     log(WARNING, tostring(problem))
     return
   end
-  if O.defenders or O.growth or O.waves then
+  if O.interval then
+    ok, problem = pcall(resolveInterval)
+    if not ok then
+      log(WARNING, tostring(problem) .. "; fixed wave intervals stay off")
+      O.interval = false
+    end
+  end
+  if O.defenders or O.growth or O.waves or O.interval then
     ok, problem = pcall(resolvePanel)
+    if ok and O.interval and G.menu == nil then
+      log(WARNING, MODULE_NAME .. ": fixed wave intervals stay off without the building menu")
+      O.interval = false
+    end
     if not ok then
       log(WARNING, tostring(problem) .. "; the outpost panel pages, defenders, growth and wave sizes stay off")
-      O.defenders, O.growth, O.waves, O.walls, O.riders = false, false, false, false, false
+      O.defenders, O.growth, O.waves, O.walls, O.riders, O.interval = false, false, false, false, false, false
     end
   end
   if O.siege or O.riders then
@@ -1770,7 +1872,7 @@ local function enable(self, config)
     end
   end
   allocate()
-  if O.defenders or O.growth or O.waves then hooks.registerHookCallback("afterInit", localizeWords) end
+  if O.defenders or O.growth or O.waves or O.interval then hooks.registerHookCallback("afterInit", localizeWords) end
 
   modules["map-extensions"]:registerSection(K.SAVE_SECTION, {
     initialize = function(_) wipe() end,

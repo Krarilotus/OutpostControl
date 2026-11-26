@@ -14,8 +14,7 @@ waves_exact_tooltip: Der Größen-Regler auf der Angreifer-Seite legt die exakte
 growth_group: Wellenwachstum
 growth_group_descr: Wie stark die Wellen eines Außenpostens im Verlauf des Spiels anwachsen.
 growth_enabled: Wachstum der Wellen festlegen
-growth_enabled_tooltip: |-
-  Der Wachstums-Regler auf der Angreifer-Seite unter Größe und Startverzögerung legt fest, um wie viel Prozent der ersten Welle jede Welle größer wird als die vorherige. 0 belässt alle Wellen gleich groß wie die erste (wie im Original); 50 fügt jedes Mal die Hälfte der ersten Welle hinzu; 100 fügt jedes Mal eine volle erste Welle hinzu (die 3. Welle ist dreimal so groß wie die erste). Das Wachstum endet bei 999 Truppen, und das Spiel sendet nie mehr als das Einheitenlimit erlaubt. Das Tempo der Wellen bleibt wie im Spiel: jede Welle etwas schneller.
+growth_enabled_tooltip: Der Regler vergr??ert jede Welle um einen Prozentsatz der ersten Welle. Bei 0 % bleibt die Gr??e gleich. Wellen wachsen bis auf 999 Truppen.
 jobs_group: Aufgaben der Angreifer
 jobs_group_descr: Verlässt eine Welle einen Außenposten, teilt sie sich nach Truppentyp auf und jeder Teil erhält eine passende Aufgabe. Die Werte unten bestimmen den Anteil für die erste Aufgabe; der Rest übernimmt die zweite. Katapulte und Feuerballisten haben unten eine eigene Einstellung.
 jobs_enabled: Angreifern Aufgaben zuweisen
@@ -61,7 +60,7 @@ diagnostics_log: Wellenverhalten protokollieren
 diagnostics_log_tooltip: Schreibt eine Zeile in ucp3.log, sobald eine Welle einen Außenposten verlässt und in Aufgaben aufgeteilt wird.
 wave_rule: Wellenregel
 wave_setting: Einstellung
-wave_details: Lege fest, welche Wellenregeln Kartenautoren nutzen können. Wellengröße, Startverzögerung und Wachstum in Prozent werden auf der Angreifer-Seite jedes Außenpostens bearbeitet.
+wave_details: Lege fest, welche Regler f?r Gr??e, Wachstum und Zeitabstand Kartenautoren nutzen k?nnen.
 job_unit: Einheit
 job_share: Erste Aufgabe (%)
 improvements: Verbesserungen
@@ -72,3 +71,8 @@ panel_attackers: Angreifer
 panel_defenders: Verteidiger
 panel_growth: Wachstum
 panel_amount: Menge
+waves_interval: Feste Wartezeit zwischen Angriffswellen
+waves_interval_tooltip: Der Regler in der Ansicht Zeit legt fest, wie lange der Au?enposten nach einer Welle wartet, bevor er die n?chste aufstellt. Bei 0 gilt die Wartezeit des Spiels.
+panel_size: Gr??e
+panel_timing: Zeit
+panel_interval: Intervall

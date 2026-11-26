@@ -72,6 +72,19 @@ options:
           value: false
         header: '{{growth_enabled}}'
       columns: 1
+    - name: outpost-control-waves-interval_row
+      display: GroupBox
+      header: '{{waves_interval}}'
+      children:
+      - url: outpost-control.waves.interval
+        name: outpost-control-waves-interval
+        text: '{{waves_interval_tooltip}}'
+        display: UCP2Switch
+        contents:
+          type: boolean
+          value: false
+        header: '{{waves_interval}}'
+      columns: 1
 - display: GroupBox
   category:
   - '{{ai}}'

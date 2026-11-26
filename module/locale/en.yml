@@ -42,7 +42,7 @@ defenders_knights_tooltip: 'Knight guards ride a patrol round their outpost in t
   within 10 tiles of them, and ride their patrol again once the building is down.
 
   '
-waves_group: Wave size
+waves_group: Wave settings
 waves_group_descr: 'How many troops each wave of an outpost has.
 
   '
@@ -61,20 +61,7 @@ growth_group_descr: 'How much bigger an outpost''s waves get over the game.
 
   '
 growth_enabled: Choose how much the waves grow
-growth_enabled_tooltip: 'The Growth slider on the outpost panel''s Attackers page, under Size and Start Delay: how
-  much
-
-  bigger each wave is than the one before, in percent of the first wave. 0 keeps every wave as
-
-  big as the first, as the game does; 50 adds half the first wave each time; 100 adds a whole
-
-  first wave each time (the 3rd wave is three times the first). Waves stop growing at 999
-
-  troops, and the game still sends no more than the army limit allows. How fast the waves come
-
-  stays as in the game: a little sooner after every wave.
-
-  '
+growth_enabled_tooltip: Growth adds a percentage of the first wave's size to every subsequent wave. At 0%, each wave keeps the same size. Waves stop growing at 999 troops.
 jobs_group: Attackers' jobs
 jobs_group_descr: 'When a wave leaves an outpost, its troops split up by type and each part gets a job that suits
 
@@ -203,8 +190,7 @@ diagnostics_log_tooltip: 'Writes a line to ucp3.log whenever a wave leaves an ou
   '
 wave_rule: Wave rule
 wave_setting: Setting
-wave_details: Configure the wave rules available to map authors. Wave size, start delay and growth percentage are
-  edited on each outpost’s Attackers page.
+wave_details: Choose which wave size, growth and timing controls map authors can use.
 job_unit: Unit
 job_share: First job (%)
 improvements: Improvements
@@ -215,3 +201,8 @@ panel_attackers: Attackers
 panel_defenders: Defenders
 panel_growth: Growth
 panel_amount: Amount
+waves_interval: Set a fixed wait between waves
+waves_interval_tooltip: The Timing view's Interval slider sets how long the outpost waits after a wave before forming the next. Set it to 0 for the game's timing.
+panel_size: Size
+panel_timing: Timing
+panel_interval: Interval
