@@ -776,12 +776,14 @@ end
 
 local function siegeTargets(owner)
   refreshSiegeTargets()
-  local targets = siegeCache[owner]
-  if targets.wallsReady then return targets end
-  targets.wallsReady = true
+  return siegeCache[owner]
+end
+
+local function siegeWalls(owner)
+  local walls = {}
   if F.playable and aliveLord(owner) then
     local cx, cy = rd32(player(owner) + P.CAMP), rd32(player(owner) + P.CAMP + 4)
-    local walls, radius = targets[2], K.SIEGE_WALL_RADIUS
+    local radius = K.SIEGE_WALL_RADIUS
     local minX, maxX = math.max(0, cx - radius), math.min(K.MAP_SIZE - 1, cx + radius)
     for y = math.max(0, cy - radius), math.min(K.MAP_SIZE - 1, cy + radius) do
       local row = rd32(G.rows + y * 12)
@@ -793,14 +795,14 @@ local function siegeTargets(owner)
       end
     end
   end
-  return targets
+  return walls
 end
 
 local function siegeBuckets(owner)
   local targets = siegeTargets(owner)
   if targets.buckets then return targets.buckets end
   local buckets = {}
-  for priority, list in ipairs(targets) do
+  for priority, list in ipairs({ targets[1], siegeWalls(owner), targets[3] }) do
     for _, target in ipairs(list) do
       local cell = (target.y // K.SIEGE_BUCKET) * K.MAP_SIZE + target.x // K.SIEGE_BUCKET
       local bucket = buckets[cell]
@@ -825,6 +827,49 @@ local function rankSiegeTarget(tier, limit, target, d)
     index = index - 1
   end
   tier[index + 1] = { target = target, d = d }
+end
+
+local function inWaveApproach(candidate, wave, cx, cy)
+  local x, y = candidate.x - cx, candidate.y - cy
+  return x * wave.dx + y * wave.dy >= math.abs(x * wave.dy - y * wave.dx)
+end
+
+local function siegeApproach(owner, x, y, wave, cx, cy)
+  local targets = siegeTargets(owner)
+  local key
+  if wave then
+    key = string.format("%d:%d:%d:%d:%d", x, y, wave.shift, cx, cy)
+  else
+    local cell = K.SIEGE_CELL
+    x, y = x - x % cell + cell // 2, y - y % cell + cell // 2
+    key = x * K.MAP_SIZE + y
+  end
+  targets.approaches = targets.approaches or {}
+  local approach = targets.approaches[key]
+  if approach then return approach end
+
+  local nearestBuckets, size = {}, K.SIEGE_BUCKET
+  for cell, bucket in pairs(siegeBuckets(owner)) do
+    if #bucket[2] > 0 then
+      local bx, by = (cell % K.MAP_SIZE) * size, (cell // K.MAP_SIZE) * size
+      local dx, dy = math.max(bx - x, x - bx - size + 1, 0), math.max(by - y, y - by - size + 1, 0)
+      nearestBuckets[#nearestBuckets + 1] = { cell = cell, walls = bucket[2], d = dx * dx + dy * dy }
+    end
+  end
+  table.sort(nearestBuckets, function(a, b) return a.d < b.d or (a.d == b.d and a.cell < b.cell) end)
+  local ranked, walls, limit = {}, {}, K.SIEGE_SHORTLIST[2]
+  for _, bucket in ipairs(nearestBuckets) do
+    if #ranked == limit and bucket.d > ranked[limit].d then break end
+    for _, candidate in ipairs(bucket.walls) do
+      if not wave or inWaveApproach(candidate, wave, cx, cy) then
+        rankSiegeTarget(ranked, limit, candidate, squared(x, y, candidate.x, candidate.y))
+      end
+    end
+  end
+  for index, entry in ipairs(ranked) do walls[index] = entry.target end
+  approach = { targets[1], walls, targets[3] }
+  targets.approaches[key] = approach
+  return approach
 end
 
 -- Rank nearby candidates once per approach cell and census. Keep space for every tier.
@@ -1127,16 +1172,21 @@ local function shootIfInRange(id)
       or squared(x, y, retry.x, retry.y) > K.SIEGE_RETRY_DISTANCE ^ 2
       or (retry.next > #retry.targets and (retry.census ~= siegeCache.census or retry.key ~= key)) then
     local center = K.SIEGE_CELL // 2
-    retry = { uid = uid, key = key, foes = foeMask, x = x, y = y, next = 1, census = siegeCache.census,
+    retry = { uid = uid, key = key, foes = foeMask, x = x, y = y, attempted = {}, census = siegeCache.census,
       targets = siegeShortlist(foes, key, cellX * K.SIEGE_CELL + center, cellY * K.SIEGE_CELL + center, range) }
     siegeRetries[id] = retry
+  end
+  -- Recheck range misses on movement while retaining native acquisition failures.
+  if retry.checkedX ~= x or retry.checkedY ~= y then
+    retry.checkedX, retry.checkedY, retry.next = x, y, 1
   end
   local tries = 0
   local reach = range * range
   for index = retry.next, #retry.targets do
     local target = retry.targets[index]
     retry.next = index + 1
-    if squared(x, y, target.x, target.y) <= reach and liveSiegeTarget(target) then
+    if not retry.attempted[index] and squared(x, y, target.x, target.y) <= reach and liveSiegeTarget(target) then
+      retry.attempted[index] = true
       local ready
       if target.tile then ready = tryWall(id, u, target) else ready = tryBuilding(id, u, target.id) end
       if ready then
@@ -1227,7 +1277,7 @@ local function siegeOrders(t, lead, target, focus)
   local nearest = focus
   local d2 = nearest and squared(x, y, nearest.x, nearest.y)
   if not nearest then
-    for priority, list in ipairs(siegeTargets(target)) do
+    for priority, list in ipairs(siegeApproach(target, x, y)) do
       if priority == 3 and nearest then break end
       for _, candidate in ipairs(list) do
         local d = squared(x, y, candidate.x, candidate.y)
@@ -1265,12 +1315,11 @@ local function waveFocus(wave, target, cx, cy)
     wave.dx, wave.dy = math.cos(angle), math.sin(angle)
     if not tick or not G.damageable then return nil end
     local nearest
-    for priority, list in ipairs(siegeTargets(target)) do
+    for priority, list in ipairs(siegeApproach(target, wave.x, wave.y, wave, cx, cy)) do
       if priority == 3 and wave.focus then break end
       for _, candidate in ipairs(list) do
-        local x, y = candidate.x - cx, candidate.y - cy
         local d = squared(wave.x, wave.y, candidate.x, candidate.y)
-        if x * wave.dx + y * wave.dy >= math.abs(x * wave.dy - y * wave.dx)
+        if inWaveApproach(candidate, wave, cx, cy)
             and (not nearest or d < nearest) and liveSiegeTarget(candidate) then
           wave.focus, nearest = candidate, d
         end
@@ -1371,9 +1420,9 @@ local function flank(t, ux, uy, cx, cy, wave, S)
   end
   if distance(ux, uy, S.flankX, S.flankY) <= 8 then
     S.flanked = true
-    return false
+  elseif moveToward(t, ux, uy, S.flankX, S.flankY, 0) then
+    S.wait = 2
   end
-  return moveToward(t, ux, uy, S.flankX, S.flankY, 0)
 end
 
 local function attackBuilding(ai, t, owner, x, y)
@@ -1494,9 +1543,9 @@ local function onDecide()
   end
 
   if job == K.JOB_FLANK then
-    if not S.flanked and flank(t, ux, uy, cx, cy, wave, S) then
-      S.wait = 2
-      return
+    if not S.flanked then
+      flank(t, ux, uy, cx, cy, wave, S)
+      if not S.flanked then return end
     end
     job = kind == K.KNIGHT and K.JOB_LORD or K.JOB_BUILDINGS
   end
