@@ -62,6 +62,8 @@ K.SIEGE_RANGE_KEY = { [39] = "catapult", [40] = "trebuchet", [77] = "fire_ballis
 K.BEHAVIOUR_MAIN, K.BEHAVIOUR_BACKUP = 20, 17
 K.ARMY_SLOTS = { [20] = { 0xC0, 0xC7 }, [17] = { 0xBA, 0xBC } }
 K.RANGED_TROOPS = { [22] = true, [23] = true, [70] = true, [72] = true, [74] = true, [76] = true }
+K.RANGED_PROJECTILE = { [22] = 1, [23] = 7, [70] = 1, [72] = 0x21, [74] = 1, [76] = 0x22 }
+K.MOAT_CAPABLE = { [22] = true, [24] = true, [25] = true, [26] = true, [30] = true, [71] = true }
 -- AICState::addUnitToItsTribe(unit, behaviour) (lord-hunt's pattern).
 K.AOB_ADD_TO_ITS_TRIBE = "56 57 8B 7C 24 0C 8B C7 69 C0 90 04 00 00 0F BF 90 ? ? ? ? 8B F2 69 F6 F4 39 00 00"
 
@@ -74,8 +76,8 @@ K.PLANS = {
   { kind = 27, name = "swordsmen", first = K.JOB_WALLS, rest = K.JOB_BUILDINGS, share = 60 },
   { kind = 75, name = "arab_swordsmen", first = K.JOB_WALLS, rest = K.JOB_BUILDINGS, share = 50 },
   { kind = 28, name = "knights", first = K.JOB_LORD, rest = K.JOB_PATROL, share = 40 },
-  { kind = 22, name = "archers", first = K.JOB_MOAT, rest = K.JOB_ENGAGE, share = 30 },
-  { kind = 70, name = "arab_archers", first = K.JOB_MOAT, rest = K.JOB_ENGAGE, share = 30 },
+  { kind = 22, name = "archers", first = K.JOB_MOAT, rest = K.JOB_ENGAGE, share = 0 },
+  { kind = 70, name = "arab_archers", first = K.JOB_ENGAGE, rest = K.JOB_ENGAGE, share = 0 },
   { kind = 72, name = "slingers", first = K.JOB_PATROL, rest = K.JOB_ENGAGE, share = 30 },
   { kind = 74, name = "horse_archers", first = K.JOB_PATROL, rest = K.JOB_ENGAGE, share = 100 },
   { kind = 76, name = "fire_throwers", first = K.JOB_BUILDINGS, rest = K.JOB_ENGAGE, share = 60 },
@@ -190,9 +192,9 @@ K.MAX_BUILDINGS = 2000         -- the building array, both exes
 K.MAX_TRIBES = 1250            -- the troop array, both exes
 K.EURO_ARCHER, K.ARAB_ARCHER = 22, 70
 K.OUTPOST_EURO, K.OUTPOST_ARAB = 106, 107
-K.KIND_RANGED, K.KIND_MELEE, K.KIND_SIEGE = 0xB6, 0xB8, 0xB9
+K.KIND_MELEE = 0xB8
 K.STANCE_AGGRESSIVE = 2
-K.ORDER_ATTACK_UNIT, K.ORDER_ATTACK_WALL_AT, K.ORDER_DIG_MOAT = 4, 7, 0x23
+K.ORDER_ATTACK_UNIT, K.ORDER_ATTACK_WALL_AT, K.ORDER_FILL_MOAT = 4, 0x17, 7
 K.ORDER_ATTACK_BUILDING = 9
 K.TEXT_BUTTON = 332           -- the outpost's own text button picture
 -- The page button, over the panel's title (the title is drawn at 25, 463).
@@ -345,7 +347,6 @@ K.SHOOTING = { [8] = true, [2] = true, [4] = true }
 K.SHOOT_BEFORE_STOP = 10          -- what the game's own idle code sets
 K.SIEGE_TRIES, K.SIEGE_REFRESH = 3, 160
 K.SIEGE_WALL_RADIUS, K.SIEGE_WALL_LIMIT = 48, 64
-K.SIEGE_WALL_ORDER = 0x17
 K.SIEGE_GATE = { [47] = true, [48] = true, [49] = true }
 K.MAP_TILES = 80400
 -- acquireShootTarget's attack-at-tile branch.
@@ -662,7 +663,7 @@ local function gameChoice(ai, t, kind)
   F.decide(ai, t)
 end
 
--- The game's own path to the castle: where it is blocked, and whether that is moat.
+-- Returns the first obstacle on the game's path to the castle and whether it is a wall.
 local function breach(owner, target, x, y)
   wr32(G.scratch, 0)
   wr32(G.scratch + 4, 0)
@@ -794,7 +795,7 @@ end
 
 local function tryWall(id, u, wall)
   local order, x, y = rd16(u + U.TARGETING), rd16(u + U.WALL_X), rd16(u + U.WALL_Y)
-  wr16(u + U.TARGETING, K.SIEGE_WALL_ORDER)
+  wr16(u + U.TARGETING, K.ORDER_ATTACK_WALL_AT)
   wr16(u + U.WALL_X, wall.x)
   wr16(u + U.WALL_Y, wall.y)
   if F.acquire(G.unitsThis, id) ~= 0 then return true end
@@ -1075,6 +1076,20 @@ local function onSiegeUnit()
   shootIfInRange(rd32(G.siegeUnit))
 end
 
+local function moveToward(t, x, y, tx, ty, standoff)
+  local d = math.sqrt(squared(x, y, tx, ty))
+  if d <= standoff then return end
+  local scale = standoff / d
+  local px = math.floor(tx + (x - tx) * scale + 0.5)
+  local py = math.floor(ty + (y - ty) * scale + 0.5)
+  for _, step in ipairs({ 0, 2, -2 }) do
+    if freeSpot(t, px + step, py - step) then
+      F.command(G.tribesThis, t, px + step, py - step, 1)
+      return
+    end
+  end
+end
+
 -- Advance toward a reachable firing position on the near side of a fortification.
 local function siegeOrders(t, lead, target)
   if not G.ticks then siegeCache = {} end
@@ -1102,15 +1117,14 @@ local function siegeOrders(t, lead, target)
   end
   if not nearest or d2 == 0 then return end
 
-  local range = siegeRange(kind)
-  local scale = math.min(range * 0.8 / math.sqrt(d2), 0.7)
-  local tx = math.floor(nearest.x + (x - nearest.x) * scale + 0.5)
-  local ty = math.floor(nearest.y + (y - nearest.y) * scale + 0.5)
-  for _, step in ipairs({ 0, 2, -2 }) do
-    if freeSpot(t, tx + step, ty - step) then
-      F.command(G.tribesThis, t, tx + step, ty - step, 1)
-      return
-    end
+  moveToward(t, x, y, nearest.x, nearest.y, math.min(siegeRange(kind) * 0.8, math.sqrt(d2) * 0.7))
+end
+
+local function engageRanged(t, kind, ux, uy, x, y)
+  F.setStance(G.tribesThis, t, K.STANCE_DEFENSIVE)
+  if G.ranges then
+    local range = rd32(G.ranges + K.RANGED_PROJECTILE[kind] * 4)
+    moveToward(t, ux, uy, x, y, range * 0.7)
   end
 end
 
@@ -1133,12 +1147,12 @@ local function onDecide()
     siegeOrders(t, lead, target)
     return
   end
-  if target < 1 or target > 8 or lead == nil or lead <= 0 then
-    gameChoice(ai, t, nil)
-    return
-  end
+  if target < 1 or target > 8 or not lead or lead <= 0 then return end
   local lu = unit(lead)
   local ux, uy = rd16(lu + U.X), rd16(lu + U.Y)
+  local kind = rd16(lu + U.TYPE)
+  local ranged = K.RANGED_TROOPS[kind]
+  local cx, cy = rd32(player(target) + P.CAMP), rd32(player(target) + P.CAMP + 4)
 
   if job == K.JOB_PATROL and S.x ~= nil then
     if distance(ux, uy, S.x, S.y) > K.PATROL_ARRIVED and S.wait > 0 then
@@ -1151,20 +1165,20 @@ local function onDecide()
   end
 
   if job == K.JOB_MOAT or job == K.JOB_WALLS then
-    local moat, x, y = breach(owner, target, ux, uy)
-    local tile = moat ~= nil and tileAt(x, y) or nil
-    if moat and tile ~= nil then
-      F.instruction(G.tribesThis, t, K.ORDER_DIG_MOAT, tile, 0, 0)
+    local isWall, x, y = breach(owner, target, ux, uy)
+    if isWall == false and job == K.JOB_MOAT and K.MOAT_CAPABLE[kind] then
+      F.instruction(G.tribesThis, t, K.ORDER_FILL_MOAT, x, y, 1000)
       S.wait = K.WAIT[job]
       return
     end
-    if job == K.JOB_WALLS and moat == false then
-      F.instruction(G.tribesThis, t, K.ORDER_ATTACK_WALL_AT, x, y, 1000)
-      S.wait = K.WAIT[job]
-      return
+    if isWall and job == K.JOB_WALLS and not ranged then
+      local tile = tileAt(x, y)
+      if tile then
+        F.instruction(G.tribesThis, t, K.ORDER_ATTACK_WALL_AT, tile, 0, 0)
+        S.wait = K.WAIT[job]
+        return
+      end
     end
-    gameChoice(ai, t, nil)
-    return
   end
 
   local lord = aliveLord(target)
@@ -1178,23 +1192,20 @@ local function onDecide()
   end
 
   if job == K.JOB_PATROL then
-    local cx, cy
-    if lord ~= nil then
-      cx, cy = lord.x, lord.y
-    else
-      cx, cy = rd32(player(target) + P.CAMP), rd32(player(target) + P.CAMP + 4)
-    end
-    local x, y, step = patrolPoint(ai, t, cx, cy, S.step)
+    local x, y, step = patrolPoint(ai, t, lord and lord.x or cx, lord and lord.y or cy, S.step)
     if x ~= nil then
       F.command(G.tribesThis, t, x, y, 1)
       S.x, S.y, S.step, S.wait = x, y, step, K.WAIT[K.JOB_PATROL]
       return
     end
-    gameChoice(ai, t, nil)
-    return
   end
 
-  gameChoice(ai, t, nil)
+  if ranged then
+    engageRanged(t, kind, ux, uy, cx, cy)
+    S.wait = 3
+  else
+    gameChoice(ai, t, job == K.JOB_BUILDINGS and K.KIND_MELEE or nil)
+  end
 end
 
 ---------------------------------------------------------------------------------------
@@ -1563,9 +1574,7 @@ local function resolveInterval()
   G.interval = site
 end
 
-local function resolveSiege()
-  local acquire = scan(K.AOB_ACQUIRE, "acquireShootTarget")
-  G.ranges = rangeTable(acquire + K.ACQUIRE_RANGE)
+local function resolveSiege(acquire)
   F.acquire = core.exposeCode(acquire, 2, 1)
   F.halt = core.exposeCode(scan(K.AOB_HALT, "the game's stop walking"), 2, 1)
 end
@@ -1821,9 +1830,7 @@ local function install(self)
     callTo(G.launchSite, assemble(templates.launch, values))
 
     values.JOBS, values.JOB_UIDS, values.TRIBE_STRIDE = G.jobs, G.jobUids, G.tribeStride
-    values.TRIBE_UID, values.TRIBE_KIND = G.tribes + T.UID, G.tribes + G.tribeKind
-    values.JOB_ENGAGE, values.JOB_BUILDINGS = K.JOB_ENGAGE, K.JOB_BUILDINGS
-    values.KIND_RANGED, values.KIND_MELEE = K.KIND_RANGED, K.KIND_MELEE
+    values.TRIBE_UID = G.tribes + T.UID
     values.DECIDE_TRIBE, values.DECIDE_THIS, values.DECIDE = G.decideTribe, G.decideThis, G.decide
     values.RETARGET, values.SET_TARGET = O.retarget and 1 or 0, G.setTarget
     values.TRIBE_TARGET, values.TRIBE_OWNER = G.tribes + G.tribeTarget, G.tribes + T.OWNER
@@ -2007,11 +2014,19 @@ local function enable(self, config)
       O.defenders, O.growth, O.waves, O.walls, O.riders, O.interval = false, false, false, false, false, false
     end
   end
-  if O.siege or O.riders then
-    ok, problem = pcall(resolveSiege)
-    if not ok then
-      log(WARNING, tostring(problem) .. "; siege engines on the way and knights attacking buildings stay off")
-      O.siege, O.riders = false, false
+  if O.siege or O.riders or O.jobs then
+    local acquire
+    ok, problem = pcall(function()
+      acquire = scan(K.AOB_ACQUIRE, "acquireShootTarget")
+      G.ranges = rangeTable(acquire + K.ACQUIRE_RANGE)
+    end)
+    if not ok and O.jobs then log(WARNING, tostring(problem) .. "; ranged wave movement stays off") end
+    if O.siege or O.riders then
+      if ok then ok, problem = pcall(resolveSiege, acquire) end
+      if not ok then
+        log(WARNING, tostring(problem) .. "; siege engines on the way and knights attacking buildings stay off")
+        O.siege, O.riders = false, false
+      end
     end
   end
   if O.siege then

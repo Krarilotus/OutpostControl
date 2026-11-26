@@ -64,7 +64,8 @@ gets a job that suits it:
 | Swordsmen | hack at walls and gates (60%) | wreck buildings |
 | Arabian swordsmen | hack at walls and gates (50%) | wreck buildings |
 | Knights | hunt the lord (40%) | ride round the castle |
-| Archers, Arabian archers | fill the moat (30%) | walk up and shoot the troops they meet |
+| Archers | fill the moat (0%) | approach at firing distance |
+| Arabian archers | approach at firing distance | approach at firing distance |
 | Slingers | walk round the castle (30%) | walk up and shoot the troops they meet |
 | Horse archers | ride round the castle (100%) | walk up and shoot the troops they meet |
 | Fire throwers | burn buildings (60%) | walk up and burn the troops they meet |
@@ -137,9 +138,9 @@ guards you set (at least one, as archers), and its waves are the game's own size
   post-wave speed-up (`+100` wave counter, `+4` unit pace -> `+growth`, pace = counter / 25).
 * The wave's `aiRegisterTribeAndAssignTarget` call -> lua splits the troop by unit type into new
   troops (`createTribeForPlayer`, `addUnitToTribe`...), each registered the same way.
-* `makeOutpostTribesAttack`'s call of `decideOnTribeAttackLocation`: job troops "fight troops" /
-  "attack buildings" get the game's ranged / melee branch by their kind field; moat, walls, lord
-  and patrol jobs are decided in lua with the game's path-to-castle search and tribe orders.
+* `makeOutpostTribesAttack`'s call of `decideOnTribeAttackLocation` routes job troops through
+  the existing order callback. It uses the game's path-to-castle search, separate moat and
+  melee-wall orders, and defensive ranged movement.
 * Outpost panel: prologue hooks on the panel text, the troop button render/click and the size
   slider handler. The page and scope buttons use the native button renderer. Attackers uses
   one pair of slider rows per scope when intervals are enabled. Defenders shows only Amount.

@@ -507,8 +507,7 @@ ret 8
 -- Replaces makeOutpostTribesAttack's call of decideOnTribeAttackLocation(tribe). With RETARGET,
 -- a troop whose target player is beaten (his lord is dead) first gets a new one from the game's
 -- own choice (setTargetForTribeBasedOnTargetChoiceLogic: the nearest enemy whose lord lives).
--- Troops with a job "fight troops" or "attack buildings" take the game's own ranged or melee
--- choice; the others are lua's.
+-- Troops with a matching job and UID use the outpost's order callback.
 templates.decide = [[
 if RETARGET <> 0
 mov eax,[esp+4]
@@ -558,18 +557,6 @@ mov ecx,[ecx+TRIBE_UID]
 cmp ecx,[JOB_UIDS+eax*4]
 pop ecx
 jne original
-cmp edx,JOB_ENGAGE
-jne not_engage
-imul eax,eax,TRIBE_STRIDE
-mov word [eax+TRIBE_KIND],KIND_RANGED
-jmp original
-not_engage:
-cmp edx,JOB_BUILDINGS
-jne own
-imul eax,eax,TRIBE_STRIDE
-mov word [eax+TRIBE_KIND],KIND_MELEE
-jmp original
-own:
 mov [DECIDE_TRIBE],eax
 mov [DECIDE_THIS],ecx
 call PAD
