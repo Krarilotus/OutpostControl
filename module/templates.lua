@@ -1070,7 +1070,7 @@ euro:
 cmp ecx,11
 jne defenderWords
 ; Use the Arabian Attacker button's shorter native Swordsmen label.
-push 10
+push 11
 push 0x40
 jmp getDefenderWords
 defenderWords:
