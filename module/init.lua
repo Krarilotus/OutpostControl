@@ -1759,7 +1759,8 @@ local function enable(self, config)
   if G.ticks and (O.siege or O.riders) then
     ok, problem = pcall(function()
       -- smarter-recruits patches the 8 bytes before the update table read.
-      local call = scan(K.AOB_UPDATE_CALL, "where every unit's update function is called")
+      local call, reason = core.AOBScanUnique(K.AOB_UPDATE_CALL)
+      if not call then error(MODULE_NAME .. ": unit update dispatch " .. reason) end
       G.currentUnit = readOperand(call, K.UPDATE_CURRENT, "the current unit")
       G.updateTable = readOperand(call, K.UPDATE_TABLE, "the update function table")
     end)
