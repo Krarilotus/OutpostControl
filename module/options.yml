@@ -101,6 +101,18 @@ options:
       type: boolean
       value: false
     header: '{{jobs_enabled}}'
+  - url: outpost-control.jobs.variation
+    name: outpost-control-jobs-variation
+    display: Slider
+    header: '{{jobs_variation}}'
+    text: '{{jobs_variation_tooltip}}'
+    contents:
+      type: integer
+      min: 0
+      max: 50
+      step: 5
+      value: 0
+    enabled: outpost-control.jobs.enabled
   - name: wave_job_shares
     display: Group
     table:
@@ -134,7 +146,7 @@ options:
         display: Slider
         contents:
           type: integer
-          value: 50
+          value: 40
           min: 0
           max: 100
           step: 5
@@ -150,7 +162,7 @@ options:
         display: Slider
         contents:
           type: integer
-          value: 30
+          value: 40
           min: 0
           max: 100
           step: 5
@@ -182,7 +194,7 @@ options:
         display: Slider
         contents:
           type: integer
-          value: 50
+          value: 60
           min: 0
           max: 100
           step: 5
@@ -198,7 +210,7 @@ options:
         display: Slider
         contents:
           type: integer
-          value: 40
+          value: 50
           min: 0
           max: 100
           step: 5
@@ -214,7 +226,7 @@ options:
         display: Slider
         contents:
           type: integer
-          value: 0
+          value: 60
           min: 0
           max: 100
           step: 5
@@ -230,7 +242,7 @@ options:
         display: Slider
         contents:
           type: integer
-          value: 0
+          value: 60
           min: 0
           max: 100
           step: 5
@@ -246,7 +258,7 @@ options:
         display: Slider
         contents:
           type: integer
-          value: 30
+          value: 40
           min: 0
           max: 100
           step: 5
@@ -262,7 +274,7 @@ options:
         display: Slider
         contents:
           type: integer
-          value: 100
+          value: 70
           min: 0
           max: 100
           step: 5
@@ -278,7 +290,7 @@ options:
         display: Slider
         contents:
           type: integer
-          value: 60
+          value: 50
           min: 0
           max: 100
           step: 5

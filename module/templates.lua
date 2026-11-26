@@ -550,6 +550,14 @@ jae original
 movzx edx,byte [JOBS+eax]
 test edx,edx
 jz original
+if JOBS_ON = 0
+cmp edx,JOB_SIEGE
+jne original
+end if
+if SIEGE_ON = 0
+cmp edx,JOB_SIEGE
+je original
+end if
 push ecx
 mov ecx,eax
 imul ecx,ecx,TRIBE_STRIDE

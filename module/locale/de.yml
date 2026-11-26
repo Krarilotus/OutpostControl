@@ -18,30 +18,29 @@ growth_enabled_tooltip: Der Regler vergr??ert jede Welle um einen Prozentsatz de
 jobs_group: Aufgaben der Angreifer
 jobs_group_descr: Verlässt eine Welle einen Außenposten, teilt sie sich nach Truppentyp auf und jeder Teil erhält eine passende Aufgabe. Die Werte unten bestimmen den Anteil für die erste Aufgabe; der Rest übernimmt die zweite. Katapulte und Feuerballisten haben unten eine eigene Einstellung.
 jobs_enabled: Angreifern Aufgaben zuweisen
-jobs_enabled_tooltip: |-
-  Ohne diese Option macht eine ganze Welle dasselbe: hinlaufen, Gebäude angreifen und ab und zu den Burggraben zuschütten. Mit ihr teilt sich die Welle in Truppen auf, die Gräben füllen, Mauern und Tore einschlagen, Gebäude anzünden und zerstören, gegnerische Truppen beschießen, um die Burg reiten oder den Lord jagen. Eine Truppe ohne offene Aufgabe (Graben voll, keine Mauer im Weg) greift wie die gesamte Welle an.
+jobs_enabled_tooltip: Teilt Angriffswellen in Gruppen auf, die Gr?ben zusch?tten, Mauern angreifen, Feuerstellungen halten, andere Gruppen begleiten oder die Burg flankieren.
 jobs_slaves: Sklaven, die den Burggraben zuschütten (%)
 jobs_slaves_tooltip: Der Rest brennt Gebäude nieder und zerstört sie.
 jobs_spearmen: Lanzenträger, die den Burggraben zuschütten (%)
-jobs_spearmen_tooltip: Der Rest schlägt auf Mauern und Tore ein.
-jobs_macemen: Streitkolbenkämpfer, die den Burggraben zuschütten (%)
+jobs_spearmen_tooltip: Der Rest begleitet eine andere Gruppe.
+jobs_macemen: Streitkolbentr?ger zum Flankieren (%)
 jobs_macemen_tooltip: Der Rest zerstört Gebäude.
 jobs_swordsmen: Schwertkämpfer gegen Mauern und Tore (%)
-jobs_swordsmen_tooltip: Der Rest zerstört Gebäude.
+jobs_swordsmen_tooltip: Der Rest begleitet eine andere Gruppe.
 jobs_arab_swordsmen: Arabische Schwertkämpfer gegen Mauern und Tore (%)
-jobs_arab_swordsmen_tooltip: Der Rest zerstört Gebäude.
-jobs_knights: Ritter auf Jagd nach dem Lord (%)
-jobs_knights_tooltip: Der Rest reitet um die Burg herum und schlägt alles außerhalb der Mauern nieder. Ist der Lord unerreichbar, reiten die Jäger ebenfalls um die Burg.
-jobs_archers: Bogenschützen, die den Burggraben zuschütten (%)
-jobs_archers_tooltip: Der Rest marschiert vor und beschießt begegnende Truppen.
-jobs_arab_archers: Arabische Bogenschützen, die den Burggraben zuschütten (%)
-jobs_arab_archers_tooltip: Der Rest marschiert vor und beschießt begegnende Truppen.
-jobs_slingers: Steinschleuderer auf Umrundung der Burg (%)
-jobs_slingers_tooltip: Sie laufen um die Burg und beschießen alles außerhalb der Mauern. Der Rest marschiert vor und beschießt begegnende Truppen.
+jobs_arab_swordsmen_tooltip: Der Rest begleitet eine andere Gruppe.
+jobs_knights: Ritter zum Flankieren (%)
+jobs_knights_tooltip: Flankierende Ritter versuchen, den Lord zu erreichen. Der Rest patrouilliert um die Burg.
+jobs_archers: Bogensch?tzen in Feuerstellung (%)
+jobs_archers_tooltip: Der Rest begleitet eine andere Gruppe.
+jobs_arab_archers: Arabische Bogensch?tzen in Feuerstellung (%)
+jobs_arab_archers_tooltip: Der Rest begleitet eine andere Gruppe.
+jobs_slingers: Steinschleuderer zum Flankieren (%)
+jobs_slingers_tooltip: Der Rest h?lt Feuerstellungen.
 jobs_horse_archers: Berittene Bogenschützen auf Umrundung der Burg (%)
-jobs_horse_archers_tooltip: Sie reiten um die Burg und beschießen alles außerhalb der Mauern. Der Rest marschiert vor und beschießt begegnende Truppen.
+jobs_horse_archers_tooltip: Der Rest flankiert die Burg.
 jobs_fire_throwers: Feuerwerfer zum Anzünden von Gebäuden (%)
-jobs_fire_throwers_tooltip: Der Rest marschiert vor und bekämpft begegnende Truppen mit Feuer.
+jobs_fire_throwers_tooltip: Der Rest begleitet eine andere Gruppe.
 siege_group: Belagerungsgeräte unterwegs
 siege_group_descr: Katapulte und Feuerballisten aus einem Außenposten beschießen Ziele auf ihrem Weg wie die Plünderungs-Belagerungsgeräte der KI.
 siege_enabled: Ziele unterwegs beschießen
@@ -76,3 +75,5 @@ waves_interval_tooltip: Der Regler in der Ansicht Zeit legt fest, wie lange der 
 panel_size: Gr??e
 panel_timing: Zeit
 panel_interval: Intervall
+jobs_variation: Wellenvariation (%)
+jobs_variation_tooltip: Variiert Aufgabenanteile und Anmarschwege zwischen Wellen. Bei 0 bleiben die Anteile fest und der Anmarsch erfolgt direkt.

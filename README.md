@@ -59,21 +59,22 @@ gets a job that suits it:
 | Unit | First job (default share) | The rest |
 | --- | --- | --- |
 | Slaves | fill the moat (50%) | burn and wreck buildings |
-| Spearmen | fill the moat (50%) | hack at walls and gates |
-| Macemen | fill the moat (30%) | wreck buildings |
-| Swordsmen | hack at walls and gates (60%) | wreck buildings |
-| Arabian swordsmen | hack at walls and gates (50%) | wreck buildings |
-| Knights | hunt the lord (40%) | ride round the castle |
-| Archers | fill the moat (0%) | approach at firing distance |
-| Arabian archers | approach at firing distance | approach at firing distance |
-| Slingers | walk round the castle (30%) | walk up and shoot the troops they meet |
-| Horse archers | ride round the castle (100%) | walk up and shoot the troops they meet |
-| Fire throwers | burn buildings (60%) | walk up and burn the troops they meet |
+| Spearmen | fill the moat (40%) | escort |
+| Macemen | flank (40%) | wreck buildings |
+| Swordsmen and Arabian swordsmen | breach walls (60%) | escort |
+| Knights | flank and hunt the lord (50%) | patrol |
+| Archers and Arabian archers | overwatch (60%) | escort |
+| Crossbowmen | overwatch (100%) | |
+| Slingers | flank (40%) | overwatch |
+| Horse archers | patrol (70%) | flank |
+| Fire throwers | burn buildings (50%) | escort |
 
-Riding round the castle means circling it a good way out and cutting down workers and troops
-outside the walls. Knights only go for the lord when they can reach him; otherwise they ride
-round the castle too. A troop with nothing left to do (the moat is filled, no wall in the way)
-attacks the way the whole wave would have. Every share can be changed in the settings.
+Overwatch groups hold defensive firing positions and look for nearby high ground. Escorts screen
+a sibling siege, breach or moat group when one is available. Flankers approach from the side.
+The other groups in a wave share an approach, and faster assault troops can wait briefly for
+a slow sibling group. The Wave variation slider varies shares and approaches without drawing
+from the game's random number generator. Job IDs are kept in saves. Reloaded groups choose
+positions from the target castle when their shared launch state is unavailable.
 
 ## Siege engines on the way
 

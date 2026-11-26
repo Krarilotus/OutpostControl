@@ -71,64 +71,33 @@ jobs_group_descr: 'When a wave leaves an outpost, its troops split up by type an
 
   '
 jobs_enabled: Give the attackers jobs
-jobs_enabled_tooltip: 'Without this, a whole wave does one thing: walk up and attack a building, now and then digging
-
-  at the moat. With it, the wave splits into troops that fill the moat, hack at walls and gates,
-
-  burn and wreck buildings, shoot the troops they meet, ride round the castle or hunt the lord.
-
-  A troop with nothing left to do for its job (moat filled, no wall in the way) attacks the way
-
-  the whole wave would have.
-
-  '
+jobs_enabled_tooltip: Splits outpost waves into groups that fill moats, break walls, hold firing positions, escort another group or flank the castle.
 jobs_slaves: Slaves filling the moat (%)
 jobs_slaves_tooltip: 'The rest burn and wreck buildings.
 
   '
 jobs_spearmen: Spearmen filling the moat (%)
-jobs_spearmen_tooltip: 'The rest hack at walls and gates.
-
-  '
-jobs_macemen: Macemen filling the moat (%)
+jobs_spearmen_tooltip: The rest escort another group.
+jobs_macemen: Macemen flanking (%)
 jobs_macemen_tooltip: 'The rest wreck buildings.
 
   '
 jobs_swordsmen: Swordsmen attacking walls and gates (%)
-jobs_swordsmen_tooltip: 'The rest wreck buildings.
-
-  '
+jobs_swordsmen_tooltip: The rest escort another group.
 jobs_arab_swordsmen: Arabian swordsmen attacking walls and gates (%)
-jobs_arab_swordsmen_tooltip: 'The rest wreck buildings.
-
-  '
-jobs_knights: Knights hunting the lord (%)
-jobs_knights_tooltip: 'The rest ride round the castle and cut down whoever is outside the walls. When the lord cannot
-  be reached, the hunters ride round the castle too.
-
-  '
-jobs_archers: Archers filling the moat (%)
-jobs_archers_tooltip: 'The rest walk up and shoot the troops they meet.
-
-  '
-jobs_arab_archers: Arabian archers filling the moat (%)
-jobs_arab_archers_tooltip: 'The rest walk up and shoot the troops they meet.
-
-  '
-jobs_slingers: Slingers riding round the castle (%)
-jobs_slingers_tooltip: 'They walk round the castle and shoot whoever is outside the walls. The rest walk up and
-  shoot the troops they meet.
-
-  '
+jobs_arab_swordsmen_tooltip: The rest escort another group.
+jobs_knights: Knights flanking (%)
+jobs_knights_tooltip: Flanking knights try to reach the lord. The rest patrol around the castle.
+jobs_archers: Archers holding firing positions (%)
+jobs_archers_tooltip: The rest escort another group.
+jobs_arab_archers: Arabian archers holding firing positions (%)
+jobs_arab_archers_tooltip: The rest escort another group.
+jobs_slingers: Slingers flanking (%)
+jobs_slingers_tooltip: The rest hold firing positions.
 jobs_horse_archers: Horse archers riding round the castle (%)
-jobs_horse_archers_tooltip: 'They ride round the castle and shoot whoever is outside the walls. The rest walk up
-  and shoot the troops they meet.
-
-  '
+jobs_horse_archers_tooltip: The rest flank the castle.
 jobs_fire_throwers: Fire throwers burning buildings (%)
-jobs_fire_throwers_tooltip: 'The rest walk up and burn the troops they meet.
-
-  '
+jobs_fire_throwers_tooltip: The rest escort another group.
 siege_group: Siege engines on the way
 siege_group_descr: 'Catapults and fire ballistas from an outpost shoot at what they pass, like the AI''s raiding
 
@@ -206,3 +175,5 @@ waves_interval_tooltip: The Timing view's Interval slider sets how long the outp
 panel_size: Size
 panel_timing: Timing
 panel_interval: Interval
+jobs_variation: Wave variation (%)
+jobs_variation_tooltip: Vary job shares and approaches between waves. Set to 0 for fixed shares and a direct approach.
