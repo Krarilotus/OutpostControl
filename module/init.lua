@@ -328,9 +328,9 @@ K.TEAMS_OPERAND = 0x03
 K.AOB_ACQUIRE = "83 EC 40 53 56 57 8B 7C 24 50 69 FF 90 04 00 00 8B F1 0F BF 84 37 AA 06 00 00"
 K.ACQUIRE_RANGE = 0x131
 K.RANGE_READ = { 0x8B, 0x04, 0x85 }
--- Native projectile ranges starting at index 20. Index 20 can be changed by range mods.
-K.AOB_PROJECTILE_RANGES = "? ? ? ? 00 00 00 00 00 00 00 00 4B 00 00 00 36 00 00 00 36 00 00 00 00 00 00 00"
-K.PROJECTILE_RANGES_OFFSET = 20 * 4
+-- The native crossbow range check also reads from that table.
+K.AOB_XBOW_RANGE = "83 FB 17 75 0B 8B 0D ? ? ? ? 0F AF C9 EB 44 83 FB 46"
+K.XBOW_RANGE_ENTRY = { 5, { 0x8B, 0x0D } }
 -- updateUnits, where it calls each unit's update function from the table by unit type.
 K.AOB_UPDATE_CALL = "0F BF 91 A2 06 00 00 8B 04 95 ? ? ? ? FF D0"
 K.UPDATE_TABLE = { 0x07, { 0x8B, 0x04, 0x95 } }
@@ -2356,9 +2356,10 @@ local function enable(self, config)
     if not acquire then log(WARNING, MODULE_NAME .. ": acquireShootTarget " .. reason) end
     G.ranges = nativeRangeTable(site)
     if not G.ranges then
-      local ranges, problem = core.AOBScanUnique(K.AOB_PROJECTILE_RANGES)
-      if ranges then
-        G.ranges = ranges - K.PROJECTILE_RANGES_OFFSET
+      local crossbow, problem = core.AOBScanUnique(K.AOB_XBOW_RANGE)
+      if crossbow then
+        G.ranges = readOperand(crossbow, K.XBOW_RANGE_ENTRY, "the crossbow range")
+          - K.RANGED_PROJECTILE[23] * 4
       else
         log(WARNING, MODULE_NAME .. ": projectile ranges " .. problem .. "; ranged standoff stays off")
       end
