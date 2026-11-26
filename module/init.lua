@@ -412,6 +412,9 @@ local function setting(config, group, name)
 end
 
 local function percent(value)
+  if type(value) == "table" then
+    value = value.sliderValue
+  end
   value = math.tointeger(math.floor(tonumber(value) or 0)) or 0
   if value < 0 then return 0 end
   if value > 100 then return 100 end
