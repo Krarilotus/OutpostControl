@@ -42,3 +42,10 @@ and jobs are stored in maps and saves through `map-extensions`. Player-facing de
   delay item is hidden (item +0x36) on the Defenders page.
 * Per-building entries (uid, troop bits, amount, growth) and the job table go into the
   `outpost-control` map-extensions section.
+
+## Vanilla and Recommended
+
+Every option of the module is off by default, so the module alone plays like the original
+game. Two plugins in this repository form the Outpost Control family in the launcher:
+`outpost-control-recommended` (offered first) switches on the recommended settings, `outpost-control-vanilla`
+keeps everything off. Plugins that build on the module set the options they need themselves.

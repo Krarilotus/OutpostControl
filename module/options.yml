@@ -13,7 +13,7 @@ options:
     display: UCP2Switch
     contents:
       type: boolean
-      value: true
+      value: false
     header: '{{defenders_enabled}}'
   - url: outpost-control.defenders.walls
     name: outpost-control-defenders-walls
@@ -21,7 +21,7 @@ options:
     display: UCP2Switch
     contents:
       type: boolean
-      value: true
+      value: false
     header: '{{defenders_walls}}'
   - url: outpost-control.defenders.knights
     name: outpost-control-defenders-knights
@@ -29,7 +29,7 @@ options:
     display: UCP2Switch
     contents:
       type: boolean
-      value: true
+      value: false
     header: '{{defenders_knights}}'
 - display: GroupBox
   category:
@@ -56,7 +56,7 @@ options:
         display: UCP2Switch
         contents:
           type: boolean
-          value: true
+          value: false
         header: '{{waves_exact}}'
       columns: 1
     - name: outpost-control-growth-enabled_row
@@ -69,7 +69,7 @@ options:
         display: UCP2Switch
         contents:
           type: boolean
-          value: true
+          value: false
         header: '{{growth_enabled}}'
       columns: 1
 - display: GroupBox
@@ -86,7 +86,7 @@ options:
     display: UCP2Switch
     contents:
       type: boolean
-      value: true
+      value: false
     header: '{{jobs_enabled}}'
   - name: wave_job_shares
     display: Group
@@ -285,7 +285,7 @@ options:
     display: UCP2Switch
     contents:
       type: boolean
-      value: true
+      value: false
     header: '{{siege_enabled}}'
 - display: GroupBox
   category:
@@ -301,7 +301,7 @@ options:
     display: UCP2Switch
     contents:
       type: boolean
-      value: true
+      value: false
     header: '{{retarget_enabled}}'
 - display: GroupBox
   category:

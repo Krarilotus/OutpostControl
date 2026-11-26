@@ -76,13 +76,13 @@ K.PLANS = {
 }
 
 K.DEFAULTS = {
-  defenders = { enabled = true, walls = true, knights = true },
-  waves = { exact = true },
-  growth = { enabled = true },
-  jobs = { enabled = true },
-  siege = { enabled = true },
+  defenders = { enabled = false, walls = false, knights = false },
+  waves = { exact = false },
+  growth = { enabled = false },
+  jobs = { enabled = false },
+  siege = { enabled = false },
   join = { enabled = false },
-  retarget = { enabled = true },
+  retarget = { enabled = false },
   diagnostics = { log = false },
 }
 for _, plan in ipairs(K.PLANS) do K.DEFAULTS.jobs[plan.name] = plan.share end
