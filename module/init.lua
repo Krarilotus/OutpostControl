@@ -324,12 +324,13 @@ K.AOB_ADD_POINT = "8B 44 24 04 8B D0 69 C0 ? ? 00 00 69 D2 ? ? 00 00 56 8B 74 24
 -- The team table (lord-hunt's pattern): dword per player.
 K.AOB_TEAMS = "8B 0C 85 ? ? ? ? 8B 44 24 30 3B 0C 85 ? ? ? ?"
 K.TEAMS_OPERAND = 0x03
--- acquireShootTarget: where it reads the range table (mov eax,[eax*4+ranges]). The Rebalancer
--- puts a jump there to its own code, which reads the same table: then look where it leads.
+-- acquireShootTarget and its native range-table instruction.
 K.AOB_ACQUIRE = "83 EC 40 53 56 57 8B 7C 24 50 69 FF 90 04 00 00 8B F1 0F BF 84 37 AA 06 00 00"
 K.ACQUIRE_RANGE = 0x131
 K.RANGE_READ = { 0x8B, 0x04, 0x85 }
-K.RANGE_SEARCH = 0x100
+-- Native projectile ranges starting at index 20. Index 20 can be changed by range mods.
+K.AOB_PROJECTILE_RANGES = "? ? ? ? 00 00 00 00 00 00 00 00 4B 00 00 00 36 00 00 00 36 00 00 00 00 00 00 00"
+K.PROJECTILE_RANGES_OFFSET = 20 * 4
 -- updateUnits, where it calls each unit's update function from the table by unit type.
 K.AOB_UPDATE_CALL = "0F BF 91 A2 06 00 00 8B 04 95 ? ? ? ? FF D0"
 K.UPDATE_TABLE = { 0x07, { 0x8B, 0x04, 0x95 } }
@@ -348,7 +349,9 @@ K.STATE_SHOOT = 8                 -- aim (then 2 load, 4 fire)
 K.SHOOTING = { [8] = true, [2] = true, [4] = true }
 K.SHOOT_BEFORE_STOP = 10          -- what the game's own idle code sets
 K.SIEGE_TRIES, K.SIEGE_REFRESH = 3, 160
-K.SIEGE_WALL_RADIUS, K.SIEGE_WALL_LIMIT = 48, 64
+K.SIEGE_WALL_RADIUS, K.SIEGE_CELL = 48, 4
+K.SIEGE_BUCKET, K.SIEGE_RETRY_DISTANCE = 32, 12
+K.SIEGE_SHORTLIST = { 8, 6, 6 }
 K.SIEGE_GATE = { [47] = true, [48] = true, [49] = true }
 K.MAP_TILES = 80400
 K.UNSAFE_TERRAIN = 0xC0100109 -- oil, moat, river, walls, pitch and sea
@@ -488,6 +491,7 @@ local G = {}             -- addresses
 local F = {}             -- the game's functions, exposed to lua
 local O = {}             -- options
 local siegeCache = {}
+local siegeRetries = {}
 local orders = {}        -- per troop id: what this module last told it
 local waveOf = {}         -- per troop id: UID and shared launch state
 local guardTroops = {}   -- per outpost and stance group: the guards' troop (id, uid)
@@ -750,11 +754,11 @@ local function siegeBuilding(b, owner)
     and kind > 0 and kind <= K.OUTPOST_ARAB and rd32(G.damageable + kind * 4) ~= 0
 end
 
-local function siegeTargets(owner)
+local function refreshSiegeTargets()
   local now = G.ticks and rd32(G.ticks) or 0
   local thenTick = siegeCache.tick
   if not thenTick or now - thenTick < 0 or now - thenTick >= K.SIEGE_REFRESH then
-    siegeCache = { tick = now }
+    siegeCache = { tick = now, shortlists = {}, census = {} }
     for p = 1, 8 do siegeCache[p] = { {}, {}, {} } end
     for id = 1, K.MAX_BUILDINGS - 1 do
       local b = building(id)
@@ -768,7 +772,10 @@ local function siegeTargets(owner)
       end
     end
   end
+end
 
+local function siegeTargets(owner)
+  refreshSiegeTargets()
   local targets = siegeCache[owner]
   if targets.wallsReady then return targets end
   targets.wallsReady = true
@@ -782,12 +789,77 @@ local function siegeTargets(owner)
         local tile = row + x
         if tile >= 0 and tile < K.MAP_TILES and wallAt(tile, owner) and F.playable(G.siegeMap, x, y) ~= 0 then
           walls[#walls + 1] = { tile = tile, x = x, y = y, owner = owner }
-          if #walls >= K.SIEGE_WALL_LIMIT then return targets end
         end
       end
     end
   end
   return targets
+end
+
+local function siegeBuckets(owner)
+  local targets = siegeTargets(owner)
+  if targets.buckets then return targets.buckets end
+  local buckets = {}
+  for priority, list in ipairs(targets) do
+    for _, target in ipairs(list) do
+      local cell = (target.y // K.SIEGE_BUCKET) * K.MAP_SIZE + target.x // K.SIEGE_BUCKET
+      local bucket = buckets[cell]
+      if not bucket then
+        bucket = { {}, {}, {} }
+        buckets[cell] = bucket
+      end
+      local tier = bucket[priority]
+      tier[#tier + 1] = target
+    end
+  end
+  targets.buckets = buckets
+  return buckets
+end
+
+local function rankSiegeTarget(tier, limit, target, d)
+  local index = #tier
+  if index == limit and d >= tier[index].d then return end
+  index = math.min(index, limit - 1)
+  while index > 0 and d < tier[index].d do
+    tier[index + 1] = tier[index]
+    index = index - 1
+  end
+  tier[index + 1] = { target = target, d = d }
+end
+
+-- Rank nearby candidates once per approach cell and census. Keep space for every tier.
+local function siegeShortlist(foes, key, x, y, range)
+  local cached = siegeCache.shortlists[key]
+  if cached then return cached end
+  local tiers, shortlist = { {}, {}, {} }, {}
+  local radius = range + K.SIEGE_CELL
+  local minX, maxX = math.max(0, x - radius) // K.SIEGE_BUCKET,
+    math.min(K.MAP_SIZE - 1, x + radius) // K.SIEGE_BUCKET
+  local minY, maxY = math.max(0, y - radius) // K.SIEGE_BUCKET,
+    math.min(K.MAP_SIZE - 1, y + radius) // K.SIEGE_BUCKET
+  for p = 1, 8 do
+    if foes[p] then
+      local buckets = siegeBuckets(p)
+      for by = minY, maxY do
+        for bx = minX, maxX do
+          local bucket = buckets[by * K.MAP_SIZE + bx]
+          if bucket then
+            for priority, targets in ipairs(bucket) do
+              for _, target in ipairs(targets) do
+                rankSiegeTarget(tiers[priority], K.SIEGE_SHORTLIST[priority], target,
+                  squared(x, y, target.x, target.y))
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+  for _, tier in ipairs(tiers) do
+    for _, ranked in ipairs(tier) do shortlist[#shortlist + 1] = ranked.target end
+  end
+  siegeCache.shortlists[key] = shortlist
+  return shortlist
 end
 
 local function liveSiegeTarget(target)
@@ -1042,38 +1114,43 @@ local function shootIfInRange(id)
 
   local x, y = rd16(u + U.X), rd16(u + U.Y)
   local range = siegeRange(kind)
+  local cellX, cellY = x // K.SIEGE_CELL, y // K.SIEGE_CELL
+  local foeMask = 0
+  for p = 1, 8 do
+    if foes[p] then foeMask = foeMask | (1 << (p - 1)) end
+  end
+  local key = string.format("%d:%d:%d", cellY * K.MAP_SIZE + cellX, foeMask, range)
+  local uid = rd32(u + U.UID)
+  refreshSiegeTargets()
+  local retry = siegeRetries[id]
+  if not retry or retry.uid ~= uid or retry.foes ~= foeMask
+      or squared(x, y, retry.x, retry.y) > K.SIEGE_RETRY_DISTANCE ^ 2
+      or (retry.next > #retry.targets and (retry.census ~= siegeCache.census or retry.key ~= key)) then
+    local center = K.SIEGE_CELL // 2
+    retry = { uid = uid, key = key, foes = foeMask, x = x, y = y, next = 1, census = siegeCache.census,
+      targets = siegeShortlist(foes, key, cellX * K.SIEGE_CELL + center, cellY * K.SIEGE_CELL + center, range) }
+    siegeRetries[id] = retry
+  end
   local tries = 0
-  for priority = 1, 3 do
-    local candidates = {}
-    for p = 1, 8 do
-      if foes[p] then
-        for _, target in ipairs(siegeTargets(p)[priority]) do
-          local d = squared(x, y, target.x, target.y)
-          if d <= range * range then candidates[#candidates + 1] = { target = target, d = d } end
+  local reach = range * range
+  for index = retry.next, #retry.targets do
+    local target = retry.targets[index]
+    retry.next = index + 1
+    if squared(x, y, target.x, target.y) <= reach and liveSiegeTarget(target) then
+      local ready
+      if target.tile then ready = tryWall(id, u, target) else ready = tryBuilding(id, u, target.id) end
+      if ready then
+        siegeRetries[id] = nil
+        startShooting(id, u)
+        if target.tile then
+          diag("%s %d shoots wall (%d,%d)", K.SIEGE[kind], id, target.x, target.y)
+        else
+          diag("%s %d shoots building %d (range %d)", K.SIEGE[kind], id, target.id, range)
         end
+        return true
       end
-    end
-    table.sort(candidates, function(a, b)
-      if a.d ~= b.d then return a.d < b.d end
-      return (a.target.id or a.target.tile) < (b.target.id or b.target.tile)
-    end)
-    for _, candidate in ipairs(candidates) do
-      local target = candidate.target
-      if liveSiegeTarget(target) then
-        local ready
-        if target.tile then ready = tryWall(id, u, target) else ready = tryBuilding(id, u, target.id) end
-        if ready then
-          startShooting(id, u)
-          if target.tile then
-            diag("%s %d shoots wall (%d,%d)", K.SIEGE[kind], id, target.x, target.y)
-          else
-            diag("%s %d shoots building %d (range %d)", K.SIEGE[kind], id, target.id, range)
-          end
-          return true
-        end
-        tries = tries + 1
-        if tries == K.SIEGE_TRIES then return false end
-      end
+      tries = tries + 1
+      if tries == K.SIEGE_TRIES then return false end
     end
   end
   return false
@@ -1135,7 +1212,6 @@ end
 
 -- Advance toward a reachable firing position on the near side of a fortification.
 local function siegeOrders(t, lead, target, focus)
-  if not G.ticks then siegeCache = {} end
   local size = rd16(tribe(t) + T.SIZE)
   local holding = false
   for index = 0, size - 1 do
@@ -1168,10 +1244,8 @@ end
 
 local function rangedRange(kind)
   local projectile = K.RANGED_PROJECTILE[kind]
-  if projectile and G.ranges then
-    if G.rangedOverrides[kind] == false then return nil end
-    return G.rangedOverrides[kind] or rd32(G.ranges + projectile * 4)
-  end
+  if projectile == 1 then return G.bowRange end
+  if projectile and G.ranges then return rd32(G.ranges + projectile * 4) end
 end
 
 local function engageRanged(t, kind, ux, uy, x, y)
@@ -1182,14 +1256,14 @@ end
 
 local function waveFocus(wave, target, cx, cy)
   if not wave then return nil end
-  local tick = G.ticks and rd32(G.ticks) or 0
+  local tick = G.ticks and rd32(G.ticks)
   if wave.target ~= target or (wave.focus and not liveSiegeTarget(wave.focus))
-      or (not wave.focus and tick - wave.focusTick >= K.SIEGE_REFRESH) then
+      or (tick and not wave.focus and (tick < wave.focusTick or tick - wave.focusTick >= K.SIEGE_REFRESH)) then
     wave.target, wave.focus = target, nil
     wave.focusTick = tick
     local angle = math.atan(wave.y - cy, wave.x - cx) + wave.shift * math.pi / 4
     wave.dx, wave.dy = math.cos(angle), math.sin(angle)
-    if not G.damageable then return nil end
+    if not tick or not G.damageable then return nil end
     local nearest
     for priority, list in ipairs(siegeTargets(target)) do
       if priority == 3 and wave.focus then break end
@@ -1338,6 +1412,7 @@ local function onDecide()
   local target = rd16(tb + G.tribeTarget)
   local lead = F.lead(G.tribesThis, t, 0)
   if target < 1 or target > 8 or not lead or lead <= 0 then return end
+  if not G.ticks then siegeCache = {} end
   local lu = unit(lead)
   local ux, uy = rd16(lu + U.X), rd16(lu + U.Y)
   local kind = rd16(lu + U.TYPE)
@@ -1527,6 +1602,7 @@ local function wipe()
   core.setMemory(G.slots, 0, K.MAX_BUILDINGS * K.MAX_GUARDS * 8)
   core.setMemory(G.jobs, 0, K.MAX_TRIBES)
   siegeCache = {}
+  siegeRetries = {}
   waveOf = {}
   guardTroops = {}
   wallSpots = {}
@@ -1703,15 +1779,8 @@ local function matches(address, bytes)
   return true
 end
 
-local function rangeTable(at)
-  if matches(at, K.RANGE_READ) then return rd32(at + #K.RANGE_READ) end
-  if (rd8(at) & 0xFF) == 0xE9 then
-    local code = at + 5 + rd32(at + 1)
-    for offset = 0, K.RANGE_SEARCH do
-      if matches(code + offset, K.RANGE_READ) then return rd32(code + offset + #K.RANGE_READ) end
-    end
-  end
-  error(string.format("%s: the range table at 0x%X is not read the way this module knows", MODULE_NAME, at))
+local function nativeRangeTable(site)
+  if site and matches(site, K.RANGE_READ) then return rd32(site + #K.RANGE_READ) end
 end
 
 local function resolve()
@@ -1838,22 +1907,6 @@ local function resolveSiege(acquire)
   F.halt = core.exposeCode(scan(K.AOB_HALT, "the game's stop walking"), 2, 1)
 end
 
--- The Rebalancer's acquireShootTarget trampoline supplies per-kind bow ranges.
-local function readBowRanges(site)
-  if matches(site, K.RANGE_READ) then return end
-  expectBytes(site, { 0xE9 }, "the bow range read")
-  local code = site + 5 + rd32(site + 1)
-  expectBytes(code, { 0x50, 0x0F, 0xBF, 0x84, 0x37, 0xA2, 0x06, 0, 0 }, "the bow range selector")
-  local ranges = {}
-  for i, kind in ipairs({ 22, 70, 74 }) do
-    local branch = code + 9 + (i - 1) * 12
-    expectBytes(branch, { 0x83, 0xF8, kind, 0x75, 7, 0xB8 }, "the bow range branch")
-    expectBytes(branch + 10, { 0xEB }, "the end of the bow range branch")
-    ranges[kind] = rd32(branch + 6)
-  end
-  G.rangedOverrides = ranges
-end
-
 local function resolveDamageable()
   local at, problem = core.AOBScanUnique(K.AOB_DAMAGEABLE)
   if not at then error("building damageability " .. problem) end
@@ -1939,11 +1992,11 @@ local function resolvePanel()
   end
   local bytes = {}
   for _, byte in ipairs(core.itob(start)) do bytes[#bytes + 1] = string.format("%02X", byte & 0xFF) end
-  local ok, constructor = pcall(core.AOBScan, "68 " .. table.concat(bytes, " ") .. " B9")
-  if ok and constructor ~= nil then
+  local constructor, reason = core.AOBScanUnique("68 " .. table.concat(bytes, " ") .. " B9")
+  if constructor then
     G.menu = rd32(constructor + 6)
   else
-    log(WARNING, MODULE_NAME .. ": could not find the building menu; switching the page may show "
+    log(WARNING, MODULE_NAME .. ": building menu constructor " .. reason .. "; switching the page may show "
       .. "the sliders of the other page until the panel is opened again")
   end
   F.sizeSlider = core.exposeCode(G.sizeSlider, 5, 0)
@@ -2256,7 +2309,6 @@ local function enable(self, config)
     O.plans[plan.kind] = { first = plan.first, rest = plan.rest, share = percent(setting(config, "jobs", plan.name)) }
   end
   O.plans[23] = { first = K.JOB_OVERWATCH, rest = K.JOB_OVERWATCH, share = 100 }
-  G.rangedOverrides = {}
   G.ticks, G.updateTable = nil, nil
   if O.defenders or O.siege or O.jobs then
     local site, problem = core.AOBScanUnique(K.AOB_TICKS)
@@ -2298,31 +2350,39 @@ local function enable(self, config)
       O.defenders, O.growth, O.waves, O.walls, O.riders, O.interval = false, false, false, false, false, false
     end
   end
-  if O.siege or O.riders or O.jobs then
-    local acquire
-    ok, problem = pcall(function()
-      acquire = scan(K.AOB_ACQUIRE, "acquireShootTarget")
-      G.ranges = rangeTable(acquire + K.ACQUIRE_RANGE)
-    end)
-    if not ok and O.jobs then log(WARNING, tostring(problem) .. "; ranged wave movement stays off") end
-    if ok and O.jobs then
+  if O.siege or O.jobs then
+    local acquire, reason = core.AOBScanUnique(K.AOB_ACQUIRE)
+    local site = acquire and acquire + K.ACQUIRE_RANGE
+    if not acquire then log(WARNING, MODULE_NAME .. ": acquireShootTarget " .. reason) end
+    G.ranges = nativeRangeTable(site)
+    if not G.ranges then
+      local ranges, problem = core.AOBScanUnique(K.AOB_PROJECTILE_RANGES)
+      if ranges then
+        G.ranges = ranges - K.PROJECTILE_RANGES_OFFSET
+      else
+        log(WARNING, MODULE_NAME .. ": projectile ranges " .. problem .. "; ranged standoff stays off")
+      end
+    end
+    if O.jobs then
       hooks.registerHookCallback("afterInit", function()
-        local site = acquire + K.ACQUIRE_RANGE
-        local ready, reason = pcall(function()
-          G.ranges = rangeTable(site)
-          readBowRanges(site)
-        end)
-        if not ready then
-          G.rangedOverrides = { [22] = false, [70] = false, [74] = false }
-          log(WARNING, tostring(reason) .. "; bow standoff stays off")
+        local ranges = nativeRangeTable(site)
+        if ranges then
+          G.bowRange = rd32(ranges + 4)
+        else
+          log(WARNING, MODULE_NAME .. ": native bow range read unavailable; bow standoff stays off")
         end
       end)
     end
-    if O.siege or O.riders then
-      if ok then ok, problem = pcall(resolveSiege, acquire) end
-      if not ok then
-        log(WARNING, tostring(problem) .. "; siege engines on the way and knights attacking buildings stay off")
-        O.siege, O.riders = false, false
+    if O.siege then
+      if not acquire or not G.ranges then
+        log(WARNING, MODULE_NAME .. ": siege engines on the way stay off without target acquisition and ranges")
+        O.siege = false
+      else
+        ok, problem = pcall(resolveSiege, acquire)
+        if not ok then
+          log(WARNING, tostring(problem) .. "; siege engines on the way stay off")
+          O.siege = false
+        end
       end
     end
   end

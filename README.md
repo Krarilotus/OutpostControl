@@ -71,6 +71,7 @@ gets a job that suits it:
 
 Overwatch groups hold defensive firing positions and look for nearby high ground. Escorts screen
 a sibling siege, breach or moat group when one is available. Flankers approach from the side.
+Bow standoff uses the game's native range read when that instruction is available.
 The other groups in a wave share an approach, and faster assault troops can wait briefly for
 a slow sibling group. The Wave variation slider varies shares and approaches without drawing
 from the game's random number generator. Job IDs are kept in saves. Reloaded groups choose
