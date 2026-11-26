@@ -2,4 +2,4 @@
 
 **Szerző**: Monsterfish
 
-Több beleszólás a térképszerkesztőben elhelyezett európai és arab előőrsök működésébe. Minden része külön kikapcsolható a beállításokban.
+A térképszerkesztőben elhelyezett európai és arab előőrsök irányítása: védők, hullámméret és -növekedés, a csapatok feladatai. Minden része külön kikapcsolható a beállításokban.

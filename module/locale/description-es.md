@@ -2,4 +2,4 @@
 
 **Autor**: Monsterfish
 
-Más control sobre los puestos avanzados europeos y árabes que colocas en el editor de mapas. Cada apartado puede desactivarse en los ajustes.
+Controla los puestos avanzados europeos y árabes del editor de mapas: defensores, tamaño y crecimiento de oleadas y tareas de las tropas. Cada apartado puede desactivarse en los ajustes.

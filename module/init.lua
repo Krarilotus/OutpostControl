@@ -446,13 +446,6 @@ local function callTo(site, target)
   core.writeCode(site, { 0xE8, core.itob(core.getRelativeAddress(site, target, -5)) })
 end
 
-local function cString(text)
-  local address = core.allocate(#text + 1, true)
-  core.writeString(address, text)
-  core.writeByte(address + #text, 0)
-  return address
-end
-
 ---------------------------------------------------------------------------------------
 -- State
 ---------------------------------------------------------------------------------------
@@ -464,6 +457,7 @@ local orders = {}        -- per troop id: what this module last told it
 local guardTroops = {}   -- per outpost and stance group: the guards' troop (id, uid)
 local wallSpots = {}     -- per guard sent onto a wall: { uid, x, y }
 local guardInfo = {}     -- per guard troop id: { uid, outpost, group, attack = { id, uid } }
+local words = {}         -- per panel word: the core.CString the game's label points to
 local broken = false
 
 local function diag(fmt, ...)
@@ -1485,7 +1479,11 @@ local function writeWords(name, encode)
     if type(text) ~= "string" then error("locale/" .. name .. ".yml has no " .. key, 0) end
     encoded[key] = encode(text)
   end
-  for key, at in pairs(G.words) do wr32(at, cString(encoded[key])) end
+  for key, at in pairs(G.words) do
+    local text = core.CString(encoded[key])
+    wr32(at, text.address)
+    words[key] = text
+  end
 end
 
 ---The panel's words in the game's language; English stays where that is unknown or fails.

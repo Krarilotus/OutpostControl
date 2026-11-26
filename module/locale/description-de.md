@@ -2,4 +2,4 @@
 
 **Autor**: Monsterfish
 
-Mehr Kontrolle über die europäischen und arabischen Außenposten, die du im Karteneditor platzierst. Jeder Teil lässt sich in den Einstellungen abschalten.
+Steuert die europäischen und arabischen Außenposten aus dem Karteneditor: Verteidiger, Wellengröße und -wachstum sowie die Aufgaben der Truppen. Jeder Teil lässt sich in den Einstellungen abschalten.
