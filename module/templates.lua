@@ -1067,6 +1067,11 @@ cmp word [eax+B_TYPE],ARAB_OUTPOST
 jne euro
 add ecx,8
 euro:
+cmp ecx,11
+jne defenderWords
+mov dword [esp+0x14],0x13  ; smaller native font for the Arabian swordsman
+add dword [esp+4],2
+defenderWords:
 push dword [DEFENDER_TEXTS+ecx*4]
 push UNIT_HELP_GROUP
 mov ecx,TEXT_MANAGER
