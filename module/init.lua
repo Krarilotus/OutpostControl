@@ -853,7 +853,13 @@ local function siegeApproach(owner, x, y, wave, cx, cy)
   end
   targets.approaches = targets.approaches or {}
   local approach = targets.approaches[key]
-  if approach then return approach end
+  if approach then
+    -- Rebuild once every cached wall is down, so standing walls further out are found.
+    if #approach[2] == 0 then return approach end
+    for _, wall in ipairs(approach[2]) do
+      if liveSiegeTarget(wall) then return approach end
+    end
+  end
 
   local nearestBuckets, size = {}, K.SIEGE_BUCKET
   for cell, bucket in pairs(siegeBuckets(owner)) do
