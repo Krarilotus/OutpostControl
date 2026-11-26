@@ -10,7 +10,7 @@ defenders_walls_tooltip: |-
 defenders_knights: 巡逻骑士攻击附近建筑
 defenders_knights_tooltip: |-
   骑士守卫会像骑射手一样以进攻姿态在前哨站周围巡逻，并与遭遇的敌军交战。开启此选项后，他们还会攻击进入其 10 格范围内的敌方建筑，摧毁后再继续巡逻。
-waves_group: 波次规模
+waves_group: 波次设置
 waves_group_descr: |-
   前哨站每波进攻包含的兵力数量。
 waves_exact: 设置每波精确兵力数量
@@ -21,46 +21,46 @@ growth_group_descr: |-
   前哨站的进攻波次随游戏进程递增的幅度。
 growth_enabled: 选择波次增长幅度
 growth_enabled_tooltip: |-
-  前哨站面板“进攻方”页面中位于规模和初始延迟下方的“增长”滑块：设置每一波比前一波增加多少兵力（以第一波兵力的百分比计算）。0 表示每波都与第一波相同（与原版一致）；50 表示每波增加第一波的一半兵力；100 表示每波增加相当于整支第一波的兵力（第 3 波为第一波的三倍）。波次增长上限为 999 名士兵，且游戏仍不会超过军队人数上限派出部队。波次间隔的加快方式与原版一致：每过一波都会稍快一点。
+  增长会将第一波兵力的一定百分比累加到之后的每一波中。设为 0% 时，每波保持相同规模。波次增长上限为 999 名士兵。
 jobs_group: 进攻部队分工
 jobs_group_descr: |-
   进攻波次离开前哨站时，部队会按兵种拆分并各自分配适合的任务。以下数值决定每个兵种中承担第一项任务的比例，其余士兵执行第二项任务。投石车和火焰弩炮在下方有单独设置。
 jobs_enabled: 为进攻部队分配任务
 jobs_enabled_tooltip: |-
-  关闭时，整支波次只会做一件事：上前攻击建筑，偶尔挖掘护城河。开启后，波次会分工执行填平护城河、猛攻城墙和城门、纵火拆毁建筑、射击遭遇的敌军、绕城袭扰或追杀领主等任务。当某支小队已完成自身任务（例如护城河已填平、道路上已无城墙）时，便会像整支波次原本那样展开进攻。
+  将前哨站波次拆分为不同小队，分别执行填平护城河、突破城墙、占据射击阵位、护卫其他小队或从侧翼包抄城堡等任务。
 jobs_slaves: 填平护城河的奴隶（%）
 jobs_slaves_tooltip: |-
   其余负责纵火并摧毁建筑。
 jobs_spearmen: 填平护城河的长矛兵（%）
 jobs_spearmen_tooltip: |-
-  其余负责攻击城墙和城门。
-jobs_macemen: 填平护城河的链锤兵（%）
+  其余护卫另一支小队。
+jobs_macemen: 侧翼进攻的链锤兵（%）
 jobs_macemen_tooltip: |-
   其余负责摧毁建筑。
 jobs_swordsmen: 攻击城墙和城门的剑士（%）
 jobs_swordsmen_tooltip: |-
-  其余负责摧毁建筑。
+  其余护卫另一支小队。
 jobs_arab_swordsmen: 攻击城墙和城门的阿拉伯剑士（%）
 jobs_arab_swordsmen_tooltip: |-
-  其余负责摧毁建筑。
-jobs_knights: 追杀领主的骑士（%）
+  其余护卫另一支小队。
+jobs_knights: 侧翼进攻的骑士（%）
 jobs_knights_tooltip: |-
-  其余会绕城驰骋，斩杀城墙外的一切目标。无法到达领主所在位置时，追杀小队也会转为绕城袭扰。
-jobs_archers: 填平护城河的弓箭手（%）
+  侧翼进攻的骑士会尝试突击领主。其余绕城堡巡逻。
+jobs_archers: 坚守射击阵位的弓箭手（%）
 jobs_archers_tooltip: |-
-  其余上前射击遭遇的敌军。
-jobs_arab_archers: 填平护城河的阿拉伯弓箭手（%）
+  其余护卫另一支小队。
+jobs_arab_archers: 坚守射击阵位的阿拉伯弓箭手（%）
 jobs_arab_archers_tooltip: |-
-  其余上前射击遭遇的敌军。
-jobs_slingers: 绕城袭扰的投石兵（%）
+  其余护卫另一支小队。
+jobs_slingers: 侧翼进攻的投石兵（%）
 jobs_slingers_tooltip: |-
-  沿城堡外围行进并向城墙外的目标投石。其余上前射击遭遇的敌军。
+  其余坚守射击阵位。
 jobs_horse_archers: 绕城袭扰的骑射手（%）
 jobs_horse_archers_tooltip: |-
-  沿城堡外围骑射城墙外的目标。其余上前射击遭遇的敌军。
+  其余从侧翼包抄城堡。
 jobs_fire_throwers: 焚烧建筑的火焰投掷兵（%）
 jobs_fire_throwers_tooltip: |-
-  其余上前焚烧遭遇的敌军。
+  其余护卫另一支小队。
 siege_group: 行进途中的攻城器械
 siege_group_descr: |-
   前哨站派出的投石车和火焰弩炮会像 AI 的袭扰攻城器械一样，向沿途经过的目标开火。
@@ -88,7 +88,7 @@ diagnostics_log_tooltip: |-
 wave_rule: 波次规则
 wave_setting: 设置
 wave_details: |-
-  配置地图作者可用的波次规则。波次规模、初始延迟和增长百分比在各个前哨站的“进攻方”页面中编辑。
+  选择地图作者可用的波次规模、增长和计时控制项。
 job_unit: 兵种
 job_share: 第一项任务（%）
 improvements: 改进
@@ -99,3 +99,12 @@ panel_attackers: 进攻方
 panel_defenders: 守军
 panel_growth: 增长
 panel_amount: 数量
+waves_interval: 设置波次间的固定等待时间
+waves_interval_tooltip: |-
+  “计时”视图中的“间隔”滑块用于设置前哨站在一波进攻后等待多久才开始组建下一波。设为 0 则使用游戏原有计时。
+panel_size: 规模
+panel_timing: 计时
+panel_interval: 间隔
+jobs_variation: 波次变化幅度（%）
+jobs_variation_tooltip: |-
+  在各波之间随机变化任务比例与进攻路线。设为 0 则保持固定比例并正面直攻。

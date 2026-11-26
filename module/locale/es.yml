@@ -10,7 +10,7 @@ defenders_walls_tooltip: |-
 defenders_knights: Los caballeros de patrulla atacan edificios cercanos
 defenders_knights_tooltip: |-
   Los guardias caballeros patrullan a caballo alrededor de su puesto avanzado en postura agresiva, igual que los arqueros a caballo, y combaten contra las tropas enemigas que encuentran. Con esta opción activada también atacan edificios enemigos que queden a menos de 10 casillas y retoman la patrulla en cuanto el edificio cae.
-waves_group: Tamaño de oleada
+waves_group: Ajustes de oleada
 waves_group_descr: |-
   Cuántas tropas tiene cada oleada de un puesto avanzado.
 waves_exact: Fijar el número exacto de tropas por oleada
@@ -21,46 +21,46 @@ growth_group_descr: |-
   Cuánto crecen las oleadas de un puesto avanzado a lo largo de la partida.
 growth_enabled: Elegir cuánto crecen las oleadas
 growth_enabled_tooltip: |-
-  El deslizador de Crecimiento en la página de Atacantes del panel del puesto avanzado, debajo de Tamaño y Retraso inicial: cuánto más grande es cada oleada respecto a la anterior, en porcentaje de la primera oleada. 0 mantiene todas las oleadas del mismo tamaño que la primera, como en el juego base; 50 añade la mitad de la primera oleada cada vez; 100 añade una primera oleada entera cada vez (la 3.ª oleada es el triple de la primera). Las oleadas dejan de crecer al llegar a 999 tropas, y el juego sigue sin enviar más de lo que permita el límite de ejército. La frecuencia con la que salen las oleadas se mantiene igual que en el juego: un poco antes tras cada oleada.
+  El crecimiento añade un porcentaje del tamaño de la primera oleada a cada oleada siguiente. En 0 %, todas las oleadas mantienen el mismo tamaño. Las oleadas dejan de crecer al llegar a 999 tropas.
 jobs_group: Tareas de los atacantes
 jobs_group_descr: |-
   Cuando una oleada sale de un puesto avanzado, sus tropas se dividen por tipo y cada parte recibe una tarea acorde. Los números de abajo indican qué porcentaje de cada tipo realiza la primera tarea; el resto realiza la segunda. Las catapultas y balistas de fuego tienen su propio ajuste más abajo.
 jobs_enabled: Asignar tareas a los atacantes
 jobs_enabled_tooltip: |-
-  Sin esto, toda la oleada hace lo mismo: avanzar y atacar un edificio, cavando el foso de vez en cuando. Con esta opción, la oleada se divide en tropas que rellenan el foso, golpean murallas y puertas, queman y destruyen edificios, disparan a las tropas que encuentran, rodean el castillo o dan caza al Señor. Si a un grupo no le queda nada que hacer en su tarea (foso rellenado, sin murallas de por medio), ataca como habría hecho toda la oleada.
+  Divide las oleadas del puesto avanzado en grupos que rellenan fosos, abren brechas en murallas, mantienen posiciones de disparo, escoltan a otro grupo o flanquean el castillo.
 jobs_slaves: Esclavos rellenando el foso (%)
 jobs_slaves_tooltip: |-
   El resto quema y destruye edificios.
 jobs_spearmen: Lanceros rellenando el foso (%)
 jobs_spearmen_tooltip: |-
-  El resto ataca murallas y puertas.
-jobs_macemen: Maceros rellenando el foso (%)
+  El resto escolta a otro grupo.
+jobs_macemen: Maceros flanqueando (%)
 jobs_macemen_tooltip: |-
   El resto destruye edificios.
 jobs_swordsmen: Espadachines atacando murallas y puertas (%)
 jobs_swordsmen_tooltip: |-
-  El resto destruye edificios.
+  El resto escolta a otro grupo.
 jobs_arab_swordsmen: Espadachines árabes atacando murallas y puertas (%)
 jobs_arab_swordsmen_tooltip: |-
-  El resto destruye edificios.
-jobs_knights: Caballeros dando caza al Señor (%)
+  El resto escolta a otro grupo.
+jobs_knights: Caballeros flanqueando (%)
 jobs_knights_tooltip: |-
-  El resto rodea el castillo a caballo y acaba con cualquiera fuera de las murallas. Si no se puede llegar al Señor, los cazadores también rodean el castillo.
-jobs_archers: Arqueros rellenando el foso (%)
+  Los caballeros que flanquean intentan llegar hasta el Señor. El resto patrulla alrededor del castillo.
+jobs_archers: Arqueros manteniendo posiciones de disparo (%)
 jobs_archers_tooltip: |-
-  El resto avanza y dispara a las tropas que encuentra.
-jobs_arab_archers: Arqueros árabes rellenando el foso (%)
+  El resto escolta a otro grupo.
+jobs_arab_archers: Arqueros árabes manteniendo posiciones de disparo (%)
 jobs_arab_archers_tooltip: |-
-  El resto avanza y dispara a las tropas que encuentra.
-jobs_slingers: Honderos rodeando el castillo (%)
+  El resto escolta a otro grupo.
+jobs_slingers: Honderos flanqueando (%)
 jobs_slingers_tooltip: |-
-  Rodean el castillo a pie y disparan a cualquiera fuera de las murallas. El resto avanza y dispara a las tropas que encuentra.
+  El resto mantiene posiciones de disparo.
 jobs_horse_archers: Arqueros a caballo rodeando el castillo (%)
 jobs_horse_archers_tooltip: |-
-  Rodean el castillo a caballo y disparan a cualquiera fuera de las murallas. El resto avanza y dispara a las tropas que encuentra.
+  El resto flanquea el castillo.
 jobs_fire_throwers: Lanzafuegos quemando edificios (%)
 jobs_fire_throwers_tooltip: |-
-  El resto avanza y quema a las tropas que encuentra.
+  El resto escolta a otro grupo.
 siege_group: Máquinas de asedio en camino
 siege_group_descr: |-
   Las catapultas y balistas de fuego de un puesto avanzado disparan a lo que encuentran al pasar, como las máquinas de asedio de incursión de la IA.
@@ -88,7 +88,7 @@ diagnostics_log_tooltip: |-
 wave_rule: Regla de oleada
 wave_setting: Ajuste
 wave_details: |-
-  Configura las reglas de oleada disponibles para los creadores de mapas. El tamaño de oleada, el retraso inicial y el porcentaje de crecimiento se editan en la página de Atacantes de cada puesto avanzado.
+  Elige qué controles de tamaño, crecimiento y tiempos de oleada pueden usar los creadores de mapas.
 job_unit: Unidad
 job_share: Primera tarea (%)
 improvements: Mejoras
@@ -99,3 +99,12 @@ panel_attackers: Atacantes
 panel_defenders: Defensores
 panel_growth: Crecimiento
 panel_amount: Cantidad
+waves_interval: Fijar una espera fija entre oleadas
+waves_interval_tooltip: |-
+  El deslizador de Intervalo en la vista Tiempos fija cuánto espera el puesto avanzado tras una oleada antes de formar la siguiente. Déjalo en 0 para usar los tiempos del juego.
+panel_size: Tamaño
+panel_timing: Tiempos
+panel_interval: Intervalo
+jobs_variation: Variación de oleadas (%)
+jobs_variation_tooltip: |-
+  Varía los porcentajes de tareas y los ángulos de aproximación entre oleadas. Déjalo en 0 para porcentajes fijos y aproximación directa.

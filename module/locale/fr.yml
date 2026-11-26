@@ -7,41 +7,40 @@ defenders_walls: Les gardes occupent les murs et tours proches
 defenders_walls_tooltip: Un nouveau garde à pied monte sur les murs, tours en pierre ou portes en pierre du propriétaire dans un rayon de 16 cases s'il peut y accéder, en choisissant la case libre la moins gardée pour se répartir et remplacer les morts. Les chevaliers et archers montés restent au sol. Fonctionne pour tout avant-poste, même sans réglage personnalisé.
 defenders_knights: Les chevaliers en patrouille attaquent les bâtiments proches
 defenders_knights_tooltip: Les chevaliers gardes patrouillent autour de leur avant-poste en posture agressive comme les archers montés et combattent les troupes ennemies. Avec cette option, ils attaquent aussi les bâtiments ennemis dans un rayon de 10 cases puis reprennent leur patrouille une fois le bâtiment détruit.
-waves_group: Taille des vagues
+waves_group: Paramètres des vagues
 waves_group_descr: Nombre de troupes dans chaque vague d'un avant-poste.
 waves_exact: Définir le nombre exact de troupes par vague
 waves_exact_tooltip: Le curseur Taille sur la page Attaquants règle le nombre exact de troupes par vague au lieu des 6 paliers aléatoires du jeu. Il va de 0 (aucune vague) jusqu'au maximum envoyé par le jeu. Sans le module, la carte conserve le palier d'origine le plus proche.
 growth_group: Croissance des vagues
 growth_group_descr: De combien les vagues d'un avant-poste grossissent au fil de la partie.
 growth_enabled: Choisir la croissance des vagues
-growth_enabled_tooltip: Le curseur Croissance sur la page Attaquants, sous Taille et Délai initial, définit l'augmentation de chaque vague par rapport à la précédente en pourcentage de la première vague. 0 garde toutes les vagues identiques à la première ; 50 ajoute la moitié de la première vague à chaque fois ; 100 ajoute une première vague entière (la 3e vague est trois fois plus grande). La croissance s'arrête à 999 troupes, dans la limite d'armée du jeu. La fréquence reste celle du jeu.
+growth_enabled_tooltip: La croissance ajoute un pourcentage de la taille de la première vague à chaque vague suivante. À 0 %, chaque vague garde la même taille. La croissance s'arrête à 999 troupes.
 jobs_group: Rôles des attaquants
 jobs_group_descr: Quand une vague quitte un avant-poste, ses troupes se divisent par type et reçoivent un rôle adapté. Les nombres ci-dessous fixent la part prenant le premier rôle ; le reste prend le second. Catapultes et balistes incendiaires ont leur réglage ci-dessous.
 jobs_enabled: Attribuer des rôles aux attaquants
-jobs_enabled_tooltip: |-
-  Sans cela, toute la vague fait la même chose : avancer attaquer un bâtiment et parfois creuser les douves. Avec cette option, la vague se répartit entre combler les douves, frapper murs et portes, incendier et détruire les bâtiments, tirer sur les troupes, contourner le château ou chasser le seigneur. Une troupe sans tâche restante attaque normalement.
+jobs_enabled_tooltip: Divise les vagues d'avant-poste en groupes qui comblent les douves, percent les murs, tiennent des positions de tir, escortent un autre groupe ou attaquent le château de flanc.
 jobs_slaves: Esclaves comblant les douves (%)
 jobs_slaves_tooltip: Le reste incendie et détruit les bâtiments.
 jobs_spearmen: Lanciers comblant les douves (%)
-jobs_spearmen_tooltip: Le reste frappe les murs et les portes.
-jobs_macemen: Massiers comblant les douves (%)
+jobs_spearmen_tooltip: Le reste escorte un autre groupe.
+jobs_macemen: Massiers attaquant de flanc (%)
 jobs_macemen_tooltip: Le reste détruit les bâtiments.
 jobs_swordsmen: Épéistes attaquant murs et portes (%)
-jobs_swordsmen_tooltip: Le reste détruit les bâtiments.
+jobs_swordsmen_tooltip: Le reste escorte un autre groupe.
 jobs_arab_swordsmen: Épéistes arabes attaquant murs et portes (%)
-jobs_arab_swordsmen_tooltip: Le reste détruit les bâtiments.
-jobs_knights: Chevaliers chassant le seigneur (%)
-jobs_knights_tooltip: Le reste chevauche autour du château et abat quiconque se trouve hors des murs. Si le seigneur est inaccessible, les chasseurs contournent aussi le château.
-jobs_archers: Archers comblant les douves (%)
-jobs_archers_tooltip: Le reste avance et tire sur les troupes rencontrées.
-jobs_arab_archers: Archers arabes comblant les douves (%)
-jobs_arab_archers_tooltip: Le reste avance et tire sur les troupes rencontrées.
-jobs_slingers: Frondeurs contournant le château (%)
-jobs_slingers_tooltip: Ils contournent le château et tirent sur ceux hors des murs. Le reste avance et tire sur les troupes rencontrées.
+jobs_arab_swordsmen_tooltip: Le reste escorte un autre groupe.
+jobs_knights: Chevaliers attaquant de flanc (%)
+jobs_knights_tooltip: Les chevaliers qui attaquent de flanc tentent d'atteindre le seigneur. Le reste patrouille autour du château.
+jobs_archers: Archers tenant des positions de tir (%)
+jobs_archers_tooltip: Le reste escorte un autre groupe.
+jobs_arab_archers: Archers arabes tenant des positions de tir (%)
+jobs_arab_archers_tooltip: Le reste escorte un autre groupe.
+jobs_slingers: Frondeurs attaquant de flanc (%)
+jobs_slingers_tooltip: Le reste tient des positions de tir.
 jobs_horse_archers: Archers montés contournant le château (%)
-jobs_horse_archers_tooltip: Ils chevauchent autour du château et tirent sur ceux hors des murs. Le reste avance et tire sur les troupes rencontrées.
+jobs_horse_archers_tooltip: Le reste attaque le château de flanc.
 jobs_fire_throwers: Lanceurs de feu incendiant les bâtiments (%)
-jobs_fire_throwers_tooltip: Le reste avance et brûle les troupes rencontrées.
+jobs_fire_throwers_tooltip: Le reste escorte un autre groupe.
 siege_group: Engins de siège en chemin
 siege_group_descr: Les catapultes et balistes incendiaires d'un avant-poste tirent sur ce qu'elles croisent, comme les engins de raid de l'IA.
 siege_enabled: Tirer sur les cibles en chemin
@@ -60,7 +59,7 @@ diagnostics_log: Journaliser l'activité des vagues
 diagnostics_log_tooltip: Écrit une ligne dans ucp3.log chaque fois qu'une vague quitte un avant-poste et se répartit en rôles.
 wave_rule: Règle de vague
 wave_setting: Réglage
-wave_details: Configurez les règles de vague disponibles pour les auteurs de cartes. Taille, délai initial et croissance en pourcentage s'éditent sur la page Attaquants de chaque avant-poste.
+wave_details: Choisissez quels réglages de taille, de croissance et de délais des vagues les auteurs de cartes peuvent utiliser.
 job_unit: Unité
 job_share: Premier rôle (%)
 improvements: Améliorations
@@ -71,3 +70,10 @@ panel_attackers: Attaquants
 panel_defenders: Défenseurs
 panel_growth: Croissance
 panel_amount: Quantité
+waves_interval: Définir une attente fixe entre les vagues
+waves_interval_tooltip: Le curseur Intervalle de la vue Délais définit combien de temps l'avant-poste attend après une vague avant de former la suivante. Réglez sur 0 pour le rythme du jeu.
+panel_size: Taille
+panel_timing: Délais
+panel_interval: Intervalle
+jobs_variation: Variation des vagues (%)
+jobs_variation_tooltip: Fait varier la répartition des rôles et les axes d'approche entre les vagues. Réglez sur 0 pour des parts fixes et une approche directe.

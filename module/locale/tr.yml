@@ -10,7 +10,7 @@ defenders_walls_tooltip: |-
 defenders_knights: Devriye gezen şövalyeler yakındaki binalara saldırsın
 defenders_knights_tooltip: |-
   Şövalye muhafızlar atlı okçular gibi saldırgan duruşta karakollarının çevresinde devriye gezer ve karşılaştıkları düşman birliklerle savaşır. Bu ayar açıkken 10 kare mesafelerine giren düşman binalarına da saldırır, bina yıkılınca devriyelerine geri dönerler.
-waves_group: Dalga boyutu
+waves_group: Dalga ayarları
 waves_group_descr: |-
   Bir karakolun her dalgasında kaç birlik bulunacağını belirler.
 waves_exact: Dalga başına kesin birlik sayısını ayarla
@@ -21,46 +21,46 @@ growth_group_descr: |-
   Oyun ilerledikçe bir karakolun dalgalarının ne kadar büyüyeceğini belirler.
 growth_enabled: Dalgaların ne kadar büyüyeceğini seç
 growth_enabled_tooltip: |-
-  Karakol panelinin Saldıranlar sayfasında Boyut ve Başlangıç Gecikmesi altında yer alan Büyüme kaydırıcısı, her dalganın bir öncekinden ilk dalganın yüzdesi cinsinden ne kadar daha büyük olacağını ayarlar. 0 değeri oyundaki gibi tüm dalgaları ilk dalgayla aynı boyutta tutar; 50 her seferinde ilk dalganın yarısını ekler; 100 her seferinde tam bir ilk dalga ekler (3. dalga ilkinin üç katı olur). Dalgalar 999 birlikte büyümeyi durdurur ve oyun yine ordu sınırının izin verdiğinden fazlasını göndermez. Dalgaların geliş hızı oyundaki gibi kalır: her dalgadan sonra biraz daha erken gelirler.
+  Büyüme, ilk dalga boyutunun belirli bir yüzdesini sonraki her dalgaya ekler. %0 değerinde her dalga aynı boyutta kalır. Dalgalar 999 birlikte büyümeyi durdurur.
 jobs_group: Saldıranların görevleri
 jobs_group_descr: |-
   Bir dalga karakoldan ayrıldığında birlikleri türlerine göre bölünür ve her grup kendine uygun bir görev alır. Aşağıdaki sayılar her türün yüzde kaçının ilk görevi üstleneceğini belirler; kalanlar ikinci görevi alır. Mancınıklar ve ateş balistaları için aşağıda ayrı ayar vardır.
 jobs_enabled: Saldıranlara görev ver
 jobs_enabled_tooltip: |-
-  Bu ayar kapalıyken bütün dalga tek bir şey yapar: ilerleyip bir binaya saldırır, arada bir hendeği kazar. Açıkken dalga; hendeği dolduran, surlara ve kapılara saldıran, binaları yakıp yıkan, karşılaştığı birliklere ateş eden, kalenin etrafında dolaşan veya lordu avlayan gruplara ayrılır. Görevinde yapacak işi kalmayan bir birlik (hendek dolmuşsa, yolda sur yoksa) tüm dalganın normalde yapacağı gibi saldırır.
+  Karakol dalgalarını hendek dolduran, surları yaran, atış mevzilerini tutan, başka bir gruba eşlik eden veya kaleye yandan saldıran gruplara böler.
 jobs_slaves: Hendeği dolduran köleler (%)
 jobs_slaves_tooltip: |-
   Kalanlar binaları yakıp yıkar.
 jobs_spearmen: Hendeği dolduran mızrakçılar (%)
 jobs_spearmen_tooltip: |-
-  Kalanlar surlara ve kapılara saldırır.
-jobs_macemen: Hendeği dolduran gürzcüler (%)
+  Kalanlar başka bir gruba eşlik eder.
+jobs_macemen: Yandan saldıran gürzcüler (%)
 jobs_macemen_tooltip: |-
   Kalanlar binaları yıkar.
 jobs_swordsmen: Surlara ve kapılara saldıran kılıçlılar (%)
 jobs_swordsmen_tooltip: |-
-  Kalanlar binaları yıkar.
+  Kalanlar başka bir gruba eşlik eder.
 jobs_arab_swordsmen: Surlara ve kapılara saldıran Arap kılıçlılar (%)
 jobs_arab_swordsmen_tooltip: |-
-  Kalanlar binaları yıkar.
-jobs_knights: Lordu avlayan şövalyeler (%)
+  Kalanlar başka bir gruba eşlik eder.
+jobs_knights: Yandan saldıran şövalyeler (%)
 jobs_knights_tooltip: |-
-  Kalanlar kalenin etrafında at sürüp surların dışındaki herkesi biçer. Lorda ulaşılamıyorsa avcılar da kalenin etrafında dolaşır.
-jobs_archers: Hendeği dolduran okçular (%)
+  Yandan saldıran şövalyeler lorda ulaşmaya çalışır. Kalanlar kalenin etrafında devriye gezer.
+jobs_archers: Atış mevzilerini tutan okçular (%)
 jobs_archers_tooltip: |-
-  Kalanlar ilerleyip karşılaştıkları birliklere ok atar.
-jobs_arab_archers: Hendeği dolduran Arap okçular (%)
+  Kalanlar başka bir gruba eşlik eder.
+jobs_arab_archers: Atış mevzilerini tutan Arap okçular (%)
 jobs_arab_archers_tooltip: |-
-  Kalanlar ilerleyip karşılaştıkları birliklere ok atar.
-jobs_slingers: Kalenin etrafında dolaşan sapancılar (%)
+  Kalanlar başka bir gruba eşlik eder.
+jobs_slingers: Yandan saldıran sapancılar (%)
 jobs_slingers_tooltip: |-
-  Kalenin etrafında yürüyerek surların dışındaki herkese taş atarlar. Kalanlar ilerleyip karşılaştıkları birliklere ateş eder.
+  Kalanlar atış mevzilerini tutar.
 jobs_horse_archers: Kalenin etrafında dolaşan atlı okçular (%)
 jobs_horse_archers_tooltip: |-
-  Kalenin etrafında at sürerek surların dışındaki herkese ok atarlar. Kalanlar ilerleyip karşılaştıkları birliklere ateş eder.
+  Kalanlar kaleye yandan saldırır.
 jobs_fire_throwers: Binaları yakan ateş atıcılar (%)
 jobs_fire_throwers_tooltip: |-
-  Kalanlar ilerleyip karşılaştıkları birlikleri yakar.
+  Kalanlar başka bir gruba eşlik eder.
 siege_group: Yoldaki kuşatma araçları
 siege_group_descr: |-
   Karakoldan çıkan mancınıklar ve ateş balistaları, yapay zekânın akıncı kuşatma araçları gibi yolları üzerindeki hedeflere ateş eder.
@@ -88,7 +88,7 @@ diagnostics_log_tooltip: |-
 wave_rule: Dalga kuralı
 wave_setting: Ayar
 wave_details: |-
-  Harita yapımcılarının kullanabileceği dalga kurallarını yapılandırın. Dalga boyutu, başlangıç gecikmesi ve büyüme yüzdesi her karakolun Saldıranlar sayfasından düzenlenir.
+  Harita yapımcılarının hangi dalga boyutu, büyüme ve zamanlama denetimlerini kullanabileceğini seçin.
 job_unit: Birlik
 job_share: İlk görev (%)
 improvements: İyileştirmeler
@@ -99,3 +99,12 @@ panel_attackers: Saldıranlar
 panel_defenders: Savunucular
 panel_growth: Büyüme
 panel_amount: Miktar
+waves_interval: Dalgalar arasında sabit bekleme süresi ayarla
+waves_interval_tooltip: |-
+  Zamanlama görünümündeki Aralık kaydırıcısı, karakolun bir dalgadan sonra bir sonrakini oluşturmadan önce ne kadar bekleyeceğini belirler. Oyunun kendi zamanlaması için 0 yapın.
+panel_size: Boyut
+panel_timing: Zamanlama
+panel_interval: Aralık
+jobs_variation: Dalga çeşitliliği (%)
+jobs_variation_tooltip: |-
+  Dalgalar arasında görev oranlarını ve yaklaşma yönlerini değiştirir. Sabit oranlar ve doğrudan yaklaşma için 0 yapın.

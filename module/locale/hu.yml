@@ -7,41 +7,40 @@ defenders_walls: Az őrök elfoglalják a közeli falakat és tornyokat
 defenders_walls_tooltip: A gyalogos őrök felmennek az előőrs tulajdonosának falaira, kőtornyaira vagy kő kapuházaira 16 mezőn belül, ha oda tudnak sétálni — mindig a legkevesebb őrrel körülvett szabad mezőre, hogy egyenletesen oszoljanak el és pótolják az elesetteket. A lovagok és lovasíjászok lent maradnak. Minden előőrsre érvényes, egyéni beállítás nélkül is.
 defenders_knights: A járőröző lovagok megtámadják a közeli épületeket
 defenders_knights_tooltip: A lovagőrök támadó módban járőröznek előőrsük körül, mint a lovasíjászok, és harcolnak a szembejövő ellenséggel. Bekapcsolva a 10 mezőn belüli ellenséges épületeket is megtámadják, majd lerombolásuk után folytatják a járőrözést.
-waves_group: Hullám mérete
+waves_group: Hullámbeállítások
 waves_group_descr: Hány egységből áll egy előőrs egyes hulláma.
 waves_exact: Pontos egységszám beállítása hullámonként
 waves_exact_tooltip: A Támadók oldal Méret csúszkája a játék 6 véletlen lépcsője helyett pontosan beállítja minden hullám létszámát, 0-tól (nincsenek hullámok) a játék legnagyobb méretéig. A modul nélkül a térkép a legközelebbi alapjátékbeli méretet őrzi meg.
 growth_group: Hullámnövekedés
 growth_group_descr: Mennyivel lesznek nagyobbak az előőrs hullámai a játék során.
 growth_enabled: Hullámok növekedésének beállítása
-growth_enabled_tooltip: A Támadók oldal Növekedés csúszkája (a Méret és Kezdési késleltetés alatt) az első hullám százalékában adja meg, mennyivel nagyobb minden hullám az előzőnél. 0 esetén minden hullám akkora marad, mint az első; 50 esetén minden alkalommal fél első hullámmal nő; 100 esetén egy egész első hullámmal (a 3. hullám az első háromszorosa). A növekedés 999 egységnél megáll, a seregkorlát betartásával. A hullámok gyakorisága változatlan.
+growth_enabled_tooltip: A növekedés az első hullám méretének egy százalékát adja hozzá minden következő hullámhoz. 0%-nál minden hullám azonos méretű marad. A növekedés 999 egységnél megáll.
 jobs_group: Támadók feladatai
 jobs_group_descr: Amikor egy hullám elhagyja az előőrsöt, egységtípus szerint szétválik, és mindegyik a hozzá illő feladatot kapja. Az alábbi számok az első feladat arányát adják meg; a többiek a másodikat kapják. A katapultoknak és tűzballisztáknak külön beállításuk van alább.
 jobs_enabled: Feladatok kiosztása a támadóknak
-jobs_enabled_tooltip: |-
-  Enélkül az egész hullám ugyanazt teszi: elmegy támadni egy épületet, néha árkot ásva. Bekapcsolva a hullám árokbetemetőkre, fal- és kapurombolókra, épületgyújtogatókra, lövészekre, várkerülőkre és lordvadászokra oszlik. Ha egy csoportnak elfogy a feladata, a szokásos módon támad tovább.
+jobs_enabled_tooltip: Az előőrs hullámait csoportokra osztja, amelyek várárkot temetnek, falakat törnek át, tüzelőállást tartanak, más csoportot kísérnek vagy oldalba támadják a várat.
 jobs_slaves: Várárkot betemető rabszolgák (%)
 jobs_slaves_tooltip: A többiek felgyújtják és lerombolják az épületeket.
 jobs_spearmen: Várárkot betemető lándzsások (%)
-jobs_spearmen_tooltip: A többiek falakat és kapukat rombolnak.
-jobs_macemen: Várárkot betemető buzogányosok (%)
+jobs_spearmen_tooltip: A többiek egy másik csoportot kísérnek.
+jobs_macemen: Oldalba támadó buzogányosok (%)
 jobs_macemen_tooltip: A többiek épületeket rombolnak.
 jobs_swordsmen: Falakat és kapukat támadó kardforgatók (%)
-jobs_swordsmen_tooltip: A többiek épületeket rombolnak.
+jobs_swordsmen_tooltip: A többiek egy másik csoportot kísérnek.
 jobs_arab_swordsmen: Falakat és kapukat támadó arab kardforgatók (%)
-jobs_arab_swordsmen_tooltip: A többiek épületeket rombolnak.
-jobs_knights: Lordra vadászó lovagok (%)
-jobs_knights_tooltip: A többiek körbelovagolják a várat, és levágják a falakon kívülieket. Ha a lord nem elérhető, a vadászok is a várat kerülik.
-jobs_archers: Várárkot betemető íjászok (%)
-jobs_archers_tooltip: A többiek előremennek és a szembejövő csapatokra lőnek.
-jobs_arab_archers: Várárkot betemető arab íjászok (%)
-jobs_arab_archers_tooltip: A többiek előremennek és a szembejövő csapatokra lőnek.
-jobs_slingers: Várat kerülő parittyások (%)
-jobs_slingers_tooltip: Körbejárják a várat, és a falakon kívüliekre lőnek. A többiek előremennek és a szembejövő csapatokra lőnek.
+jobs_arab_swordsmen_tooltip: A többiek egy másik csoportot kísérnek.
+jobs_knights: Oldalba támadó lovagok (%)
+jobs_knights_tooltip: Az oldalba támadó lovagok megpróbálnak eljutni a lordhoz. A többiek a vár körül járőröznek.
+jobs_archers: Tüzelőállást tartó íjászok (%)
+jobs_archers_tooltip: A többiek egy másik csoportot kísérnek.
+jobs_arab_archers: Tüzelőállást tartó arab íjászok (%)
+jobs_arab_archers_tooltip: A többiek egy másik csoportot kísérnek.
+jobs_slingers: Oldalba támadó parittyások (%)
+jobs_slingers_tooltip: A többiek tüzelőállást tartanak.
 jobs_horse_archers: Várat kerülő lovasíjászok (%)
-jobs_horse_archers_tooltip: Körbelovagolják a várat, és a falakon kívüliekre lőnek. A többiek előremennek és a szembejövő csapatokra lőnek.
+jobs_horse_archers_tooltip: A többiek oldalba támadják a várat.
 jobs_fire_throwers: Épületeket gyújtogató tűzhajítók (%)
-jobs_fire_throwers_tooltip: A többiek előremennek és a szembejövő csapatokat égetik.
+jobs_fire_throwers_tooltip: A többiek egy másik csoportot kísérnek.
 siege_group: Ostromgépek útközben
 siege_group_descr: Az előőrs katapultjai és tűzballisztái lövik az útba eső célpontokat, mint az MI portyázó ostromgépei.
 siege_enabled: Útba eső célpontok lövése
@@ -60,7 +59,7 @@ diagnostics_log: Hullámműveletek naplózása
 diagnostics_log_tooltip: Sort ír a ucp3.log fájlba, valahányszor egy hullám elhagyja az előőrsöt és feladatokra oszlik.
 wave_rule: Hullámszabály
 wave_setting: Beállítás
-wave_details: A térképkészítők számára elérhető hullámszabályok beállítása. A hullám mérete, kezdési késleltetése és növekedési százaléka az egyes előőrsök Támadók oldalán szerkeszthető.
+wave_details: Válaszd ki, mely hullámméret-, növekedés- és időzítésvezérlőket használhatják a térképkészítők.
 job_unit: Egység
 job_share: Első feladat (%)
 improvements: Fejlesztések
@@ -71,3 +70,10 @@ panel_attackers: Támadók
 panel_defenders: Védők
 panel_growth: Növekedés
 panel_amount: Mennyiség
+waves_interval: Rögzített várakozási idő beállítása a hullámok között
+waves_interval_tooltip: Az Időzítés nézet Időköz csúszkája állítja be, mennyit vár az előőrs egy hullám után a következő összeállításáig. 0 esetén a játék saját időzítése érvényes.
+panel_size: Méret
+panel_timing: Időzítés
+panel_interval: Időköz
+jobs_variation: Hullámvariáció (%)
+jobs_variation_tooltip: Hullámonként változtatja a feladatarányokat és a megközelítési irányokat. 0 esetén az arányok rögzítettek, a megközelítés pedig közvetlen.

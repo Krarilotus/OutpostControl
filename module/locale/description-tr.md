@@ -2,4 +2,4 @@
 
 **Yazar**: Monsterfish
 
-Harita düzenleyicide yerleştirdiğiniz Avrupalı ve Arap karakollarını yönetir: savunucular, dalga boyutu ve büyümesi, birliklerin görevleri. Her özellik ayarlardan kapatılabilir.
+Harita düzenleyicide yerleştirdiğiniz Avrupalı ve Arap karakollarını yönetir: savunucular, dalga boyutu, büyümesi ve zamanlaması, birliklerin görevleri. Her özellik ayarlardan kapatılabilir.

@@ -7,23 +7,23 @@ defenders_walls: Wachen besetzen nahe Mauern und Türme
 defenders_walls_tooltip: Neue Wachen zu Fuß steigen auf Mauern, Steintürme oder steinerne Torhäuser des Außenposten-Besitzers innerhalb von 16 Feldern, sofern sie dorthin laufen können – jeweils auf das freie Feld mit den wenigsten Wachen daneben, sodass sie sich auf den Mauern verteilen und Gefallene ersetzen. Ritter und berittene Bogenschützen bleiben am Boden. Gilt für jeden Außenposten, auch ohne eigene Einstellungen.
 defenders_knights: Patrouillierende Ritter greifen nahe Gebäude an
 defenders_knights_tooltip: Ritter-Wachen reiten in aggressiver Haltung Patrouille um ihren Außenposten wie berittene Bogenschützen und bekämpfen feindliche Truppen unterwegs. Mit dieser Option greifen sie auch feindliche Gebäude innerhalb von 10 Feldern an und setzen danach ihre Patrouille fort.
-waves_group: Wellengröße
+waves_group: Welleneinstellungen
 waves_group_descr: Wie viele Truppen jede Angriffswelle eines Außenpostens enthält.
 waves_exact: Genaue Truppenzahl pro Welle festlegen
 waves_exact_tooltip: Der Größen-Regler auf der Angreifer-Seite legt die exakte Truppenzahl jeder Welle fest, statt der 6 Stufen zufälliger Gruppengrößen des Spiels. Er reicht von 0 (keine Wellen) bis zur größten im Spiel selbst entsandten Menge. Ohne das Modul behält die Karte die nächstgelegene Standardgröße des Spiels.
 growth_group: Wellenwachstum
 growth_group_descr: Wie stark die Wellen eines Außenpostens im Verlauf des Spiels anwachsen.
 growth_enabled: Wachstum der Wellen festlegen
-growth_enabled_tooltip: Der Regler vergr??ert jede Welle um einen Prozentsatz der ersten Welle. Bei 0 % bleibt die Gr??e gleich. Wellen wachsen bis auf 999 Truppen.
+growth_enabled_tooltip: Wachstum vergrößert jede folgende Welle um einen Prozentsatz der ersten Welle. Bei 0 % bleibt jede Welle gleich groß. Wellen wachsen bis auf 999 Truppen.
 jobs_group: Aufgaben der Angreifer
 jobs_group_descr: Verlässt eine Welle einen Außenposten, teilt sie sich nach Truppentyp auf und jeder Teil erhält eine passende Aufgabe. Die Werte unten bestimmen den Anteil für die erste Aufgabe; der Rest übernimmt die zweite. Katapulte und Feuerballisten haben unten eine eigene Einstellung.
 jobs_enabled: Angreifern Aufgaben zuweisen
-jobs_enabled_tooltip: Teilt Angriffswellen in Gruppen auf, die Gr?ben zusch?tten, Mauern angreifen, Feuerstellungen halten, andere Gruppen begleiten oder die Burg flankieren.
+jobs_enabled_tooltip: Teilt Außenposten-Wellen in Gruppen auf, die Gräben zuschütten, Mauern durchbrechen, Feuerstellungen halten, andere Gruppen begleiten oder die Burg flankieren.
 jobs_slaves: Sklaven, die den Burggraben zuschütten (%)
 jobs_slaves_tooltip: Der Rest brennt Gebäude nieder und zerstört sie.
 jobs_spearmen: Lanzenträger, die den Burggraben zuschütten (%)
 jobs_spearmen_tooltip: Der Rest begleitet eine andere Gruppe.
-jobs_macemen: Streitkolbentr?ger zum Flankieren (%)
+jobs_macemen: Streitkolbenkämpfer zum Flankieren (%)
 jobs_macemen_tooltip: Der Rest zerstört Gebäude.
 jobs_swordsmen: Schwertkämpfer gegen Mauern und Tore (%)
 jobs_swordsmen_tooltip: Der Rest begleitet eine andere Gruppe.
@@ -31,12 +31,12 @@ jobs_arab_swordsmen: Arabische Schwertkämpfer gegen Mauern und Tore (%)
 jobs_arab_swordsmen_tooltip: Der Rest begleitet eine andere Gruppe.
 jobs_knights: Ritter zum Flankieren (%)
 jobs_knights_tooltip: Flankierende Ritter versuchen, den Lord zu erreichen. Der Rest patrouilliert um die Burg.
-jobs_archers: Bogensch?tzen in Feuerstellung (%)
+jobs_archers: Bogenschützen in Feuerstellung (%)
 jobs_archers_tooltip: Der Rest begleitet eine andere Gruppe.
-jobs_arab_archers: Arabische Bogensch?tzen in Feuerstellung (%)
+jobs_arab_archers: Arabische Bogenschützen in Feuerstellung (%)
 jobs_arab_archers_tooltip: Der Rest begleitet eine andere Gruppe.
 jobs_slingers: Steinschleuderer zum Flankieren (%)
-jobs_slingers_tooltip: Der Rest h?lt Feuerstellungen.
+jobs_slingers_tooltip: Der Rest hält Feuerstellungen.
 jobs_horse_archers: Berittene Bogenschützen auf Umrundung der Burg (%)
 jobs_horse_archers_tooltip: Der Rest flankiert die Burg.
 jobs_fire_throwers: Feuerwerfer zum Anzünden von Gebäuden (%)
@@ -59,7 +59,7 @@ diagnostics_log: Wellenverhalten protokollieren
 diagnostics_log_tooltip: Schreibt eine Zeile in ucp3.log, sobald eine Welle einen Außenposten verlässt und in Aufgaben aufgeteilt wird.
 wave_rule: Wellenregel
 wave_setting: Einstellung
-wave_details: Lege fest, welche Regler f?r Gr??e, Wachstum und Zeitabstand Kartenautoren nutzen k?nnen.
+wave_details: Lege fest, welche Regler für Größe, Wachstum und Zeitsteuerung Kartenautoren nutzen können.
 job_unit: Einheit
 job_share: Erste Aufgabe (%)
 improvements: Verbesserungen
@@ -71,8 +71,8 @@ panel_defenders: Verteidiger
 panel_growth: Wachstum
 panel_amount: Menge
 waves_interval: Feste Wartezeit zwischen Angriffswellen
-waves_interval_tooltip: Der Regler in der Ansicht Zeit legt fest, wie lange der Au?enposten nach einer Welle wartet, bevor er die n?chste aufstellt. Bei 0 gilt die Wartezeit des Spiels.
-panel_size: Gr??e
+waves_interval_tooltip: Der Intervall-Regler in der Ansicht „Zeit“ legt fest, wie lange der Außenposten nach einer Welle wartet, bevor er die nächste aufstellt. Bei 0 gilt die Wartezeit des Spiels.
+panel_size: Größe
 panel_timing: Zeit
 panel_interval: Intervall
 jobs_variation: Wellenvariation (%)
