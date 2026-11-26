@@ -1006,7 +1006,11 @@ cmp word [eax+B_TYPE],ARAB_OUTPOST
 jne euro
 add ecx,8
 euro:
-push dword [DEFENDER_NAMES+ecx*4]
+push dword [DEFENDER_TEXTS+ecx*8+4]
+push dword [DEFENDER_TEXTS+ecx*8]
+mov ecx,TEXT_MANAGER
+call GET_TEXT
+push eax
 mov ecx,TEXT_MANAGER
 call SHADOW_TEXT
 pop edi

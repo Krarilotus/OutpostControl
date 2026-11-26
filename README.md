@@ -141,6 +141,9 @@ guards you set (at least one, as archers), and its waves are the game's own size
   growth on, the size and start delay slider items move up (y 494/530) and a growth slider is
   drawn below (y 566) with the game's slider renderer, dragged by its own mouse test; the start
   delay item is hidden (item +0x36) on the Defenders page.
+* Panel texts: troop names are the game's own texts (outpost group 0x40, unit help group 8),
+  read when drawn. The page names and the Growth and Amount labels are `panel_*` entries of the
+  module's locale catalogs, in the game's language as textResourceModifier names and encodes it.
 * Per-building entries (uid, troop bits, amount, growth) and the job table go into the
   `outpost-control` map-extensions section.
 

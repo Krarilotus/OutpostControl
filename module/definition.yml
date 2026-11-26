@@ -5,6 +5,7 @@ version: 1.0.18
 author: Monsterfish
 dependencies:
   map-extensions: ^1.0.0
+  textResourceModifier: ^0.3.0
   framework: '>=3.0.7'
   frontend: '>=1.0.17'
 meta:

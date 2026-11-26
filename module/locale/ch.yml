@@ -95,3 +95,7 @@ improvements: 改进
 misc: 其他
 balance_changes: 平衡性改动
 ai: AI
+panel_attackers: 进攻方
+panel_defenders: 守军
+panel_growth: 增长
+panel_amount: 数量

@@ -92,12 +92,18 @@ K.DEFENDER_TYPES = {
   22, 23, 24, 25, 26, 27, 28, 37,
   70, 72, 74, 75, 71, 73, 76, 23,
 }
-K.DEFENDER_NAMES = {
-  "Archers", "Crossbowmen", "Spearmen", "Pikemen", "Macemen", "Swordsmen", "Knights", "Black Monks",
-  "Archers", "Slingers", "Horse Archers", "Swordsmen", "Slaves", "Assassins", "Fire Throwers",
-  "Crossbowmen",
+-- Their names: game texts (group, index), from the outpost's own list (group 0x40) where it has
+-- the troop, otherwise from the unit buttons' help (group 8; the assassin has a singular name only).
+K.DEFENDER_TEXTS = {
+  { 0x40, 1 }, { 8, 248 }, { 0x40, 2 }, { 8, 246 }, { 0x40, 3 }, { 0x40, 4 }, { 0x40, 5 }, { 8, 254 },
+  { 0x40, 10 }, { 0x40, 15 }, { 0x40, 13 }, { 0x40, 11 }, { 0x40, 12 }, { 8, 318 }, { 0x40, 14 },
+  { 8, 248 },
 }
-K.PAGE_NAMES = { "Attackers", "Defenders" }
+-- The panel's own words come from the module's locale catalogs: English until the game's
+-- language (textResourceModifier's name for it) is known.
+K.LOCALE = "ucp/modules/outpost-control/locale/"
+K.CATALOGS = { german = "de", french = "fr", russian = "ru", hungarian = "hu", turkish = "tr",
+  chinese = "ch", spanish = "es", persian = "fa" }
 
 -- The left column of the panel. The game has the size slider at y 510 and the start delay
 -- slider at 568, with their names at the left and their ends written above them. With growth on
@@ -1468,6 +1474,33 @@ local function resolvePanel()
   F.sizeSlider = core.exposeCode(G.sizeSlider, 5, 0)
 end
 
+---Writes the panel's own words from the locale catalog `name` (plain one-line entries), each
+---passed through `encode`.
+local function writeWords(name, encode)
+  local file = io.open(K.LOCALE .. name .. ".yml", "rb")
+  if file == nil then error("missing locale/" .. name .. ".yml") end
+  local catalog = "\n" .. file:read("a")
+  file:close()
+  for key, at in pairs(G.words) do
+    local text = catalog:match("\n" .. key .. ": ([^\r\n]+)")
+    if text == nil then error("locale/" .. name .. ".yml has no " .. key) end
+    wr32(at, cString(encode(text)))
+  end
+end
+
+---The panel's words in the game's language; English stays where that is unknown or fails.
+local function localizeWords()
+  local owner = modules.textResourceModifier
+  local name = K.CATALOGS[tostring(owner:GetLanguage()):lower()]
+  if name == nil then return end
+  local ok, problem = pcall(writeWords, name, function(text)
+    local encoded = owner:TransformText(text)
+    if encoded:match("^ERROR:") then error("textResourceModifier cannot encode " .. text, 0) end
+    return encoded
+  end)
+  if not ok then log(WARNING, "the outpost panel keeps its English words: " .. tostring(problem)) end
+end
+
 local function allocate()
   G.table = core.allocate(K.MAX_BUILDINGS * K.ENTRY_SIZE, true)
   G.slots = core.allocate(K.MAX_BUILDINGS * K.MAX_GUARDS * 8, true)
@@ -1486,10 +1519,12 @@ local function allocate()
   G.scratch = core.allocate(16, true)
   G.defenderTypes = core.allocate(16, true)
   for index, kind in ipairs(K.DEFENDER_TYPES) do wr8(G.defenderTypes + index - 1, kind) end
-  G.defenderNames = core.allocate(16 * 4, true)
-  for index, name in ipairs(K.DEFENDER_NAMES) do wr32(G.defenderNames + (index - 1) * 4, cString(name)) end
+  G.defenderTexts = core.allocate(16 * 8, true)
+  for index, text in ipairs(K.DEFENDER_TEXTS) do
+    wr32(G.defenderTexts + (index - 1) * 8, text[1])
+    wr32(G.defenderTexts + (index - 1) * 8 + 4, text[2])
+  end
   G.pageTexts = core.allocate(2 * 4, true)
-  for index, name in ipairs(K.PAGE_NAMES) do wr32(G.pageTexts + (index - 1) * 4, cString(name)) end
   -- Labels: x, y, text (0 = the game's text with that id), id.
   local function labels(list)
     local at = core.allocate(#list * 16, true)
@@ -1500,10 +1535,14 @@ local function allocate()
   end
   G.attackLabels, G.attackLabelCount = labels({
     { K.LABEL_X, K.SIZE_Y + K.LABEL_DROP, 0, K.TEXT_SIZE }, { K.LABEL_X, K.DELAY_Y + K.LABEL_DROP, 0, K.TEXT_DELAY },
-    { K.LABEL_X, K.GROWTH_Y + K.LABEL_DROP, cString("Growth"), 0 },
+    { K.LABEL_X, K.GROWTH_Y + K.LABEL_DROP, 0, 0 },
   })
   local sizeY = O.growth and K.SIZE_Y or K.GAME_SIZE_Y
-  G.defendLabels, G.defendLabelCount = labels({ { K.LABEL_X, sizeY + K.LABEL_DROP, cString("Amount"), 0 } })
+  G.defendLabels, G.defendLabelCount = labels({ { K.LABEL_X, sizeY + K.LABEL_DROP, 0, 0 } })
+  -- where each of the panel's own words is read from
+  G.words = { panel_attackers = G.pageTexts, panel_defenders = G.pageTexts + 4,
+    panel_growth = G.attackLabels + 2 * 16 + 8, panel_amount = G.defendLabels + 8 }
+  writeWords("en", function(text) return text end)
 end
 
 local function install(self)
@@ -1614,7 +1653,7 @@ local function install(self)
     values.MODE, values.SELECTED = G.mode, G.selected
     values.MENU_X, values.MENU_Y = G.menuX, G.menuY
     values.TEXT_MANAGER, values.RENDER_TEXT, values.SHADOW_TEXT = G.textManager, G.renderText, G.shadowText
-    values.GET_TEXT, values.PAGE_TEXTS, values.DEFENDER_NAMES = G.getText, G.pageTexts, G.defenderNames
+    values.GET_TEXT, values.PAGE_TEXTS, values.DEFENDER_TEXTS = G.getText, G.pageTexts, G.defenderTexts
     values.MOUSE, values.MOUSE_X, values.MOUSE_Y = G.mouse, K.MOUSE_X, K.MOUSE_Y
     values.LEFT_CLICK, values.LEFT_HELD = K.LEFT_CLICK, K.LEFT_HELD
     values.CLICK_SOUND, values.SOUNDS, values.PLAY_SOUND = G.clickSound, G.sounds, G.playSound
@@ -1712,6 +1751,7 @@ local function enable(self, config)
     end
   end
   allocate()
+  if O.defenders or O.growth or O.waves then hooks.registerHookCallback("afterInit", localizeWords) end
 
   modules["map-extensions"]:registerSection(K.SAVE_SECTION, {
     initialize = function(_) wipe() end,
