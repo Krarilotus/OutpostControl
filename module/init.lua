@@ -401,9 +401,9 @@ local rd32, rd16, rd8 = core.readInteger, core.readSmallInteger, core.readByte
 local wr32, wr16, wr8 = core.writeInteger, core.writeSmallInteger, core.writeByte
 
 local function scan(pattern, purpose)
-  local ok, address = pcall(core.AOBScan, pattern)
-  if not ok or address == nil then
-    error(MODULE_NAME .. ": could not find " .. purpose)
+  local address, problem = core.AOBScanUnique(pattern)
+  if not address then
+    error(MODULE_NAME .. ": " .. purpose .. " " .. problem)
   end
   return address
 end
@@ -2376,7 +2376,7 @@ local function enable(self, config)
     if site then
       G.ticks = rd32(site + K.TICKS_OPERAND)
     else
-      log(WARNING, MODULE_NAME .. ": game tick counter " .. problem
+      log(ERROR, MODULE_NAME .. ": game tick counter " .. problem
         .. "; defender patrols and periodic knight and siege updates stay off")
       O.riders = false
     end
@@ -2464,7 +2464,7 @@ local function enable(self, config)
   if O.siege or O.jobs then
     ok, problem = pcall(resolveDamageable)
     if not ok then
-      log(WARNING, tostring(problem) .. "; damageable targets and siege orders stay off")
+      log(ERROR, tostring(problem) .. "; damageable targets and siege orders stay off")
       O.siege = false
     end
     ok, problem = pcall(resolveWallShooting)
@@ -2490,7 +2490,7 @@ local function enable(self, config)
       G.updateTable = readOperand(call, K.UPDATE_TABLE, "the update function table")
     end)
     if not ok then
-      log(WARNING, tostring(problem) .. "; periodic knight and siege updates stay off")
+      log(ERROR, tostring(problem) .. "; periodic knight and siege updates stay off")
       O.riders = false
     end
   end
