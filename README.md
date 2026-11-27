@@ -56,25 +56,27 @@ Normally a whole wave does the same thing: walk up and attack a building, diggin
 now and then. With this module, each wave splits up by unit type when it leaves, and each part
 gets a job that suits it:
 
-| Unit | First job (default share) | The rest |
+| Preset key under `outpost-control.jobs` | Assignment (default share) | The rest |
 | --- | --- | --- |
-| Slaves | fill the moat (50%) | burn and wreck buildings |
-| Spearmen | fill the moat (40%) | escort |
-| Macemen | flank (40%) | wreck buildings |
-| Swordsmen and Arabian swordsmen | breach walls (60%) | escort |
-| Knights | flank and hunt the lord (50%) | patrol |
-| Archers and Arabian archers | overwatch (60%) | escort |
-| Crossbowmen | overwatch (100%) | |
-| Slingers | flank (40%) | overwatch |
-| Horse archers | patrol (70%) | flank |
-| Fire throwers | burn buildings (50%) | escort |
+| `slaves` | Slaves assigned to moat filling (50%) | Burn and wreck buildings |
+| `spearmen` | Spearmen assigned to moat filling (40%) | Escort |
+| `macemen` | Macemen assigned to flanking (40%) | Wreck buildings |
+| `swordsmen`, `arab_swordsmen` | Swordsmen or Arabian swordsmen assigned to wall breaching (60%) | Escort |
+| `knights` | Knights assigned to flanking and lord hunting (50%) | Patrol |
+| `archers`, `arab_archers` | Archers or Arabian archers assigned to overwatch (60%) | Escort |
+| | Crossbowmen assigned to overwatch (100%) | |
+| `slingers` | Slingers assigned to flanking (40%) | Overwatch |
+| `horse_archers` | Horse archers assigned to patrol (70%) | Flank |
+| `fire_throwers` | Fire throwers assigned to burning buildings (50%) | Escort |
 
 Overwatch groups hold defensive firing positions and look for nearby high ground. Escorts screen
 a sibling siege, breach or moat group when one is available. Flankers approach from the side.
 Bow standoff uses the game's native range read when that instruction is available.
 The other groups in a wave share an approach, and faster assault troops can wait briefly for
-a slow sibling group. The Wave variation slider varies shares and approaches without drawing
-from the game's random number generator. Job IDs are kept in saves. Reloaded groups choose
+a slow sibling group. Set `jobs.variation` in the preset to vary shares and approaches by
+percentage. Its default is 0. Set `diagnostics.log` to trace outpost decisions.
+Troops that transfer to the AI army leave outpost command before jobs are assigned.
+Job IDs are kept in saves. Reloaded groups choose
 positions from the target castle when their shared launch state is unavailable.
 If the game has no slot for a split, ranged troops stay with the original tribe and use
 defensive orders.

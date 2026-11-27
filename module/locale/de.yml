@@ -1,5 +1,4 @@
 defenders_group: Außenposten-Verteidiger
-defenders_group_descr: Wähle direkt im Außenposten-Fenster des Karteneditors, welche Truppen einen Außenposten bewachen und wie viele es sind.
 defenders_enabled: Verteidiger wählen
 defenders_enabled_tooltip: |-
   Fügt dem Außenposten-Fenster eine Seite „Verteidiger“ hinzu. Klicke oben im Fenster auf den Knopf, um zwischen der Angreifer-Seite (aus dem Originalspiel) und der Verteidiger-Seite zu wechseln. Auf der Verteidiger-Seite wählen die acht Truppenknöpfe die Wachen (bei mehreren wechseln sie sich ab), und der Mengen-Regler stellt ein, wie viele rund um den Außenposten stehen (von 0 bis 50). Gefallene Wachen erscheinen einzeln neu – je höher die Anzahl, desto schneller, sodass ein voller Trupp etwa so lange braucht wie die 8 Wachen im Originalspiel. Ohne gewählte Truppe nutzt der Außenposten Bogenschützen wie im Original. Nahkampfwachen stehen auf defensiv, Sklaven auf aggressiv, Ritter sind aggressiv und patrouillieren wie berittene Bogenschützen, und berittene Bogenschützen sind aggressiv und patrouillieren über sechs zufällige Punkte um den Außenposten (bei Hindernissen auf ein freies Feld versetzt).
@@ -16,54 +15,15 @@ growth_group_descr: Wie stark die Wellen eines Außenpostens im Verlauf des Spie
 growth_enabled: Wachstum der Wellen festlegen
 growth_enabled_tooltip: Wachstum vergrößert jede folgende Welle um einen Prozentsatz der ersten Welle. Bei 0 % bleibt jede Welle gleich groß. Wellen wachsen bis auf 999 Truppen.
 jobs_group: Aufgaben der Angreifer
-jobs_group_descr: Verlässt eine Welle einen Außenposten, teilt sie sich nach Truppentyp auf und jeder Teil erhält eine passende Aufgabe. Die Werte unten bestimmen den Anteil für die erste Aufgabe; der Rest übernimmt die zweite. Katapulte und Feuerballisten haben unten eine eigene Einstellung.
 jobs_enabled: Angreifern Aufgaben zuweisen
 jobs_enabled_tooltip: Teilt Außenposten-Wellen in Gruppen auf, die Gräben zuschütten, Mauern durchbrechen, Feuerstellungen halten, andere Gruppen begleiten oder die Burg flankieren.
-jobs_slaves: Sklaven, die den Burggraben zuschütten (%)
-jobs_slaves_tooltip: Der Rest brennt Gebäude nieder und zerstört sie.
-jobs_spearmen: Lanzenträger, die den Burggraben zuschütten (%)
-jobs_spearmen_tooltip: Der Rest begleitet eine andere Gruppe.
-jobs_macemen: Streitkolbenkämpfer zum Flankieren (%)
-jobs_macemen_tooltip: Der Rest zerstört Gebäude.
-jobs_swordsmen: Schwertkämpfer gegen Mauern und Tore (%)
-jobs_swordsmen_tooltip: Der Rest begleitet eine andere Gruppe.
-jobs_arab_swordsmen: Arabische Schwertkämpfer gegen Mauern und Tore (%)
-jobs_arab_swordsmen_tooltip: Der Rest begleitet eine andere Gruppe.
-jobs_knights: Ritter zum Flankieren (%)
-jobs_knights_tooltip: Flankierende Ritter versuchen, den Lord zu erreichen. Der Rest patrouilliert um die Burg.
-jobs_archers: Bogenschützen in Feuerstellung (%)
-jobs_archers_tooltip: Der Rest begleitet eine andere Gruppe.
-jobs_arab_archers: Arabische Bogenschützen in Feuerstellung (%)
-jobs_arab_archers_tooltip: Der Rest begleitet eine andere Gruppe.
-jobs_slingers: Schleuderschützen zum Flankieren (%)
-jobs_slingers_tooltip: Der Rest hält Feuerstellungen.
-jobs_horse_archers: Berittene Bogenschützen auf Umrundung der Burg (%)
-jobs_horse_archers_tooltip: Der Rest flankiert die Burg.
-jobs_fire_throwers: Feuerwerfer zum Anzünden von Gebäuden (%)
-jobs_fire_throwers_tooltip: Der Rest begleitet eine andere Gruppe.
-siege_group: Belagerungsgeräte unterwegs
-siege_group_descr: Katapulte und Feuerballisten aus einem Außenposten beschießen Ziele auf ihrem Weg wie die Plünderungs-Belagerungsgeräte der KI.
 siege_enabled: Ziele unterwegs beschießen
 siege_enabled_tooltip: Katapulte und Feuerballisten eines Außenpostens fahren Richtung Zielburg und halten zum Schießen an, sobald ein feindliches Gebäude (bei Feuerballisten zuerst feindliche Truppen) in Reichweite kommt. Das Spiel selbst bestimmt die Reichweite jedes Geräts genau wie bei Spielergeräten. Anvisiert werden nur Feinde (Spieler anderer Teams als der Außenposten-Besitzer), niemals Verbündete.
-retarget_group: Nächster Gegner
-retarget_group_descr: Was die Truppen eines Außenpostens tun, sobald der angegriffene Spieler besiegt ist.
 retarget_enabled: Zum nächsten Gegner weiterziehen
 retarget_enabled_tooltip: Jede ausgesandte Außenposten-Truppe greift einen feindlichen Spieler an. Ist dessen Lord tot, wählt die Truppe den nächsten Gegner nach Spielregel – den nächsten Feind mit noch lebendem Lord –, statt untätig stehen zu bleiben. Belagerungsgeräte beschießen ohnehin jeden Feind in Reichweite.
-join_group: Außenposten verstärken die KI
-join_group_descr: Wellen aus Außenposten einer KI schließen sich deren eigener Angriffsarmee an, statt allein anzugreifen.
 join_enabled: Außenposten-Wellen an die KI-Angriffsarmee senden
 join_enabled_tooltip: Verlässt eine Welle den Außenposten eines KI-Spielers, schließen sich ihre Truppen der Angriffsarmee dieser KI in der spielüblichen Gruppe an – Bogenschützen, Armbrustschützen, Schleuderschützen, berittene Bogenschützen und Feuerwerfer den Reservetruppen, alle anderen der Hauptarmee. Sie warten auf den nächsten KI-Angriff, kämpfen mit und zählen zur nötigen Angriffsgröße. Belagerungsgeräte bleiben beim Außenposten und feuern auf Ziele in Reichweite. Einheiten ohne passende KI-Truppe greifen weiter vom Außenposten aus an.
-diagnostics_group: Diagnose
-diagnostics_group_descr: Für Tests und Fehlersuche.
-diagnostics_log: Wellenverhalten protokollieren
-diagnostics_log_tooltip: Schreibt eine Zeile in ucp3.log, sobald eine Welle einen Außenposten verlässt und in Aufgaben aufgeteilt wird.
-wave_rule: Wellenregel
-wave_setting: Einstellung
-wave_details: Lege fest, welche Regler für Größe, Wachstum und Zeitsteuerung Kartenautoren nutzen können.
-job_unit: Einheit
-job_share: Erste Aufgabe (%)
 improvements: Verbesserungen
-misc: Sonstiges
 balance_changes: Balance-Änderungen
 ai: KI
 panel_attackers: Angreifer
@@ -75,5 +35,5 @@ waves_interval_tooltip: Der Intervall-Regler in der Ansicht „Zeit“ legt fest
 panel_size: Größe
 panel_timing: Zeit
 panel_interval: Intervall
-jobs_variation: Wellenvariation (%)
-jobs_variation_tooltip: Variiert Aufgabenanteile und Anmarschwege zwischen Wellen. Bei 0 bleiben die Anteile fest und der Anmarsch erfolgt direkt.
+qol: Komfort
+map_editor: Karteneditor

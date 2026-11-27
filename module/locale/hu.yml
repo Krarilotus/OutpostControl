@@ -1,5 +1,4 @@
 defenders_group: Előőrs védői
-defenders_group_descr: Válaszd ki közvetlenül az előőrs paneljén a térképszerkesztőben, mely csapatok és hányan védjék az előőrsöt.
 defenders_enabled: Védők kiválasztása
 defenders_enabled_tooltip: |-
   Védők oldalt ad az előőrs paneljéhez. A panel tetején lévő gombbal válthatsz a Támadók (játék eredeti) és a Védők oldal között. A Védők oldalon a nyolc egységgomb választja ki az őröket (több választásakor váltakoznak), a Mennyiség csúszka pedig 0 és 50 között állítja a létszámukat. Az elesett őrök egyesével térnek vissza, nagyobb létszámnál gyorsabban, hogy a teljes csapat nagyjából annyi idő alatt pótlódjon, mint az alapjáték 8 őre. Kiválasztás nélkül íjászok őrzik. A közelharci őrök védekező, a rabszolgák támadó módban állnak; a lovagok és a lovasíjászok támadó módban járőröznek az előőrs körül hat véletlen ponton (akadály esetén szabad mezőre tolva).
@@ -16,55 +15,16 @@ growth_group_descr: Mennyivel lesznek nagyobbak az előőrs hullámai a játék 
 growth_enabled: Hullámok növekedésének beállítása
 growth_enabled_tooltip: A növekedés az első hullám méretének egy százalékát adja hozzá minden következő hullámhoz. 0%-nál minden hullám azonos méretű marad. A növekedés 999 egységnél megáll.
 jobs_group: Támadók feladatai
-jobs_group_descr: Amikor egy hullám elhagyja az előőrsöt, egységtípus szerint szétválik, és mindegyik a hozzá illő feladatot kapja. Az alábbi számok az első feladat arányát adják meg; a többiek a másodikat kapják. A katapultoknak és tűzballisztáknak külön beállításuk van alább.
 jobs_enabled: Feladatok kiosztása a támadóknak
 jobs_enabled_tooltip: Az előőrs hullámait csoportokra osztja, amelyek várárkot temetnek, falakat törnek át, tüzelőállást tartanak, más csoportot kísérnek vagy oldalba támadják a várat.
-jobs_slaves: Várárkot betemető rabszolgák (%)
-jobs_slaves_tooltip: A többiek felgyújtják és lerombolják az épületeket.
-jobs_spearmen: Várárkot betemető lándzsások (%)
-jobs_spearmen_tooltip: A többiek egy másik csoportot kísérnek.
-jobs_macemen: Oldalba támadó buzogányosok (%)
-jobs_macemen_tooltip: A többiek épületeket rombolnak.
-jobs_swordsmen: Falakat és kapukat támadó kardforgatók (%)
-jobs_swordsmen_tooltip: A többiek egy másik csoportot kísérnek.
-jobs_arab_swordsmen: Falakat és kapukat támadó arab kardforgatók (%)
-jobs_arab_swordsmen_tooltip: A többiek egy másik csoportot kísérnek.
-jobs_knights: Oldalba támadó lovagok (%)
-jobs_knights_tooltip: Az oldalba támadó lovagok megpróbálnak eljutni a lordhoz. A többiek a vár körül járőröznek.
-jobs_archers: Tüzelőállást tartó íjászok (%)
-jobs_archers_tooltip: A többiek egy másik csoportot kísérnek.
-jobs_arab_archers: Tüzelőállást tartó arab íjászok (%)
-jobs_arab_archers_tooltip: A többiek egy másik csoportot kísérnek.
-jobs_slingers: Oldalba támadó parittyások (%)
-jobs_slingers_tooltip: A többiek tüzelőállást tartanak.
-jobs_horse_archers: Várat kerülő lovasíjászok (%)
-jobs_horse_archers_tooltip: A többiek oldalba támadják a várat.
-jobs_fire_throwers: Épületeket gyújtogató tűzhajítók (%)
-jobs_fire_throwers_tooltip: A többiek egy másik csoportot kísérnek.
-siege_group: Ostromgépek útközben
-siege_group_descr: Az előőrs katapultjai és tűzballisztái lövik az útba eső célpontokat, mint az MI portyázó ostromgépei.
 siege_enabled: Útba eső célpontok lövése
 siege_enabled_tooltip: Az előőrs katapultjai és tűzballisztái a célvár felé indulnak, és megállnak lőni, amint ellenséges épület (tűzballisztánál előbb ellenséges csapatok) lőtávba kerül, minden gép saját lőtávjával. Csak más csapatba tartozó ellenségekre céloznak, szövetségesekre sosem.
-retarget_group: Következő ellenfél
-retarget_group_descr: Mit tesznek az előőrs csapatai, miután a megtámadott játékos elesett.
 retarget_enabled: Továbbhaladás a következő ellenfélre
 retarget_enabled_tooltip: Minden előőrsből induló csapat egy ellenséges játékost támad. Ha annak lordja meghal, a csapat a játék szabálya szerint a legközelebbi élő lorddal rendelkező ellenséget választja tétlen ácsorgás helyett. Az ostromgépek már eleve lőnek minden lőtávon belüli ellenségre.
-join_group: Az előőrsök erősítik az MI-t
-join_group_descr: Az MI előőrseinek hullámai önálló támadás helyett az MI saját támadó seregéhez csatlakoznak.
 join_enabled: Előőrs-hullámok küldése az MI támadó seregébe
 join_enabled_tooltip: Amikor egy hullám elhagyja egy MI-játékos előőrsét, egységei a játék által használt csoportba (íjászok, számszeríjászok, parittyások, lovasíjászok és tűzhajítók a tartalékba, a többiek a főseregbe) csatlakoznak az MI támadó seregéhez, és a következő támadásban harcolnak. Az ostromgépek az előőrsnél maradnak. Ha az MI-nek még nincs megfelelő csapata, az egység az előőrsből támad tovább.
-diagnostics_group: Diagnosztika
-diagnostics_group_descr: Teszteléshez.
-diagnostics_log: Hullámműveletek naplózása
-diagnostics_log_tooltip: Sort ír a ucp3.log fájlba, valahányszor egy hullám elhagyja az előőrsöt és feladatokra oszlik.
-wave_rule: Hullámszabály
-wave_setting: Beállítás
-wave_details: Válaszd ki, mely hullámméret-, növekedés- és időzítésvezérlőket használhatják a térképkészítők.
-job_unit: Egység
-job_share: Első feladat (%)
 improvements: Fejlesztések
-misc: Egyéb
-balance_changes: Egyensúly-módosítások
+balance_changes: Egyensúlymódosítások
 ai: MI
 panel_attackers: Támadók
 panel_defenders: Védők
@@ -75,5 +35,5 @@ waves_interval_tooltip: Az Időzítés nézet Időköz csúszkája állítja be,
 panel_size: Méret
 panel_timing: Időzítés
 panel_interval: Időköz
-jobs_variation: Hullámvariáció (%)
-jobs_variation_tooltip: Hullámonként változtatja a feladatarányokat és a megközelítési irányokat. 0 esetén az arányok rögzítettek, a megközelítés pedig közvetlen.
+qol: Kényelmi funkciók
+map_editor: Térképszerkesztő

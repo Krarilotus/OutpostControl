@@ -1,7 +1,3 @@
 # Outpost Control
 
-**Author**: Monsterfish
-
-Controls the European and Arabian outposts you place in the map editor: their defenders, the
-size, growth and timing of their waves, and their troops' jobs. Every part can be switched off
-in the settings.
+Set the defenders, wave size, growth and timing of European and Arabian outposts. Select an outpost in the map editor to open its settings. In play, outpost waves can split into groups with different jobs.

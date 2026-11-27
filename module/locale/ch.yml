@@ -1,6 +1,4 @@
 defenders_group: 前哨站守军
-defenders_group_descr: |-
-  在地图编辑器中前哨站自带的面板里，选择驻守前哨站的兵种及数量。
 defenders_enabled: 选择守军
 defenders_enabled_tooltip: |-
   为前哨站面板添加“守军”页面。点击面板顶部的按钮即可在“进攻方”页面（游戏原有页面）和“守军”页面之间切换。在“守军”页面中，八个兵种按钮用于选择守卫兵种（多选时将轮流生成），数量滑块用于设置驻守在前哨站周围的守卫人数（从 0 到 50）。阵亡的守卫会逐个补充；设置的数量越多，补充越快，因此整支守军补齐所需的时间与游戏原本的 8 名守卫大致相同。若未选择任何兵种，前哨站将像原版一样使用弓箭手。近战守卫保持防御姿态，奴隶为进攻姿态，骑士为进攻姿态并像骑射手一样巡逻，骑射手为进攻姿态并在前哨站周围随机的六个点位巡逻（遇到障碍物时每个点位会自动移至空位）。
@@ -23,77 +21,20 @@ growth_enabled: 选择波次增长幅度
 growth_enabled_tooltip: |-
   增长会将第一波兵力的一定百分比累加到之后的每一波中。设为 0% 时，每波保持相同规模。波次增长上限为 999 名士兵。
 jobs_group: 进攻部队分工
-jobs_group_descr: |-
-  进攻波次离开前哨站时，部队会按兵种拆分并各自分配适合的任务。以下数值决定每个兵种中承担第一项任务的比例，其余士兵执行第二项任务。投石车和火焰弩炮在下方有单独设置。
 jobs_enabled: 为进攻部队分配任务
 jobs_enabled_tooltip: |-
   将前哨站波次拆分为不同小队，分别执行填平护城河、突破城墙、占据射击阵位、护卫其他小队或从侧翼包抄城堡等任务。
-jobs_slaves: 填平护城河的奴隶（%）
-jobs_slaves_tooltip: |-
-  其余负责纵火并摧毁建筑。
-jobs_spearmen: 填平护城河的长矛兵（%）
-jobs_spearmen_tooltip: |-
-  其余护卫另一支小队。
-jobs_macemen: 侧翼进攻的链锤兵（%）
-jobs_macemen_tooltip: |-
-  其余负责摧毁建筑。
-jobs_swordsmen: 攻击城墙和城门的剑士（%）
-jobs_swordsmen_tooltip: |-
-  其余护卫另一支小队。
-jobs_arab_swordsmen: 攻击城墙和城门的阿拉伯剑士（%）
-jobs_arab_swordsmen_tooltip: |-
-  其余护卫另一支小队。
-jobs_knights: 侧翼进攻的骑士（%）
-jobs_knights_tooltip: |-
-  侧翼进攻的骑士会尝试突击领主。其余绕城堡巡逻。
-jobs_archers: 坚守射击阵位的弓箭手（%）
-jobs_archers_tooltip: |-
-  其余护卫另一支小队。
-jobs_arab_archers: 坚守射击阵位的阿拉伯弓箭手（%）
-jobs_arab_archers_tooltip: |-
-  其余护卫另一支小队。
-jobs_slingers: 侧翼进攻的投石兵（%）
-jobs_slingers_tooltip: |-
-  其余坚守射击阵位。
-jobs_horse_archers: 绕城袭扰的骑射手（%）
-jobs_horse_archers_tooltip: |-
-  其余从侧翼包抄城堡。
-jobs_fire_throwers: 焚烧建筑的火焰投掷兵（%）
-jobs_fire_throwers_tooltip: |-
-  其余护卫另一支小队。
-siege_group: 行进途中的攻城器械
-siege_group_descr: |-
-  前哨站派出的投石车和火焰弩炮会像 AI 的袭扰攻城器械一样，向沿途经过的目标开火。
 siege_enabled: 射击沿途目标
 siege_enabled_tooltip: |-
   前哨站派出的投石车和火焰弩炮会朝目标城堡行进，一旦有敌方建筑（火焰弩炮优先攻击敌军部队）进入射程便停下开火。是否进入射程由游戏自身按各器械射程判定，与玩家控制的器械相同。它们只会瞄准敌人，即与前哨站所有者不同阵营的玩家，绝不会攻击盟友。
-retarget_group: 下一个对手
-retarget_group_descr: |-
-  当所进攻的玩家被击败后，前哨站部队的后续行动。
 retarget_enabled: 转向下一个对手
 retarget_enabled_tooltip: |-
   前哨站派出的每支部队都会锁定一名敌方玩家。当该玩家的领主阵亡后，部队不再原地呆立，而是按照游戏选择首个目标的方式——寻找领主仍存活的最近敌人——转向下一个对手。攻城器械本身就会持续射击射程内的任意敌人。
-join_group: 前哨站增援 AI
-join_group_descr: |-
-  属于 AI 的前哨站派出的波次会并入该 AI 自身的进攻军队，而不是单独发起进攻。
 join_enabled: 将前哨站波次并入 AI 的进攻军队
 join_enabled_tooltip: |-
   当 AI 玩家的前哨站派出进攻波次时，其士兵会并入该 AI 的进攻军队，并各自归入游戏原生分配的编队：弓箭手、弩手、投石兵、骑射手和火焰投掷兵进入后援部队，其余兵种进入主力军队。随后他们会等待该 AI 下一次出击并一同参战，同时计入 AI 出击前所需的兵力规模。攻城器械仍留在前哨站，向射程内的目标开火。若该 AI 尚未拥有对应编队，则该兵种继续直接从前哨站发起进攻。
-diagnostics_group: 诊断
-diagnostics_group_descr: |-
-  用于测试。
-diagnostics_log: 将波次行为写入日志
-diagnostics_log_tooltip: |-
-  每当一波部队离开前哨站并拆分任务时，在 ucp3.log 中写入一行记录。
-wave_rule: 波次规则
-wave_setting: 设置
-wave_details: |-
-  选择地图作者可用的波次规模、增长和计时控制项。
-job_unit: 兵种
-job_share: 第一项任务（%）
 improvements: 改进
-misc: 其他
-balance_changes: 平衡性改动
+balance_changes: 平衡调整
 ai: AI
 panel_attackers: 进攻方
 panel_defenders: 守军
@@ -105,6 +46,5 @@ waves_interval_tooltip: |-
 panel_size: 规模
 panel_timing: 计时
 panel_interval: 间隔
-jobs_variation: 波次变化幅度（%）
-jobs_variation_tooltip: |-
-  在各波之间随机变化任务比例与进攻路线。设为 0 则保持固定比例并正面直攻。
+qol: 便利性改进
+map_editor: 地图编辑器

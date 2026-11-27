@@ -1,6 +1,4 @@
 defenders_group: Defensores del puesto avanzado
-defenders_group_descr: |-
-  Elige qué tropas defienden un puesto avanzado y cuántas son, desde el propio panel del puesto en el editor de mapas.
 defenders_enabled: Elegir los defensores
 defenders_enabled_tooltip: |-
   Añade una página de Defensores al panel del puesto avanzado. Haz clic en el botón de la parte superior del panel para alternar entre la página de Atacantes (la propia del juego) y la de Defensores. En la página de Defensores, los ocho botones de tropas eligen la guarnición (si eliges varios, se turnan) y el deslizador de Cantidad fija cuántos guardias rodean el puesto, de ninguno a 50. Los guardias caídos se reponen de uno en uno, más rápido cuanto mayor sea el número elegido, de modo que una guarnición completa tarda en reponerse más o menos lo mismo que los 8 guardias originales del juego. Si no eliges ninguna tropa, el puesto usa arqueros, como en el juego base. Los guardias cuerpo a cuerpo mantienen postura defensiva, los esclavos agresiva, los caballeros son agresivos y patrullan como los arqueros a caballo, y los arqueros a caballo son agresivos y patrullan alrededor del puesto por seis puntos aleatorios que se desplazan a una casilla libre si hay algún obstáculo.
@@ -23,76 +21,19 @@ growth_enabled: Elegir cuánto crecen las oleadas
 growth_enabled_tooltip: |-
   El crecimiento añade un porcentaje del tamaño de la primera oleada a cada oleada siguiente. En 0 %, todas las oleadas mantienen el mismo tamaño. Las oleadas dejan de crecer al llegar a 999 tropas.
 jobs_group: Tareas de los atacantes
-jobs_group_descr: |-
-  Cuando una oleada sale de un puesto avanzado, sus tropas se dividen por tipo y cada parte recibe una tarea acorde. Los números de abajo indican qué porcentaje de cada tipo realiza la primera tarea; el resto realiza la segunda. Las catapultas y balistas de fuego tienen su propio ajuste más abajo.
 jobs_enabled: Asignar tareas a los atacantes
 jobs_enabled_tooltip: |-
   Divide las oleadas del puesto avanzado en grupos que rellenan fosos, abren brechas en murallas, mantienen posiciones de disparo, escoltan a otro grupo o flanquean el castillo.
-jobs_slaves: Esclavos rellenando el foso (%)
-jobs_slaves_tooltip: |-
-  El resto quema y destruye edificios.
-jobs_spearmen: Lanceros rellenando el foso (%)
-jobs_spearmen_tooltip: |-
-  El resto escolta a otro grupo.
-jobs_macemen: Maceros flanqueando (%)
-jobs_macemen_tooltip: |-
-  El resto destruye edificios.
-jobs_swordsmen: Espadachines atacando murallas y puertas (%)
-jobs_swordsmen_tooltip: |-
-  El resto escolta a otro grupo.
-jobs_arab_swordsmen: Espadachines árabes atacando murallas y puertas (%)
-jobs_arab_swordsmen_tooltip: |-
-  El resto escolta a otro grupo.
-jobs_knights: Caballeros flanqueando (%)
-jobs_knights_tooltip: |-
-  Los caballeros que flanquean intentan llegar hasta el Señor. El resto patrulla alrededor del castillo.
-jobs_archers: Arqueros manteniendo posiciones de disparo (%)
-jobs_archers_tooltip: |-
-  El resto escolta a otro grupo.
-jobs_arab_archers: Arqueros árabes manteniendo posiciones de disparo (%)
-jobs_arab_archers_tooltip: |-
-  El resto escolta a otro grupo.
-jobs_slingers: Honderos flanqueando (%)
-jobs_slingers_tooltip: |-
-  El resto mantiene posiciones de disparo.
-jobs_horse_archers: Arqueros a caballo rodeando el castillo (%)
-jobs_horse_archers_tooltip: |-
-  El resto flanquea el castillo.
-jobs_fire_throwers: Lanzafuegos quemando edificios (%)
-jobs_fire_throwers_tooltip: |-
-  El resto escolta a otro grupo.
-siege_group: Máquinas de asedio en camino
-siege_group_descr: |-
-  Las catapultas y balistas de fuego de un puesto avanzado disparan a lo que encuentran al pasar, como las máquinas de asedio de incursión de la IA.
 siege_enabled: Disparar a objetivos en el camino
 siege_enabled_tooltip: |-
   Las catapultas y balistas de fuego de un puesto avanzado marchan hacia el castillo que atacan y se detienen para disparar en cuanto un edificio enemigo (para las balistas de fuego, primero tropas enemigas) entra en alcance. El propio juego decide qué está a tiro, con el alcance de cada máquina, igual que con una máquina del jugador. Solo apuntan a enemigos: jugadores de otro equipo distinto al del propietario del puesto, nunca aliados.
-retarget_group: Siguiente rival
-retarget_group_descr: |-
-  Qué hacen las tropas de un puesto avanzado cuando el jugador al que atacan ha sido derrotado.
 retarget_enabled: Ir a por el siguiente rival
 retarget_enabled_tooltip: |-
   Cada tropa enviada por un puesto avanzado va a por un jugador enemigo. En cuanto muere el Señor de ese jugador, la tropa elige al siguiente rival del mismo modo que el juego elige el primero —el enemigo más cercano cuyo Señor siga con vida— en lugar de quedarse parada. Las máquinas de asedio ya disparan a cualquier enemigo a su alcance.
-join_group: Los puestos avanzados refuerzan a la IA
-join_group_descr: |-
-  Las oleadas de los puestos avanzados de una IA se unen al ejército de ataque de esa IA en lugar de atacar por su cuenta.
 join_enabled: Enviar las oleadas del puesto al ejército de ataque de la IA
 join_enabled_tooltip: |-
   Cuando una oleada sale de un puesto avanzado de un jugador de la IA, sus tropas se unen al ejército de ataque de esa IA, cada una en el grupo que el propio juego usaría para ella: arqueros, ballesteros, honderos, arqueros a caballo y lanzafuegos a las tropas de apoyo, y el resto al ejército principal. Luego esperan el próximo ataque de la IA, luchan en él y cuentan para el tamaño de ejército que la IA espera reunir antes de atacar. Las máquinas de asedio se quedan con el puesto y disparan a lo que alcancen. Si la IA aún no dispone del grupo correspondiente para una unidad, esta sigue atacando desde el puesto.
-diagnostics_group: Diagnóstico
-diagnostics_group_descr: |-
-  Para pruebas.
-diagnostics_log: Registrar en el log lo que hacen las oleadas
-diagnostics_log_tooltip: |-
-  Escribe una línea en ucp3.log cada vez que una oleada sale de un puesto avanzado y se divide en tareas.
-wave_rule: Regla de oleada
-wave_setting: Ajuste
-wave_details: |-
-  Elige qué controles de tamaño, crecimiento y tiempos de oleada pueden usar los creadores de mapas.
-job_unit: Unidad
-job_share: Primera tarea (%)
 improvements: Mejoras
-misc: Varios
 balance_changes: Cambios de equilibrio
 ai: IA
 panel_attackers: Atacantes
@@ -105,6 +46,5 @@ waves_interval_tooltip: |-
 panel_size: Tamaño
 panel_timing: Tiempos
 panel_interval: Intervalo
-jobs_variation: Variación de oleadas (%)
-jobs_variation_tooltip: |-
-  Varía los porcentajes de tareas y los ángulos de aproximación entre oleadas. Déjalo en 0 para porcentajes fijos y aproximación directa.
+qol: Comodidad de juego
+map_editor: Editor de mapas
