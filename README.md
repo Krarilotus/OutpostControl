@@ -71,7 +71,7 @@ gets a job that suits it:
 
 Overwatch groups hold defensive firing positions and look for nearby high ground. Escorts screen
 a sibling siege, breach or moat group when one is available. Flankers approach from the side.
-Bow standoff uses the game's native range read when that instruction is available.
+Bow standoff uses Rebalancer's applied bow ranges when available, then the game's native range if its read instruction is intact.
 The other groups in a wave share an approach, and faster assault troops can wait briefly for
 a slow sibling group. Set `jobs.variation` in the preset to vary shares and approaches by
 percentage. Its default is 0. Set `diagnostics.log` to trace outpost decisions.

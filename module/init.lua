@@ -2414,18 +2414,26 @@ local function enable(self, config)
   if O.siege or O.jobs then
     local acquire, reason = core.AOBScanUnique(K.AOB_ACQUIRE)
     local site = acquire and acquire + K.ACQUIRE_RANGE
-    if not acquire then log(WARNING, MODULE_NAME .. ": acquireShootTarget " .. reason) end
+    local acquireProblem = not acquire and ("acquireShootTarget " .. reason)
+    local rangeProblem
     G.ranges = nativeRangeTable(site)
     if not G.ranges then
-      local crossbow, problem = core.AOBScanUnique(K.AOB_XBOW_RANGE)
+      local crossbow, reason = core.AOBScanUnique(K.AOB_XBOW_RANGE)
       if crossbow then
-        G.ranges = readOperand(crossbow, K.XBOW_RANGE_ENTRY, "the crossbow range")
-          - K.RANGED_PROJECTILE[23] * 4
+        local ok, entry = pcall(readOperand, crossbow, K.XBOW_RANGE_ENTRY, "the crossbow range")
+        if ok then
+          G.ranges = entry - K.RANGED_PROJECTILE[23] * 4
+        else
+          rangeProblem = tostring(entry)
+        end
       else
-        log(WARNING, MODULE_NAME .. ": projectile ranges " .. problem .. "; ranged standoff stays off")
+        rangeProblem = "crossbow range binding " .. reason
       end
     end
     if O.jobs then
+      if rangeProblem then
+        log(ERROR, MODULE_NAME .. ": projectile standoff stays off: " .. rangeProblem)
+      end
       hooks.registerHookCallback("afterInit", function()
         local rebalancer = modules.rebalancer
         if rebalancer and type(rebalancer.getBowRanges) == "function" then
@@ -2436,20 +2444,20 @@ local function enable(self, config)
         if ranges then
           G.bowRange = rd32(ranges + 4)
         else
-          log(WARNING, MODULE_NAME .. ": native bow range read unavailable; bow standoff stays off")
+          log(ERROR, MODULE_NAME .. ": bow standoff stays off: "
+            .. (acquireProblem or "native bow range instruction changed"))
         end
       end)
     end
     if O.siege then
-      if not acquire or not G.ranges then
-        log(WARNING, MODULE_NAME .. ": siege engines on the way stay off without target acquisition and ranges")
+      local siegeProblem = acquireProblem or rangeProblem
+      if not siegeProblem then
+        local ok, problem = pcall(resolveSiege, acquire)
+        if not ok then siegeProblem = tostring(problem) end
+      end
+      if siegeProblem then
+        log(ERROR, MODULE_NAME .. ": siege engines on the way stay off: " .. siegeProblem)
         O.siege = false
-      else
-        ok, problem = pcall(resolveSiege, acquire)
-        if not ok then
-          log(WARNING, tostring(problem) .. "; siege engines on the way stay off")
-          O.siege = false
-        end
       end
     end
   end
