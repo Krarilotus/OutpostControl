@@ -7,11 +7,11 @@ defenders_knights: Ritter-Wachen greifen auf Patrouille an
 defenders_knights_tooltip: Ritter-Wachen von Außenposten können auf Patrouille Gegner angreifen.
 waves_group: Außenposten-Welleneinstellungen
 waves_group_descr: Wie viele Truppen jede Angriffswelle eines Außenpostens enthält.
-waves_exact: Exakte Wellengröße
+waves_exact: Genaue Truppenzahl pro Welle
 waves_exact_tooltip: Stelle auf der Seite „Angreifer“ des Außenpostens „Größe“ auf die Truppenzahl je Welle ein, oder 0 zum Stoppen.
 growth_group: Wellenwachstum
 growth_group_descr: Wie stark die Wellen eines Außenpostens im Verlauf des Spiels anwachsen.
-growth_enabled: Wellenwachstum
+growth_enabled: Wachstum der Angriffswellen
 growth_enabled_tooltip: Stelle auf der Seite „Angreifer“ des Außenpostens „Wachstum“ ein, um spätere Wellen zu vergrößern, oder 0 für konstante Größe.
 jobs_group: Außenposten-Wellen
 jobs_enabled: Außenposten-Wellen getrennte Aufgaben geben

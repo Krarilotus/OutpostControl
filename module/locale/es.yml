@@ -2,7 +2,7 @@ defenders_group: Defensores del puesto avanzado
 defenders_enabled: Añadir página Defensores en puestos avanzados
 defenders_enabled_tooltip: Selecciona un puesto avanzado en el editor de mapas, haz clic en Defensores arriba del panel, elige tipos y fija la cantidad.
 defenders_walls: Los guardias de puestos ocupan murallas y torres cercanas
-defenders_walls_tooltip: Los defensores de puestos avanzados pueden apostar en murallas y torres cercanas.
+defenders_walls_tooltip: Los defensores de los puestos avanzados pueden apostarse en murallas y torres cercanas.
 defenders_knights: Los caballeros guardianes atacan al patrullar
 defenders_knights_tooltip: Los caballeros guardianes de puestos avanzados pueden atacar a enemigos durante sus patrullas.
 waves_group: Ajustes de oleadas de puestos
