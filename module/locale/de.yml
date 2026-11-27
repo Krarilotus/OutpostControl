@@ -35,7 +35,7 @@ jobs_archers: Bogenschützen in Feuerstellung (%)
 jobs_archers_tooltip: Der Rest begleitet eine andere Gruppe.
 jobs_arab_archers: Arabische Bogenschützen in Feuerstellung (%)
 jobs_arab_archers_tooltip: Der Rest begleitet eine andere Gruppe.
-jobs_slingers: Steinschleuderer zum Flankieren (%)
+jobs_slingers: Schleuderschützen zum Flankieren (%)
 jobs_slingers_tooltip: Der Rest hält Feuerstellungen.
 jobs_horse_archers: Berittene Bogenschützen auf Umrundung der Burg (%)
 jobs_horse_archers_tooltip: Der Rest flankiert die Burg.
@@ -52,7 +52,7 @@ retarget_enabled_tooltip: Jede ausgesandte Außenposten-Truppe greift einen fein
 join_group: Außenposten verstärken die KI
 join_group_descr: Wellen aus Außenposten einer KI schließen sich deren eigener Angriffsarmee an, statt allein anzugreifen.
 join_enabled: Außenposten-Wellen an die KI-Angriffsarmee senden
-join_enabled_tooltip: Verlässt eine Welle den Außenposten eines KI-Spielers, schließen sich ihre Truppen der Angriffsarmee dieser KI in der spielüblichen Gruppe an – Bogenschützen, Armbrustschützen, Steinschleuderer, berittene Bogenschützen und Feuerwerfer den Reservetruppen, alle anderen der Hauptarmee. Sie warten auf den nächsten KI-Angriff, kämpfen mit und zählen zur nötigen Angriffsgröße. Belagerungsgeräte bleiben beim Außenposten und feuern auf Ziele in Reichweite. Einheiten ohne passende KI-Truppe greifen weiter vom Außenposten aus an.
+join_enabled_tooltip: Verlässt eine Welle den Außenposten eines KI-Spielers, schließen sich ihre Truppen der Angriffsarmee dieser KI in der spielüblichen Gruppe an – Bogenschützen, Armbrustschützen, Schleuderschützen, berittene Bogenschützen und Feuerwerfer den Reservetruppen, alle anderen der Hauptarmee. Sie warten auf den nächsten KI-Angriff, kämpfen mit und zählen zur nötigen Angriffsgröße. Belagerungsgeräte bleiben beim Außenposten und feuern auf Ziele in Reichweite. Einheiten ohne passende KI-Truppe greifen weiter vom Außenposten aus an.
 diagnostics_group: Diagnose
 diagnostics_group_descr: Für Tests und Fehlersuche.
 diagnostics_log: Wellenverhalten protokollieren

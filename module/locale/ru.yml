@@ -23,7 +23,7 @@ jobs_slaves: Рабы, засыпающие ров (%)
 jobs_slaves_tooltip: Остальные поджигают и разрушают здания.
 jobs_spearmen: Копейщики, засыпающие ров (%)
 jobs_spearmen_tooltip: Остальные сопровождают другой отряд.
-jobs_macemen: Булавоносцы, атакующие с фланга (%)
+jobs_macemen: Пехотинцы, атакующие с фланга (%)
 jobs_macemen_tooltip: Остальные разрушают здания.
 jobs_swordsmen: Мечники, атакующие стены и ворота (%)
 jobs_swordsmen_tooltip: Остальные сопровождают другой отряд.
