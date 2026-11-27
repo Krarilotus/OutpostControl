@@ -24,6 +24,13 @@ def run(name, exe):
         if len(hits) != 1:
             raise Exception('AOB %d hits: %s' % (len(hits), p))
         return hits[0]
+    def unique(p):
+        hits = [address for address in exe.find(p.decode()) if address is not None
+                and any(first <= address < first + size
+                        for first, size, _, _, section in exe.secs if section == '.text')]
+        if len(hits) == 1:
+            return hits[0]
+        return None, b'found more than once' if hits else b'not found'
     def alloc(n, z=False):
         a = heap[0]; heap[0] += (int(n) + 15) & ~15; wr(a, b'\0'*int(n)); return a
     scripts = []
@@ -44,6 +51,7 @@ def run(name, exe):
     import lupa
     core = L.table_from({
         b'AOBScan': aob,
+        b'AOBScanUnique': unique,
         b'readInteger': lambda a: struct.unpack('<i', rd(a,4))[0],
         b'readSmallInteger': lambda a: struct.unpack('<h', rd(a,2))[0],
         b'readByte': lambda a: struct.unpack('<b', rd(a,1))[0],
@@ -56,6 +64,7 @@ def run(name, exe):
         b'allocateCode': lambda b: alloc(64),
         b'allocateAssembly': allocAsm,
         b'writeCode': writeCode,
+        b'writeCodeSmallInteger': lambda a, v: writeCode(a, L.table_from(list(struct.pack('<H', v & 0xFFFF)))),
         b'writeCodeInteger': lambda a, v: writeCode(a, L.table_from(list(struct.pack('<I', v & 0xFFFFFFFF)))),
         b'itob': lambda v: L.table_from(list(struct.pack('<I', v & 0xFFFFFFFF))),
         b'getRelativeAddress': lambda f, t, o: (t - f + o) & 0xFFFFFFFF if (t-f+o)>=0 else (t-f+o),
@@ -63,11 +72,18 @@ def run(name, exe):
         b'detourCode': lambda f, a, s: None,
         b'setMemory': lambda a, v, n: wr(a, bytes([v])*int(n)),
     })
+    L.execute("""local core = ...
+      function core.CString(text)
+        local address = core.allocate(#text + 1, true)
+        core.writeString(address, text)
+        return { address = address }
+      end""", core)
     g = L.globals()
     g.core = core
+    g.package.path = (MOD.replace(os.sep, '/') + '/?.lua;').encode() + g.package.path
     logs = []
     g.log = lambda lvl, msg: logs.append(msg)
-    g.INFO, g.WARNING = 1, 2
+    g.INFO, g.WARNING, g.ERROR = 1, 2, 3
     sections = {}
     me = L.table_from({b'registerSection': lambda self, n, cb: sections.__setitem__(n, cb)})
     g.hooks = L.table_from({b'registerHookCallback': lambda n, f: None})

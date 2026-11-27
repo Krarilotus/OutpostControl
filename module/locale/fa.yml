@@ -25,14 +25,7 @@ join_enabled_tooltip: نیروهایی که به ارتش هوش مصنوعی م
 improvements: بهبودها
 balance_changes: تغییرات توازن
 ai: هوش مصنوعی
-panel_attackers: مهاجمان
-panel_defenders: مدافعان
-panel_growth: رشد
-panel_amount: تعداد
 waves_interval: فاصلهٔ ثابت میان موج‌ها
 waves_interval_tooltip: در صفحهٔ «زمان‌بندی» پایگاه، «فاصله» را روی تأخیر ثابت یا 0 برای زمان‌بندی بازی بگذارید.
-panel_size: اندازه
-panel_timing: زمان‌بندی
-panel_interval: فاصله
 qol: سهولت استفاده
 map_editor: ویرایشگر نقشه

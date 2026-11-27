@@ -25,14 +25,7 @@ join_enabled_tooltip: Az MI seregéhez csatlakozó csapatok annak parancsait kö
 improvements: Fejlesztések
 balance_changes: Egyensúlymódosítások
 ai: MI
-panel_attackers: Támadók
-panel_defenders: Védők
-panel_growth: Növekedés
-panel_amount: Mennyiség
 waves_interval: Fix időköz a hullámok között
 waves_interval_tooltip: Az előőrs Időzítés lapján az Időköz értékkel adj meg fix késleltetést, vagy 0-val a játék időzítését.
-panel_size: Méret
-panel_timing: Időzítés
-panel_interval: Időköz
 qol: Kényelmi funkciók
 map_editor: Térképszerkesztő

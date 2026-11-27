@@ -25,14 +25,7 @@ join_enabled_tooltip: 加入 AI 军队的部队会听从其指挥，并脱离前
 improvements: 改进
 balance_changes: 平衡调整
 ai: AI
-panel_attackers: 进攻方
-panel_defenders: 守军
-panel_growth: 增长
-panel_amount: 数量
 waves_interval: 固定波次间隔
 waves_interval_tooltip: 在前哨站的“计时”页面将“间隔”设为固定延迟，设为 0 则使用游戏默认计时。
-panel_size: 规模
-panel_timing: 计时
-panel_interval: 间隔
 qol: 便利性改进
 map_editor: 地图编辑器

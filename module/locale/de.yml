@@ -25,14 +25,7 @@ join_enabled_tooltip: Truppen, die sich einer KI-Armee anschließen, folgen dere
 improvements: Verbesserungen
 balance_changes: Balance-Änderungen
 ai: KI
-panel_attackers: Angreifer
-panel_defenders: Verteidiger
-panel_growth: Wachstum
-panel_amount: Menge
 waves_interval: Festes Intervall zwischen Wellen
 waves_interval_tooltip: Stelle auf der Seite „Zeit“ des Außenpostens „Intervall“ auf eine feste Pause ein, oder 0 für das Spiel-Timing.
-panel_size: Größe
-panel_timing: Zeit
-panel_interval: Intervall
 qol: Komfort
 map_editor: Karteneditor

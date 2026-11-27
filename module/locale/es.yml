@@ -25,14 +25,7 @@ join_enabled_tooltip: Las tropas que se unen a un ejército de la IA siguen sus 
 improvements: Mejoras
 balance_changes: Cambios de equilibrio
 ai: IA
-panel_attackers: Atacantes
-panel_defenders: Defensores
-panel_growth: Crecimiento
-panel_amount: Cantidad
 waves_interval: Intervalo fijo entre oleadas
 waves_interval_tooltip: En la página Tiempos del puesto, fija Intervalo en una pausa fija o 0 para usar el ritmo del juego.
-panel_size: Tamaño
-panel_timing: Tiempos
-panel_interval: Intervalo
 qol: Comodidad de juego
 map_editor: Editor de mapas

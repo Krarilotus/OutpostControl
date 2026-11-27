@@ -109,9 +109,6 @@ K.DEFENDER_TEXTS = {
   244, 248, 245, 246, 247, 249, 250, 254,
   315, 317, 319, 320, 316, 318, 321, 248,
 }
--- The panel's own words come from the module's locale catalogs: English until the game's
--- language is known.
-K.LOCALE = "ucp/modules/outpost-control/locale/"
 K.CATALOGS = { german = "de", french = "fr", russian = "ru", hungarian = "hu", turkish = "tr",
   chinese = "ch", spanish = "es", persian = "fa" }
 
@@ -437,21 +434,26 @@ local function same(a, b, purpose)
   end
 end
 
-local function setting(config, group, name)
+local function setting(config, group, name, maximum)
+  local default = K.DEFAULTS[group][name]
   local section = config[group]
-  if type(section) == "table" and section[name] ~= nil then
-    return section[name]
+  if section == nil then return default end
+  if type(section) ~= "table" then
+    log(ERROR, MODULE_NAME .. ": invalid " .. group .. " settings type.")
+    return default
   end
-  return K.DEFAULTS[group][name]
-end
-
-local function percent(value)
-  if type(value) == "table" then
-    value = value.sliderValue
+  local value = section[name]
+  if value == nil then return default end
+  if maximum and type(value) == "table" then value = value.sliderValue end
+  local field = group .. "." .. name
+  if type(value) ~= type(default) then
+    log(ERROR, MODULE_NAME .. ": invalid " .. field .. " type.")
+    return default
   end
-  value = math.tointeger(math.floor(tonumber(value) or 0)) or 0
-  if value < 0 then return 0 end
-  if value > 100 then return 100 end
+  if maximum and (math.tointeger(value) == nil or value < 0 or value > maximum) then
+    log(WARNING, MODULE_NAME .. ": invalid " .. field .. ". Using " .. default .. ".")
+    return default
+  end
   return value
 end
 
@@ -1003,7 +1005,7 @@ end
 -- circle - until a free one is found. The random numbers come from the game state (outpost,
 -- troop, tick), so every player of a multiplayer game gets the same patrol.
 local function patrolRound(t, bid)
-  if G.ticks == nil then return end
+  if not O.patrol then return end
   local b = building(bid)
   local half = rd32(b + B.SIZE) // 2
   local cx, cy = rd16(b + B.X) + half, rd16(b + B.Y) + half
@@ -1844,62 +1846,7 @@ local function nativeRangeTable(site)
   if site and matches(site, K.RANGE_READ) then return rd32(site + #K.RANGE_READ) end
 end
 
-local function resolve()
-  local count = scan(K.AOB_DEFENDER_COUNT, "where an outpost checks its defender count")
-  G.defenderCount = count
-  G.defendersField = readOperand(count, { 0x00, { 0x80, 0xB9 } }, "the defender count")
-  G.buildings = G.defendersField - K.DEFENDER_COUNT_FIELD
-  G.roll = readJumpTarget(count + 7, "the defender roll")
-  expectBytes(count + 0x1C, { 0x66, 0x85, 0xC0 }, "the defender timer")
-  G.skip = readJumpTarget(count + 0x1F, "the end of the defender part")
-
-  local guards = scan(K.AOB_GUARD_COUNT, "where an outpost counts its defenders")
-  G.guardCount = guards + K.GUARD_COUNT_AT
-  same(readOperand(guards, { K.GUARD_COUNT_AT, { 0x66, 0xC7, 0x81 } }, "the defender timer"),
-    G.buildings + K.TIMER_FIELD, "the defender timer")
-  G.guardRecord = scan(K.AOB_GUARD_RECORD, "where an outpost puts away a new defender")
-  G.guardRecorded = G.guardRecord + K.GUARD_RECORDED
-  G.area = readOperand(G.guardRecord, K.GUARD_AREA, "the area map")
-  G.pathFinder = readOperand(G.guardRecord, K.GUARD_PATHS, "the path finder")
-  F.navigate = core.exposeCode(readCallTarget(G.guardRecord, K.GUARD_NAVIGATE, "the area test"), 5, 1)
-  F.setDestination = core.exposeCode(readCallTarget(G.guardRecord, K.GUARD_DESTINATION,
-    "setDestinationForUnit"), 5, 1)
-  expectBytes(G.guardRecorded, { 0x8B, 0x6C, 0x24, 0x10, 0x85, 0xED }, "the end of the defender slots")
-
-  local wave = scan(K.AOB_WAVE_SIZE, "where an outpost sizes its waves")
-  G.waveSize = wave + K.WAVE_SIZE_AT
-  same(readOperand(wave, { K.WAVE_SIZE_AT, { 0x66, 0x89, 0x91 } }, "the wave size"), G.buildings + K.WAVE_FIELD,
-    "the wave size")
-  G.kinds = readOperand(wave, K.WAVE_SIZE_KINDS, "the outpost troop kinds") - K.KIND_BASE
-  G.waveMax = 0
-  for kind = 0, K.KINDS - 1 do
-    local at = G.kinds + kind * K.KIND_STRIDE
-    local most = (rd32(at + K.KIND_BASE) + rd32(at + K.KIND_RANGE) - 1) * (K.VANILLA_TOP + 1)
-    if most > G.waveMax then G.waveMax = most end
-  end
-  G.waveStart = G.guardRecorded + K.WAVE_START_AT
-  expectBytes(G.waveStart, { 0x85, 0xED, 0x0F, 0x85 }, "the start of the wave part")
-  G.forming = G.waveStart + 8 + rd32(G.waveStart + 4)
-  G.waveResume = G.waveStart + K.WAVE_START_SIZE
-
-  G.defenderType = scan(K.AOB_DEFENDER_TYPE, "where an outpost picks its defenders")
-  same(readOperand(G.defenderType, { 0x00, { 0x66, 0x83, 0xB9 } }, "the outpost type"), G.buildings + B.TYPE,
-    "the building array")
-
-  G.growth = scan(K.AOB_GROWTH, "where an outpost speeds up after a wave")
-  same(readOperand(G.growth, { 0x00, { 0x66, 0x83, 0x80 } }, "the wave counter"), G.buildings + K.WAVES_FIELD,
-    "the wave counter")
-  same(readOperand(G.growth, { 0x08, { 0x66, 0x83, 0x80 } }, "the unit pace"), G.buildings + K.PACE_FIELD,
-    "the unit pace")
-
-  local launch = scan(K.AOB_LAUNCH, "where an outpost sends its wave")
-  same(readOperand(launch, { 0x00, { 0x8B, 0x80 } }, "the wave troop"), G.buildings + B.TRIBE_UID, "the wave troop")
-  G.aiState = readOperand(launch, K.LAUNCH_AI, "the AI state")
-  G.launchSite = launch + K.LAUNCH_CALL
-  G.register = readCallTarget(launch, K.LAUNCH_CALL, "aiRegisterTribeAndAssignTarget")
-  G.setTarget = readCallTarget(G.register, K.REGISTER_SET_TARGET, "setTargetForTribeBasedOnTargetChoiceLogic")
-  G.current = readOperand(launch, K.LAUNCH_CURRENT, "the current building")
-
+local function resolveState()
   local make = scan(K.AOB_MAKE, "the outpost troops' update")
   G.tribeStride = readOperand(make, K.MAKE_STRIDE, "the troop size")
   G.decideSite = make + K.MAKE_CALL
@@ -1922,31 +1869,152 @@ local function resolve()
   local lastUnit = rd32(limit + 5)
   assert(lastUnit > 0 and lastUnit < 0xFFFF, "invalid unit table limit")
   G.unitCapacity = lastUnit + 1
-  G.paths = readOperand(d, K.DECIDE_PATHS, "the path finder")
   G.rows = readOperand(d, K.DECIDE_ROWS, "the map rows")
-  same(readOperand(d, K.DECIDE_BUILDING_UID, "the building uid"), G.buildings + B.UID, "the building array")
+  G.buildings = readOperand(d, K.DECIDE_BUILDING_UID, "the building uid") - B.UID
   G.players = readOperand(d, K.DECIDE_CAMP, "the player array") - P.CAMP
+end
 
-  F.busy = core.exposeCode(readCallTarget(d, K.DECIDE_BUSY, "checkTribeActivityPercentages"), 4, 1)
-  F.lead = core.exposeCode(readCallTarget(d, K.DECIDE_LEAD, "getUnitIDForIndexInTribe"), 3, 1)
-  F.path = core.exposeCode(readCallTarget(d, K.DECIDE_PATH, "pathFindingToAttackCastleIncludingMoat"), 8, 1)
-  local relay = readCallTarget(d, K.DECIDE_RELAY, "relayTribeInstruction")
+local function resolveLaunch()
+  if G.launch then return G.launch end
+  local launch = scan(K.AOB_LAUNCH, "where an outpost sends its wave")
+  G.current = readOperand(launch, K.LAUNCH_CURRENT, "the current building")
+  G.aiState = readOperand(launch, K.LAUNCH_AI, "the AI state")
+  G.launch = launch
+  return launch
+end
+
+local function resolveGuardRecord()
+  if G.guardRecorded then return end
+  G.guardRecord = scan(K.AOB_GUARD_RECORD, "where an outpost puts away a new defender")
+  local recorded = G.guardRecord + K.GUARD_RECORDED
+  expectBytes(recorded, { 0x8B, 0x6C, 0x24, 0x10, 0x85, 0xED }, "the end of the defender slots")
+  G.guardRecorded = recorded
+end
+
+local function resolveTribeActions()
+  if F.setStance then return end
+  F.createTribe = core.exposeCode(scan(K.AOB_CREATE_TRIBE, "createTribeForPlayer"), 2, 1)
+  F.addToTribe = core.exposeCode(scan(K.AOB_ADD_TO_TRIBE, "addUnitToTribe"), 3, 1)
+  F.setStance = core.exposeCode(scan(K.AOB_STANCE, "setUnitStance"), 3, 1)
+end
+
+local function resolveReach()
+  if F.reach then return end
+  local d = G.decide
   F.reach = core.exposeCode(readCallTarget(d, K.DECIDE_REACH, "canNavigateUnitsFromTileToTargetTile"), 3, 1)
-  F.command = core.exposeCode(readCallTarget(d, K.DECIDE_COMMAND, "commandUnitsToLocation"), 5, 1)
-  F.register = core.exposeCode(G.register, 3, 1)
+end
 
+local function resolveInstruction()
+  if F.instruction then return end
+  local d = G.decide
+  local relay = readCallTarget(d, K.DECIDE_RELAY, "relayTribeInstruction")
   local instruction = scan(K.AOB_INSTRUCTION, "giveTribeAnInstruction")
   expectBytes(relay, { 0xB9 }, "relayTribeInstruction")
   same(relay + 10 + rd32(relay + 6), instruction, "giveTribeAnInstruction")
   F.instruction = core.exposeCode(instruction, 6, 1)
-  F.createTribe = core.exposeCode(scan(K.AOB_CREATE_TRIBE, "createTribeForPlayer"), 2, 1)
-  F.addToTribe = core.exposeCode(scan(K.AOB_ADD_TO_TRIBE, "addUnitToTribe"), 3, 1)
-  F.removeFromTribe = core.exposeCode(scan(K.AOB_REMOVE_FROM_TRIBE, "removeUnitFromTribe"), 3, 1)
-  F.setStance = core.exposeCode(scan(K.AOB_STANCE, "setUnitStance"), 3, 1)
+end
+
+local function resolveTeams()
+  if G.teams then return end
   G.teams = rd32(scan(K.AOB_TEAMS, "the team table") + K.TEAMS_OPERAND)
+end
+
+local function resolveMove()
+  if F.move then return end
   F.move = core.exposeCode(scan(K.AOB_MOVE, "giveTribeMoveInstruction"), 7, 1)
-  F.addToItsTribe = core.exposeCode(scan(K.AOB_ADD_TO_ITS_TRIBE, "addUnitToItsTribe"), 3, 1)
+end
+
+local function resolvePatrol()
+  resolveReach()
+  resolveMove()
   F.addPoint = core.exposeCode(scan(K.AOB_ADD_POINT, "addRallyPoint"), 5, 1)
+  if O.riders then
+    resolveInstruction()
+    resolveTeams()
+  end
+end
+
+local function resolveDefenders()
+  resolveLaunch()
+  resolveTribeActions()
+  local count = scan(K.AOB_DEFENDER_COUNT, "where an outpost checks its defender count")
+  G.defenderCount = count
+  local defendersField = readOperand(count, { 0x00, { 0x80, 0xB9 } }, "the defender count")
+  same(defendersField, G.buildings + K.DEFENDER_COUNT_FIELD, "the defender count")
+  G.roll = readJumpTarget(count + 7, "the defender roll")
+  expectBytes(count + 0x1C, { 0x66, 0x85, 0xC0 }, "the defender timer")
+  G.skip = readJumpTarget(count + 0x1F, "the end of the defender part")
+
+  local guards = scan(K.AOB_GUARD_COUNT, "where an outpost counts its defenders")
+  G.guardCount = guards + K.GUARD_COUNT_AT
+  same(readOperand(guards, { K.GUARD_COUNT_AT, { 0x66, 0xC7, 0x81 } }, "the defender timer"),
+    G.buildings + K.TIMER_FIELD, "the defender timer")
+  resolveGuardRecord()
+  G.area = readOperand(G.guardRecord, K.GUARD_AREA, "the area map")
+  G.pathFinder = readOperand(G.guardRecord, K.GUARD_PATHS, "the path finder")
+  F.navigate = core.exposeCode(readCallTarget(G.guardRecord, K.GUARD_NAVIGATE, "the area test"), 5, 1)
+  F.setDestination = core.exposeCode(readCallTarget(G.guardRecord, K.GUARD_DESTINATION,
+    "setDestinationForUnit"), 5, 1)
+  G.defenderType = scan(K.AOB_DEFENDER_TYPE, "where an outpost picks its defenders")
+  same(readOperand(G.defenderType, { 0x00, { 0x66, 0x83, 0xB9 } }, "the outpost type"), G.buildings + B.TYPE,
+    "the building array")
+
+end
+
+local function resolveWaveSize()
+  resolveLaunch()
+  local wave = scan(K.AOB_WAVE_SIZE, "where an outpost sizes its waves")
+  G.waveSize = wave + K.WAVE_SIZE_AT
+  same(readOperand(wave, { K.WAVE_SIZE_AT, { 0x66, 0x89, 0x91 } }, "the wave size"), G.buildings + K.WAVE_FIELD,
+    "the wave size")
+end
+
+local function resolveExactWaves()
+  resolveGuardRecord()
+  G.kinds = readOperand(G.waveSize - K.WAVE_SIZE_AT, K.WAVE_SIZE_KINDS, "the outpost troop kinds") - K.KIND_BASE
+  G.waveMax = 0
+  for kind = 0, K.KINDS - 1 do
+    local at = G.kinds + kind * K.KIND_STRIDE
+    local most = (rd32(at + K.KIND_BASE) + rd32(at + K.KIND_RANGE) - 1) * (K.VANILLA_TOP + 1)
+    if most > G.waveMax then G.waveMax = most end
+  end
+  G.waveStart = G.guardRecorded + K.WAVE_START_AT
+  expectBytes(G.waveStart, { 0x85, 0xED, 0x0F, 0x85 }, "the start of the wave part")
+  G.forming = G.waveStart + 8 + rd32(G.waveStart + 4)
+  G.waveResume = G.waveStart + K.WAVE_START_SIZE
+
+  G.growth = scan(K.AOB_GROWTH, "where an outpost speeds up after a wave")
+  same(readOperand(G.growth, { 0x00, { 0x66, 0x83, 0x80 } }, "the wave counter"), G.buildings + K.WAVES_FIELD,
+    "the wave counter")
+  same(readOperand(G.growth, { 0x08, { 0x66, 0x83, 0x80 } }, "the unit pace"), G.buildings + K.PACE_FIELD,
+    "the unit pace")
+
+  expectBytes(G.growth + K.GROWTH_SIZE, { 0x5D, 0x5F, 0x5E, 0x5B }, "the end of the outpost update")
+end
+
+local function resolveOrders()
+  local launch = resolveLaunch()
+  same(readOperand(launch, { 0x00, { 0x8B, 0x80 } }, "the wave troop"), G.buildings + B.TRIBE_UID, "the wave troop")
+  G.launchSite = launch + K.LAUNCH_CALL
+  G.register = readCallTarget(launch, K.LAUNCH_CALL, "aiRegisterTribeAndAssignTarget")
+  G.setTarget = readCallTarget(G.register, K.REGISTER_SET_TARGET, "setTargetForTribeBasedOnTargetChoiceLogic")
+  local d = G.decide
+  G.paths = readOperand(d, K.DECIDE_PATHS, "the path finder")
+  F.busy = core.exposeCode(readCallTarget(d, K.DECIDE_BUSY, "checkTribeActivityPercentages"), 4, 1)
+  F.lead = core.exposeCode(readCallTarget(d, K.DECIDE_LEAD, "getUnitIDForIndexInTribe"), 3, 1)
+  F.path = core.exposeCode(readCallTarget(d, K.DECIDE_PATH, "pathFindingToAttackCastleIncludingMoat"), 8, 1)
+  resolveReach()
+  resolveInstruction()
+  resolveTribeActions()
+  resolveTeams()
+  resolveMove()
+  F.command = core.exposeCode(readCallTarget(d, K.DECIDE_COMMAND, "commandUnitsToLocation"), 5, 1)
+  F.register = core.exposeCode(G.register, 3, 1)
+  F.removeFromTribe = core.exposeCode(scan(K.AOB_REMOVE_FROM_TRIBE, "removeUnitFromTribe"), 3, 1)
+  F.addToItsTribe = core.exposeCode(scan(K.AOB_ADD_TO_ITS_TRIBE, "addUnitToItsTribe"), 3, 1)
+end
+
+local function resolveMapLayers()
   G.tileFlags = rd32(scan(K.AOB_TILE_FLAGS, "the tile flags") + K.TILE_FLAGS_OPERAND)
   G.buildingLayer = G.tileFlags + K.FLAGS_TO_BUILDINGS
   G.wallOwner = G.tileFlags + K.FLAGS_TO_WALL_OWNER
@@ -1954,6 +2022,7 @@ local function resolve()
 end
 
 local function resolveInterval()
+  resolveLaunch()
   local at, problem = core.AOBScanUnique(K.AOB_INTERVAL)
   if not at then error("idle wave wait " .. problem) end
   local site = at + K.INTERVAL_AT
@@ -2035,7 +2104,8 @@ local function resolvePanel()
   for _, value in ipairs({ 5, K.SLIDER_X, K.GAME_SIZE_Y, K.SLIDER_W, K.SLIDER_H, G.sizeSlider }) do
     for _, byte in ipairs(core.itob(value)) do pattern[#pattern + 1] = string.format("%02X", byte & 0xFF) end
   end
-  local sizeItem = scan(table.concat(pattern, " "), "the outpost's size slider item")
+  local sizeItem = core.AOBScan(table.concat(pattern, " "))
+  if sizeItem == nil then error("the outpost's size slider item was not found", 0) end
   local header = sizeItem - K.SIZE_ITEM_FROM_GROUP * K.ITEM_SIZE
   if rd32(header + K.ITEM_TYPE) ~= K.TYPE_GROUP then
     error(MODULE_NAME .. ": the outpost menu is not the one this module knows")
@@ -2063,37 +2133,25 @@ local function resolvePanel()
   F.sizeSlider = core.exposeCode(G.sizeSlider, 5, 0)
 end
 
----Encodes every panel word from the locale catalog `name` with `encode` before writing any of them.
-local function writeWords(name, encode)
-  local file = io.open(K.LOCALE .. name .. ".yml", "rb")
-  if file == nil then error("missing locale/" .. name .. ".yml", 0) end
-  local source = file:read("a")
-  file:close()
-  local catalog, encoded = yaml.eval(source), {}
+local panelText = require("panel_text")
+local function writeWords(catalog, encode)
+  local encoded = {}
   for key in pairs(G.words) do
-    local text = type(catalog) == "table" and catalog[key] or nil
-    if text == nil and name ~= "en" and G.intervalWords[key] then goto continue end
-    if type(text) ~= "string" then error("locale/" .. name .. ".yml has no " .. key, 0) end
-    encoded[key] = encode(text)
-    ::continue::
+    local text = encode(catalog[key])
+    if text:match("^ERROR:") then error("textResourceModifier cannot encode " .. catalog[key], 0) end
+    encoded[key] = core.CString(text)
   end
-  for key, value in pairs(encoded) do
-    local text = core.CString(value)
+  for key, text in pairs(encoded) do
     wr32(G.words[key], text.address)
     words[key] = text
   end
 end
 
----The panel's words in the game's language; English stays where that is unknown or fails.
 local function localizeWords()
-  local name = K.CATALOGS[data.version.getGameLanguage() or ""]
-  if name == nil then return end
+  local catalog = panelText[K.CATALOGS[data.version.getGameLanguage()]]
+  if catalog == nil then return end
   local owner = modules.textResourceModifier
-  local ok, problem = pcall(writeWords, name, function(text)
-    local encoded = owner:TransformText(text)
-    if encoded:match("^ERROR:") then error("textResourceModifier cannot encode " .. text, 0) end
-    return encoded
-  end)
+  local ok, problem = pcall(writeWords, catalog, function(text) return owner:TransformText(text) end)
   if not ok then log(WARNING, "the outpost panel keeps its English words: " .. tostring(problem)) end
 end
 
@@ -2137,24 +2195,23 @@ local function allocate()
   G.defendLabels, G.defendLabelCount = labels({ { K.LABEL_X, sizeY + K.LABEL_DROP, 0, 0 } })
   G.words = { panel_attackers = G.pageTexts, panel_defenders = G.pageTexts + 4, panel_amount = G.defendLabels + 8 }
   if O.growth then G.words.panel_growth = G.attackLabels + (#attack - 1) * 16 + 8 end
-  G.intervalWords = {}
   if O.interval then
     G.scopeTexts = core.allocate(8, true)
     G.timingLabels, G.timingLabelCount = labels({
       { K.LABEL_X, K.SIZE_Y + K.LABEL_DROP, 0, K.TEXT_DELAY },
       { K.LABEL_X, K.SECOND_ROW_Y + K.LABEL_DROP, 0, 0 },
     })
-    G.intervalWords = { panel_size = G.scopeTexts, panel_timing = G.scopeTexts + 4,
-      panel_interval = G.timingLabels + 16 + 8 }
-    for key, address in pairs(G.intervalWords) do G.words[key] = address end
+    G.words.panel_size = G.scopeTexts
+    G.words.panel_timing = G.scopeTexts + 4
+    G.words.panel_interval = G.timingLabels + 16 + 8
   end
-  writeWords("en", function(text) return text end)
+  writeWords(panelText.en, function(text) return text end)
 end
 
 local function install(self)
   local values = {
     MAX_BUILDINGS = K.MAX_BUILDINGS, MAX_TRIBES = K.MAX_TRIBES, B_STRIDE = B.STRIDE,
-    B_UID = G.buildings + B.UID, B_TYPE = G.buildings + B.TYPE, B_DEFENDERS = G.defendersField,
+    B_UID = G.buildings + B.UID, B_TYPE = G.buildings + B.TYPE, B_DEFENDERS = G.buildings + K.DEFENDER_COUNT_FIELD,
     B_WAVES = G.buildings + K.WAVES_FIELD, B_PACE = G.buildings + K.PACE_FIELD,
     TABLE = G.table, ENTRY_SHIFT = K.ENTRY_SHIFT, MAX_DEFENDERS = K.MAX_DEFENDERS, USUAL_DEFENDERS = K.USUAL_DEFENDERS,
     CURRENT_BUILDING = G.current, ARAB_OUTPOST = K.OUTPOST_ARAB, EURO_ARCHER = K.EURO_ARCHER,
@@ -2211,7 +2268,6 @@ local function install(self)
     values.WAVE_VALUE = assemble(templates.waveValue, values)
     keep(G.waveStart, K.WAVE_START_SIZE)
     values.UPDATE_END, values.FORMING, values.RESUME = G.growth + K.GROWTH_SIZE, G.forming, G.waveResume
-    expectBytes(values.UPDATE_END, { 0x5D, 0x5F, 0x5E, 0x5B }, "the end of the outpost update")
     jumpTo(G.waveStart, assemble(templates.waveStart, values), K.WAVE_START_SIZE)
   end
 
@@ -2304,8 +2360,12 @@ local function install(self)
         values.ENTRY_FIELD, values.STEP, values.WIDE = K.INTERVAL_FIELD, K.INTERVAL_STEP, 1
         values.INTERVAL_SLIDER = assemble(templates.entrySlider, values)
       end
+      keep(G.sizeItem + K.ITEM_Y, 4)
+      keep(G.delayItem + K.ITEM_Y, 4)
+      liveSliders(function(item) keep(item + K.ITEM_Y, 4) end)
       moveSliders()
       hooks.registerHookCallback("afterInit", function()
+        if self.saved == nil then return end
         moveSliders()
         if O.interval then refreshSliders() end
       end)
@@ -2320,6 +2380,7 @@ local function install(self)
       if O.interval then
         keep(G.sizeItem + K.ITEM_HIDDEN, 2)
         keep(G.delayItem + K.ITEM_HIDDEN, 2)
+        liveSliders(function(item) keep(item + K.ITEM_HIDDEN, 2) end)
         values.TOGGLE_X, values.TOGGLE_STATE, values.TOGGLE_TEXTS = K.SCOPE_X, G.scope, G.scopeTexts
         values.SCOPE_TOGGLE = assemble(templates.toggle, values)
         refreshSliders()
@@ -2360,17 +2421,20 @@ local function enable(self, config)
   O.riders = O.defenders and setting(config, "defenders", "knights") == true
   O.growth = setting(config, "growth", "enabled") == true
   O.jobs = setting(config, "jobs", "enabled") == true
-  O.variation = O.jobs and math.min(50, percent(setting(config, "jobs", "variation"))) or 0
+  O.variation = O.jobs and setting(config, "jobs", "variation", 50) or 0
   O.siege = setting(config, "siege", "enabled") == true
   O.join = setting(config, "join", "enabled") == true
   O.retarget = setting(config, "retarget", "enabled") == true
   O.log = setting(config, "diagnostics", "log") == true
   O.plans = {}
-  for _, plan in ipairs(K.PLANS) do
-    O.plans[plan.kind] = { first = plan.first, rest = plan.rest, share = percent(setting(config, "jobs", plan.name)) }
+  if O.jobs then
+    for _, plan in ipairs(K.PLANS) do
+      O.plans[plan.kind] = { first = plan.first, rest = plan.rest, share = setting(config, "jobs", plan.name, 100) }
+    end
   end
   O.plans[23] = { first = K.JOB_OVERWATCH, rest = K.JOB_OVERWATCH, share = 100 }
   G.ticks, G.updateTable = nil, nil
+  O.patrol = false
   if O.defenders or O.siege or O.jobs then
     local site, problem = core.AOBScanUnique(K.AOB_TICKS)
     if site then
@@ -2388,26 +2452,69 @@ local function enable(self, config)
   end
 
   -- A part whose code is not found (another module changed it) stays off on its own.
-  local ok, problem = pcall(resolve)
+  local ok, problem = pcall(resolveState)
   if not ok then
-    log(WARNING, tostring(problem))
+    log(ERROR, "Outpost Control is off. Shared outpost state could not be bound: " .. tostring(problem))
     return
+  end
+  if O.defenders then
+    ok, problem = pcall(resolveDefenders)
+    if not ok then
+      log(ERROR, "Outpost defenders and patrols are off: " .. tostring(problem))
+      O.defenders, O.walls, O.riders = false, false, false
+    end
+  end
+  if O.waves or O.growth then
+    ok, problem = pcall(resolveWaveSize)
+    if not ok then
+      log(ERROR, "Outpost wave sizes and growth are off: " .. tostring(problem))
+      O.waves, O.growth = false, false
+    end
+  end
+  if O.waves then
+    ok, problem = pcall(resolveExactWaves)
+    if not ok then
+      log(ERROR, "Exact outpost wave sizes are off: " .. tostring(problem))
+      O.waves = false
+    end
+  end
+  if O.jobs or O.siege or O.join or O.retarget then
+    ok, problem = pcall(resolveOrders)
+    if not ok then
+      log(ERROR, "Outpost wave roles, merging and retargeting are off: " .. tostring(problem))
+      O.jobs, O.siege, O.join, O.retarget = false, false, false, false
+    end
+  end
+  if O.defenders and G.ticks then
+    ok, problem = pcall(resolvePatrol)
+    O.patrol = ok
+    if not ok then
+      log(ERROR, "Outpost patrols are off: " .. tostring(problem))
+      O.riders = false
+    end
+  end
+  if O.walls or O.patrol or O.jobs or O.siege then
+    ok, problem = pcall(resolveMapLayers)
+    if not ok then
+      log(ERROR, "Outpost wall defenders, patrols, wave roles and siege targeting are off: " .. tostring(problem))
+      O.walls, O.patrol, O.riders, O.jobs, O.siege = false, false, false, false, false
+    end
   end
   if O.interval then
     ok, problem = pcall(resolveInterval)
     if not ok then
-      log(WARNING, tostring(problem) .. "; fixed wave intervals stay off")
+      log(ERROR, "Fixed outpost wave intervals are off: " .. tostring(problem))
       O.interval = false
     end
   end
   if O.defenders or O.growth or O.waves or O.interval then
     ok, problem = pcall(resolvePanel)
     if ok and O.interval and G.menu == nil then
-      log(WARNING, MODULE_NAME .. ": fixed wave intervals stay off without the building menu")
+      log(ERROR, "Fixed outpost wave intervals stay off without the building menu.")
       O.interval = false
     end
     if not ok then
-      log(WARNING, tostring(problem) .. "; the outpost panel pages, defenders, growth and wave sizes stay off")
+      log(ERROR, "Outpost panel controls, defenders, growth and wave sizes are off: " .. tostring(problem))
       O.defenders, O.growth, O.waves, O.walls, O.riders, O.interval = false, false, false, false, false, false
     end
   end
@@ -2469,8 +2576,8 @@ local function enable(self, config)
     end
     ok, problem = pcall(resolveWallShooting)
     if not ok then
-      G.height = nil
-      log(WARNING, tostring(problem) .. "; some outpost terrain targeting is unavailable")
+      G.height, F.playable = nil, nil
+      log(ERROR, "Outpost terrain targeting is off: " .. tostring(problem))
     end
   end
   if O.siege then
@@ -2494,6 +2601,9 @@ local function enable(self, config)
       O.riders = false
     end
   end
+  if not (O.defenders or O.growth or O.jobs or O.siege or O.join or O.retarget or O.waves or O.interval) then
+    return
+  end
   allocate()
   if O.defenders or O.growth or O.waves or O.interval then hooks.registerHookCallback("afterInit", localizeWords) end
 
@@ -2503,7 +2613,16 @@ local function enable(self, config)
     deserialize = function(_, handle) deserialize(handle) end,
   })
 
-  install(self)
+  local installed, installProblem = pcall(install, self)
+  if not installed then
+    for index = #(self.saved or {}), 1, -1 do
+      local saved = self.saved[index]
+      core.writeCode(saved.address, saved.bytes)
+    end
+    self.saved = nil
+    log(ERROR, "Outpost Control is off. Its patches could not be installed: " .. tostring(installProblem))
+    return
+  end
   log(INFO, string.format("%s: on (defenders %s, growth %s, jobs %s, siege engines %s, waves to the AI army %s); buildings 0x%X, "
     .. "troops 0x%X (size 0x%X), units 0x%X", MODULE_NAME, O.defenders and "on" or "off",
     O.growth and "on" or "off", O.jobs and "on" or "off", O.siege and "on" or "off", O.join and "on" or "off", G.buildings, G.tribes,

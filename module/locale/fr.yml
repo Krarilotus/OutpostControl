@@ -25,14 +25,7 @@ join_enabled_tooltip: Les troupes qui rejoignent une armée IA suivent ses ordre
 improvements: Améliorations
 balance_changes: Modifications de l'équilibrage
 ai: IA
-panel_attackers: Attaquants
-panel_defenders: Défenseurs
-panel_growth: Croissance
-panel_amount: Quantité
 waves_interval: Intervalle fixe entre les vagues
 waves_interval_tooltip: Dans la page Délais de l’avant-poste, réglez Intervalle sur un délai fixe ou 0 pour utiliser le rythme du jeu.
-panel_size: Taille
-panel_timing: Délais
-panel_interval: Intervalle
 qol: Qualité de vie
 map_editor: Éditeur de cartes

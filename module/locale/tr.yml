@@ -25,14 +25,7 @@ join_enabled_tooltip: Bir yapay zekâ ordusuna katılan birlikler onun emirlerin
 improvements: İyileştirmeler
 balance_changes: Denge değişiklikleri
 ai: Yapay zekâ
-panel_attackers: Saldıranlar
-panel_defenders: Savunucular
-panel_growth: Büyüme
-panel_amount: Miktar
 waves_interval: Dalgalar arası sabit aralık
 waves_interval_tooltip: Karakolun Zamanlama sayfasında Aralık değerini sabit bir gecikmeye veya oyun zamanlaması için 0’a ayarlayın.
-panel_size: Boyut
-panel_timing: Zamanlama
-panel_interval: Aralık
 qol: Kullanım kolaylığı
 map_editor: Harita düzenleyici

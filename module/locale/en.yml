@@ -29,14 +29,7 @@ join_enabled_tooltip: Troops that join an AI army follow its orders and leave th
 improvements: Improvements
 balance_changes: Balance Changes
 ai: AI
-panel_attackers: Attackers
-panel_defenders: Defenders
-panel_growth: Growth
-panel_amount: Amount
 waves_interval: Fixed interval between waves
 waves_interval_tooltip: On the outpost’s Timing page, set Interval to a fixed delay or 0 to use game timing.
-panel_size: Size
-panel_timing: Timing
-panel_interval: Interval
 qol: Quality of Life
 map_editor: Map editor

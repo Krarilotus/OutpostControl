@@ -25,14 +25,7 @@ join_enabled_tooltip: Войска, присоединившиеся к арми
 improvements: Улучшения
 balance_changes: Изменения баланса
 ai: ИИ
-panel_attackers: Атакующие
-panel_defenders: Защитники
-panel_growth: Рост
-panel_amount: Количество
 waves_interval: Фиксированный интервал между волнами
 waves_interval_tooltip: На вкладке «Время» задайте фиксированный «Интервал» или 0, чтобы использовать стандартный таймер игры.
-panel_size: Размер
-panel_timing: Время
-panel_interval: Интервал
 qol: Удобство игры
 map_editor: Редактор карт
