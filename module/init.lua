@@ -1677,8 +1677,29 @@ local function isOutpost(id)
   return kind == K.OUTPOST_EURO or kind == K.OUTPOST_ARAB
 end
 
+local function resolveUnitCapacity()
+  if not G.unitCapacityResolved then
+    G.unitCapacityResolved = true
+    local ok, result = pcall(function()
+      -- The reinforcement check subtracts the live unit count from the last unit index.
+      local limit = scan("8D 44 38 06 B9 ? ? ? ? 2B 0D ? ? ? ? 50 51 B9 ? ? ? ? E8", "the unit limit")
+      same(G.unitsThis + 4, readOperand(limit, { 9, { 0x2B, 0x0D } }, "the active unit count"),
+        "the active unit count")
+      local lastUnit = rd32(limit + 5)
+      assert(lastUnit > 0 and lastUnit < 0xFFFF, "invalid unit table limit")
+      return lastUnit + 1
+    end)
+    if ok then
+      G.unitCapacity = result
+    else
+      log(ERROR, "Outpost defenders and saved defender slots are off: " .. tostring(result))
+    end
+  end
+  return G.unitCapacity
+end
+
 local function serialize(handle)
-  local unitCount = math.min(rd32(G.unitsThis), G.unitCapacity)
+  local unitCount = G.unitCapacity and math.min(rd32(G.unitsThis), G.unitCapacity) or 0
   local entries = {}
   for id = 1, K.MAX_BUILDINGS - 1 do
     local entry = G.table + id * K.ENTRY_SIZE
@@ -1784,12 +1805,12 @@ local function deserialize(handle)
       end
     end
   end
-  if handle:exists(K.SAVE_GUARDS) then
-    local data = handle:get(K.SAVE_GUARDS)
-    local size = string.packsize("<I2I2I4")
+  local guardData = handle:exists(K.SAVE_GUARDS) and handle:get(K.SAVE_GUARDS)
+  local guardSize = string.packsize("<I2I2I4")
+  if guardData and #guardData >= guardSize and resolveUnitCapacity() then
     local used = {}
-    for offset = 1, #data - size + 1, size do
-      local id, u, unitUid = string.unpack("<I2I2I4", data, offset)
+    for offset = 1, #guardData - guardSize + 1, guardSize do
+      local id, u, unitUid = string.unpack("<I2I2I4", guardData, offset)
       local slot = used[id] or 0
       if id > 0 and id < K.MAX_BUILDINGS and slot < K.MAX_GUARDS
           and u > 0 and u < G.unitCapacity and unitUid ~= 0
@@ -1860,13 +1881,6 @@ local function resolveState()
   G.units = readOperand(d, K.DECIDE_UNIT_Y, "the unit array") - U.Y
   G.unitsThis = readOperand(d, K.DECIDE_UNITS_THIS, "the unit state")
   same(G.unitsThis, G.units - U.STATE_OFFSET, "the unit array")
-  -- The reinforcement check subtracts the live unit count from the last unit index.
-  local limit = scan("8D 44 38 06 B9 ? ? ? ? 2B 0D ? ? ? ? 50 51 B9 ? ? ? ? E8", "the unit limit")
-  same(G.unitsThis + 4, readOperand(limit, { 9, { 0x2B, 0x0D } }, "the active unit count"),
-    "the active unit count")
-  local lastUnit = rd32(limit + 5)
-  assert(lastUnit > 0 and lastUnit < 0xFFFF, "invalid unit table limit")
-  G.unitCapacity = lastUnit + 1
   G.rows = readOperand(d, K.DECIDE_ROWS, "the map rows")
   G.buildings = readOperand(d, K.DECIDE_BUILDING_UID, "the building uid") - B.UID
   G.players = readOperand(d, K.DECIDE_CAMP, "the player array") - P.CAMP
@@ -2442,6 +2456,10 @@ local function install(self)
 end
 
 local function enable(self, config)
+  if config ~= nil and type(config) ~= "table" then
+    log(ERROR, MODULE_NAME .. ": invalid settings type. Using defaults.")
+    return
+  end
   config = config or {}
   O.defenders = setting(config, "defenders", "enabled") == true
   O.walls = O.defenders and setting(config, "defenders", "walls") == true
@@ -2485,6 +2503,10 @@ local function enable(self, config)
   if not ok then
     log(ERROR, "Outpost Control is off. Shared outpost state could not be bound: " .. tostring(problem))
     return
+  end
+  G.unitCapacity, G.unitCapacityResolved = nil, false
+  if O.defenders and not resolveUnitCapacity() then
+    O.defenders, O.walls, O.riders = false, false, false
   end
   if O.defenders then
     ok, problem = pcall(resolveDefenders)
