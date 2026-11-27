@@ -544,6 +544,7 @@ pop ebx
 pop ecx
 checked:
 end if
+if ORDERS <> 0
 mov eax,[esp+4]
 cmp eax,MAX_TRIBES
 jae original
@@ -570,6 +571,7 @@ mov [DECIDE_THIS],ecx
 call PAD
 ret 4
 original:
+end if
 jmp DECIDE
 ]]
 

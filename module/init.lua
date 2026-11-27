@@ -372,6 +372,8 @@ K.ITEM_SIZE, K.ITEM_TYPE, K.ITEM_ACTION, K.ITEM_PARAM, K.ITEM_IMAGE = 0x50, 0x00
 K.ITEM_MIN, K.ITEM_MAX, K.ITEM_VALUE = 0x3C, 0x40, 0x44
 K.ITEM_Y, K.ITEM_RENDER, K.ITEM_HIDDEN = 0x08, 0x1C, 0x36
 K.TYPE_GROUP, K.TYPE_LAST = 0x01000000, 0x66
+K.AOB_BUILDING_MENU = "68 ? ? ? ? B9 ? ? ? ? E8 81 93 F5 FF C3 68 ? ? ? ? B9 ? ? ? ? E8 71 93 F5 FF C3"
+K.AOB_BUILDING_MENU_EXTREME = "68 ? ? ? ? B9 ? ? ? ? E8 E1 92 F5 FF C3 68 ? ? ? ? B9 ? ? ? ? E8 D1 92 F5 FF C3"
 K.SIZE_ITEM_FROM_GROUP = 9    -- group header, eight buttons, then the size slider
 
 ---------------------------------------------------------------------------------------
@@ -476,14 +478,10 @@ local function assemble(script, values)
   return core.allocateAssembly(script, used)
 end
 
-local function jumpTo(site, target, size)
-  local bytes = { 0xE9, core.itob(core.getRelativeAddress(site, target, -5)) }
+local function relativePatch(opcode, site, target, size)
+  local bytes = { opcode, core.itob(core.getRelativeAddress(site, target, -5)) }
   for _ = 6, size do bytes[#bytes + 1] = 0x90 end
-  core.writeCode(site, bytes)
-end
-
-local function callTo(site, target)
-  core.writeCode(site, { 0xE8, core.itob(core.getRelativeAddress(site, target, -5)) })
+  return bytes
 end
 
 ---------------------------------------------------------------------------------------
@@ -621,7 +619,7 @@ local function onLaunch()
   end
 
   if O.join then joinArmy(t, owner) end
-  if rd16(tb + T.STATE) ~= 2 then return end
+  if not (O.jobs or O.siege) or rd16(tb + T.STATE) ~= 2 then return end
 
   local byKind, kinds = {}, {}
   local count = rd32(G.unitsThis)
@@ -1874,13 +1872,17 @@ local function resolveState()
   G.players = readOperand(d, K.DECIDE_CAMP, "the player array") - P.CAMP
 end
 
+local function findLaunch()
+  if not G.launch then G.launch = scan(K.AOB_LAUNCH, "where an outpost sends its wave") end
+  return G.launch
+end
+
 local function resolveLaunch()
-  if G.launch then return G.launch end
-  local launch = scan(K.AOB_LAUNCH, "where an outpost sends its wave")
-  G.current = readOperand(launch, K.LAUNCH_CURRENT, "the current building")
-  G.aiState = readOperand(launch, K.LAUNCH_AI, "the AI state")
-  G.launch = launch
-  return launch
+  if not G.current then G.current = readOperand(findLaunch(), K.LAUNCH_CURRENT, "the current building") end
+end
+
+local function resolveOrderAI()
+  if not G.aiState then G.aiState = readOperand(findLaunch(), K.LAUNCH_AI, "the AI state") end
 end
 
 local function resolveGuardRecord()
@@ -1925,6 +1927,7 @@ local function resolveMove()
 end
 
 local function resolvePatrol()
+  resolveOrderAI()
   resolveReach()
   resolveMove()
   F.addPoint = core.exposeCode(scan(K.AOB_ADD_POINT, "addRallyPoint"), 5, 1)
@@ -1992,26 +1995,35 @@ local function resolveExactWaves()
   expectBytes(G.growth + K.GROWTH_SIZE, { 0x5D, 0x5F, 0x5E, 0x5B }, "the end of the outpost update")
 end
 
-local function resolveOrders()
-  local launch = resolveLaunch()
+local function resolveWaveRegister()
+  local launch = findLaunch()
   same(readOperand(launch, { 0x00, { 0x8B, 0x80 } }, "the wave troop"), G.buildings + B.TRIBE_UID, "the wave troop")
   G.launchSite = launch + K.LAUNCH_CALL
   G.register = readCallTarget(launch, K.LAUNCH_CALL, "aiRegisterTribeAndAssignTarget")
-  G.setTarget = readCallTarget(G.register, K.REGISTER_SET_TARGET, "setTargetForTribeBasedOnTargetChoiceLogic")
+end
+
+local function resolveMerge()
+  resolveOrderAI()
+  F.addToItsTribe = core.exposeCode(scan(K.AOB_ADD_TO_ITS_TRIBE, "addUnitToItsTribe"), 3, 1)
+end
+
+local function resolveWaveGroups()
+  resolveOrderAI()
+  resolveReach()
+  resolveTribeActions()
   local d = G.decide
-  G.paths = readOperand(d, K.DECIDE_PATHS, "the path finder")
   F.busy = core.exposeCode(readCallTarget(d, K.DECIDE_BUSY, "checkTribeActivityPercentages"), 4, 1)
   F.lead = core.exposeCode(readCallTarget(d, K.DECIDE_LEAD, "getUnitIDForIndexInTribe"), 3, 1)
-  F.path = core.exposeCode(readCallTarget(d, K.DECIDE_PATH, "pathFindingToAttackCastleIncludingMoat"), 8, 1)
-  resolveReach()
-  resolveInstruction()
-  resolveTribeActions()
-  resolveTeams()
-  resolveMove()
   F.command = core.exposeCode(readCallTarget(d, K.DECIDE_COMMAND, "commandUnitsToLocation"), 5, 1)
   F.register = core.exposeCode(G.register, 3, 1)
-  F.removeFromTribe = core.exposeCode(scan(K.AOB_REMOVE_FROM_TRIBE, "removeUnitFromTribe"), 3, 1)
-  F.addToItsTribe = core.exposeCode(scan(K.AOB_ADD_TO_ITS_TRIBE, "addUnitToItsTribe"), 3, 1)
+end
+
+local function resolveRoleOrders()
+  resolveLaunch()
+  resolveInstruction()
+  local d = G.decide
+  G.paths = readOperand(d, K.DECIDE_PATHS, "the path finder")
+  F.path = core.exposeCode(readCallTarget(d, K.DECIDE_PATH, "pathFindingToAttackCastleIncludingMoat"), 8, 1)
 end
 
 local function resolveMapLayers()
@@ -2033,6 +2045,7 @@ local function resolveInterval()
 end
 
 local function resolveSiege(acquire)
+  resolveTeams()
   F.acquire = core.exposeCode(acquire, 2, 1)
   F.halt = core.exposeCode(scan(K.AOB_HALT, "the game's stop walking"), 2, 1)
 end
@@ -2099,37 +2112,50 @@ local function resolvePanel()
   G.sounds = readOperand(toolbar, K.TOOLBAR_SOUNDS, "the sound player")
   G.playSound = readCallTarget(toolbar, K.TOOLBAR_PLAY_SOUND, "the sound player")
 
-  -- The static size slider item: its group's picture, the menu's item table and the menu.
-  local pattern = {}
-  for _, value in ipairs({ 5, K.SLIDER_X, K.GAME_SIZE_Y, K.SLIDER_W, K.SLIDER_H, G.sizeSlider }) do
-    for _, byte in ipairs(core.itob(value)) do pattern[#pattern + 1] = string.format("%02X", byte & 0xFF) end
+  -- The static initializer passes the building menu its item table.
+  local constructor = scan(data.version.isExtreme() and K.AOB_BUILDING_MENU_EXTREME or K.AOB_BUILDING_MENU,
+    "the building menu initializer")
+  local start = rd32(constructor + 1)
+  local menu = rd32(constructor + 6)
+  local first, last = ucp.internal.getMainImageRange()
+  if start < first or start > last - K.ITEM_SIZE + 1 or rd32(start) ~= 0
+      or menu < first or menu > last - 3 then
+    error("the building menu initializer has invalid operands", 0)
   end
-  local sizeItem = core.AOBScan(table.concat(pattern, " "))
-  if sizeItem == nil then error("the outpost's size slider item was not found", 0) end
+  local sizeItem, endItem
+  for index = 0, 399 do
+    local item = start + index * K.ITEM_SIZE
+    if item > last - K.ITEM_SIZE + 1 then break end
+    if rd32(item + K.ITEM_TYPE) == K.TYPE_LAST then
+      endItem = item
+      break
+    end
+    if rd32(item + K.ITEM_ACTION) == G.sizeSlider then
+      if sizeItem then error("the building menu has multiple outpost size sliders", 0) end
+      sizeItem = item
+    end
+  end
+  if not endItem or not sizeItem or sizeItem + K.ITEM_SIZE >= endItem then
+    error("the building menu's outpost sliders could not be verified", 0)
+  end
   local header = sizeItem - K.SIZE_ITEM_FROM_GROUP * K.ITEM_SIZE
-  if rd32(header + K.ITEM_TYPE) ~= K.TYPE_GROUP then
-    error(MODULE_NAME .. ": the outpost menu is not the one this module knows")
+  if header < start or rd32(header + K.ITEM_TYPE) ~= K.TYPE_GROUP then
+    error("the building menu's outpost group could not be verified", 0)
   end
+  local delayItem = sizeItem + K.ITEM_SIZE
   same(rd32(header + K.ITEM_SIZE + K.ITEM_IMAGE), K.TEXT_BUTTON, "the outpost's button picture")
-  G.sizeItem = sizeItem
+  same(rd32(delayItem + K.ITEM_ACTION), G.delaySlider, "the outpost's start delay slider action")
+  for _, slider in ipairs({ { sizeItem, K.GAME_SIZE_Y }, { delayItem, K.GAME_DELAY_Y } }) do
+    local item = slider[1]
+    same(rd32(item + K.ITEM_TYPE), 5, "the outpost slider type")
+    same(rd32(item + 4), K.SLIDER_X, "the outpost slider x position")
+    same(rd32(item + K.ITEM_Y), slider[2], "the outpost slider y position")
+    same(rd32(item + 0x0C), K.SLIDER_W, "the outpost slider width")
+    same(rd32(item + 0x10), K.SLIDER_H, "the outpost slider height")
+  end
+  G.sizeItem, G.delayItem, G.menu = sizeItem, delayItem, menu
   G.sliderRender = rd32(sizeItem + K.ITEM_RENDER)
-  G.delayItem = sizeItem + K.ITEM_SIZE
-  same(rd32(G.delayItem + K.ITEM_ACTION), G.delaySlider, "the outpost's start delay slider item")
-  same(rd32(G.delayItem + K.ITEM_Y), K.GAME_DELAY_Y, "the outpost's start delay slider item")
-  local start, limit = header, 400
-  while rd32(start - K.ITEM_SIZE + K.ITEM_TYPE) ~= K.TYPE_LAST and limit > 0 do
-    start = start - K.ITEM_SIZE
-    limit = limit - 1
-  end
-  local bytes = {}
-  for _, byte in ipairs(core.itob(start)) do bytes[#bytes + 1] = string.format("%02X", byte & 0xFF) end
-  local constructor, reason = core.AOBScanUnique("68 " .. table.concat(bytes, " ") .. " B9")
-  if constructor then
-    G.menu = rd32(constructor + 6)
-  else
-    log(WARNING, MODULE_NAME .. ": building menu constructor " .. reason .. "; switching the page may show "
-      .. "the sliders of the other page until the panel is opened again")
-  end
+  if G.sliderRender == 0 then error("the outpost slider renderer is missing", 0) end
   F.sizeSlider = core.exposeCode(G.sizeSlider, 5, 0)
 end
 
@@ -2220,44 +2246,46 @@ local function install(self)
     U_STRIDE = U.STRIDE, U_UID = G.units + U.UID, UNIT_CAPACITY = G.unitCapacity,
     UNIT_COUNT = G.unitsThis, VANILLA_SLOTS = K.VANILLA_SLOTS,
   }
-  self.saved = {}
+  local saved, writes = {}, {}
   local function keep(address, size)
-    self.saved[#self.saved + 1] = { address = address, bytes = core.readBytes(address, size) }
+    saved[#saved + 1] = { address = address, bytes = core.readBytes(address, size) }
+  end
+  local function stage(site, bytes)
+    local code = core.compile(bytes, site)
+    keep(site, #code)
+    writes[#writes + 1] = function() core.writeCode(site, code, false) end
+  end
+  local function stageJump(site, target, size)
+    stage(site, relativePatch(0xE9, site, target, size))
   end
 
   values.ENTRY_GET = assemble(templates.entryGet, values)
   values.ENTRY_MAKE = assemble(templates.entryMake, values)
 
   if O.defenders then
-    keep(G.defenderCount, K.DEFENDER_COUNT_SIZE)
     values.SKIP, values.ROLL, values.RESUME = G.skip, G.roll, G.defenderCount + K.DEFENDER_COUNT_SIZE
-    jumpTo(G.defenderCount, assemble(templates.defenderCount, values), K.DEFENDER_COUNT_SIZE)
-    keep(G.guardCount, K.GUARD_COUNT_SIZE)
+    stageJump(G.defenderCount, assemble(templates.defenderCount, values), K.DEFENDER_COUNT_SIZE)
     values.B_TIMER, values.GUARD_PACE = G.buildings + K.TIMER_FIELD, K.GUARD_PACE
     values.LONGEST_WAIT, values.SHORTEST_WAIT = K.LONGEST_WAIT, K.SHORTEST_WAIT
     values.PICK, values.RESUME = G.defenderType, G.guardCount + K.GUARD_COUNT_SIZE
-    jumpTo(G.guardCount, assemble(templates.guardCount, values), K.GUARD_COUNT_SIZE)
-    keep(G.guardRecord, K.GUARD_RECORD_SIZE)
+    stageJump(G.guardCount, assemble(templates.guardCount, values), K.GUARD_COUNT_SIZE)
     values.DONE, values.RESUME = G.guardRecorded, G.guardRecord + K.GUARD_RECORD_SIZE
     values.GUARD_UNIT, values.PAD = G.guardUnit, pad(onGuard, "outpost guards")
-    jumpTo(G.guardRecord, assemble(templates.guardRecord, values), K.GUARD_RECORD_SIZE)
-    keep(G.defenderType, K.DEFENDER_TYPE_SIZE)
+    stageJump(G.guardRecord, assemble(templates.guardRecord, values), K.GUARD_RECORD_SIZE)
     values.RESUME = G.defenderType + K.DEFENDER_TYPE_SIZE
-    jumpTo(G.defenderType, assemble(templates.defenderType, values), K.DEFENDER_TYPE_SIZE)
+    stageJump(G.defenderType, assemble(templates.defenderType, values), K.DEFENDER_TYPE_SIZE)
   end
 
   values.WAVES_ON, values.GROWTH_ON = O.waves and 1 or 0, O.growth and 1 or 0
   values.B_WAVE, values.GROWTH_CAP = G.buildings + K.WAVE_FIELD, K.GROWTH_CAP
   if O.interval then
-    keep(G.interval, K.INTERVAL_SIZE)
     values.INTERVAL_FIELD, values.TICKS_PER_SECOND = K.INTERVAL_FIELD, K.TICKS_PER_SECOND
     values.B_IDLE_TIMER, values.RESUME = G.buildings + K.IDLE_TIMER_FIELD, G.interval + K.INTERVAL_SIZE
-    jumpTo(G.interval, assemble(templates.intervalWait, values), K.INTERVAL_SIZE)
+    stageJump(G.interval, assemble(templates.intervalWait, values), K.INTERVAL_SIZE)
   end
   if O.waves or O.growth then
-    keep(G.waveSize, K.WAVE_SIZE_SIZE)
     values.RESUME = G.waveSize + K.WAVE_SIZE_SIZE
-    jumpTo(G.waveSize, assemble(templates.waveSize, values), K.WAVE_SIZE_SIZE)
+    stageJump(G.waveSize, assemble(templates.waveSize, values), K.WAVE_SIZE_SIZE)
   end
   if O.waves then
     values.KINDS, values.KIND_STRIDE = G.kinds, K.KIND_STRIDE
@@ -2266,18 +2294,19 @@ local function install(self)
     values.B_WAVE, values.WAVE_MAX, values.VANILLA_TOP = G.buildings + K.WAVE_FIELD, G.waveMax, K.VANILLA_TOP
     values.KIND_AVERAGE = assemble(templates.kindAverage, values)
     values.WAVE_VALUE = assemble(templates.waveValue, values)
-    keep(G.waveStart, K.WAVE_START_SIZE)
     values.UPDATE_END, values.FORMING, values.RESUME = G.growth + K.GROWTH_SIZE, G.forming, G.waveResume
-    jumpTo(G.waveStart, assemble(templates.waveStart, values), K.WAVE_START_SIZE)
+    stageJump(G.waveStart, assemble(templates.waveStart, values), K.WAVE_START_SIZE)
   end
 
 
-  if O.jobs or O.siege or O.join or O.retarget then
+  local orders = O.jobs or O.siege
+  if orders or O.join then
     values.LAUNCH_TRIBE, values.LAUNCH_THIS, values.REGISTER = G.launchTribe, G.launchThis, G.register
     values.PAD = pad(onLaunch, "splitting waves")
-    keep(G.launchSite, 5)
-    callTo(G.launchSite, assemble(templates.launch, values))
-
+    stage(G.launchSite, relativePatch(0xE8, G.launchSite, assemble(templates.launch, values), 5))
+  end
+  if orders or O.retarget then
+    values.ORDERS = orders and 1 or 0
     values.JOBS, values.JOB_UIDS, values.TRIBE_STRIDE = G.jobs, G.jobUids, G.tribeStride
     values.TRIBE_UID = G.tribes + T.UID
     values.JOBS_ON, values.SIEGE_ON = O.jobs and 1 or 0, O.siege and 1 or 0
@@ -2287,9 +2316,8 @@ local function install(self)
     values.TRIBE_TARGET, values.TRIBE_OWNER = G.tribes + G.tribeTarget, G.tribes + T.OWNER
     values.P_STRIDE, values.P_LORD, values.P_LORD_UID = P.STRIDE, G.players + P.LORD, G.players + P.LORD_UID
     values.U_STATE, values.U_TYPE, values.LORD_TYPE = G.units + U.STATE, G.units + U.TYPE, K.LORD_TYPE
-    values.PAD = pad(onDecide, "outpost troop orders")
-    keep(G.decideSite, 5)
-    callTo(G.decideSite, assemble(templates.decide, values))
+    if orders then values.PAD = pad(onDecide, "outpost troop orders") end
+    stage(G.decideSite, relativePatch(0xE8, G.decideSite, assemble(templates.decide, values), 5))
   end
 
   local siegeUpdates = O.siege and G.updateTable ~= nil
@@ -2306,16 +2334,14 @@ local function install(self)
     values.PAD = pad(onSiegeUnit, "siege engines on the way")
     local check = assemble(templates.siegeCheck, values)
     for kind in pairs(K.SIEGE) do
-      keep(G.updateTable + kind * 4, 4)
-      core.writeCodeInteger(G.updateTable + kind * 4, check)
+      stage(G.updateTable + kind * 4, core.itob(check))
     end
   end
   if O.riders then
     -- the same check for knight guards; their states 0, 1 and 0x65 only
     values.STATE_CREEPING, values.SIEGE_UNIT = K.STATE_MOVING, G.riderUnit
     values.PAD = pad(onRider, "patrolling knights")
-    keep(G.updateTable + K.KNIGHT * 4, 4)
-    core.writeCodeInteger(G.updateTable + K.KNIGHT * 4, assemble(templates.siegeCheck, values))
+    stage(G.updateTable + K.KNIGHT * 4, core.itob(assemble(templates.siegeCheck, values)))
   end
 
   if O.defenders or O.growth or O.waves or O.interval then
@@ -2363,12 +2389,7 @@ local function install(self)
       keep(G.sizeItem + K.ITEM_Y, 4)
       keep(G.delayItem + K.ITEM_Y, 4)
       liveSliders(function(item) keep(item + K.ITEM_Y, 4) end)
-      moveSliders()
-      hooks.registerHookCallback("afterInit", function()
-        if self.saved == nil then return end
-        moveSliders()
-        if O.interval then refreshSliders() end
-      end)
+      writes[#writes + 1] = moveSliders
     end
 
     if O.defenders or O.interval then
@@ -2380,10 +2401,13 @@ local function install(self)
       if O.interval then
         keep(G.sizeItem + K.ITEM_HIDDEN, 2)
         keep(G.delayItem + K.ITEM_HIDDEN, 2)
-        liveSliders(function(item) keep(item + K.ITEM_HIDDEN, 2) end)
+        liveSliders(function(item, action)
+          keep(item + K.ITEM_HIDDEN, 2)
+          if action == G.sizeSlider then keep(item + K.ITEM_MIN, 12) end
+        end)
         values.TOGGLE_X, values.TOGGLE_STATE, values.TOGGLE_TEXTS = K.SCOPE_X, G.scope, G.scopeTexts
         values.SCOPE_TOGGLE = assemble(templates.toggle, values)
-        refreshSliders()
+        writes[#writes + 1] = refreshSliders
       end
     end
 
@@ -2391,24 +2415,29 @@ local function install(self)
       values.LABEL_TABLE, values.LABEL_COUNT = G.defendLabels, G.defendLabelCount
       values.DEFENDER_LABELS = assemble(templates.labels, values)
 
-      keep(G.buttonRender, K.BUTTON_RENDER_SIZE)
       values.RESUME = G.buttonRender + K.BUTTON_RENDER_SIZE
-      jumpTo(G.buttonRender, assemble(templates.buttonRender, values), K.BUTTON_RENDER_SIZE)
-      keep(G.buttonClick, K.BUTTON_CLICK_SIZE)
+      stageJump(G.buttonRender, assemble(templates.buttonRender, values), K.BUTTON_RENDER_SIZE)
       values.RESUME = G.buttonClick + K.BUTTON_CLICK_SIZE
-      jumpTo(G.buttonClick, assemble(templates.buttonClick, values), K.BUTTON_CLICK_SIZE)
+      stageJump(G.buttonClick, assemble(templates.buttonClick, values), K.BUTTON_CLICK_SIZE)
     end
     if O.defenders or O.waves then
       if O.waves then values.WAVE_SLIDER = assemble(templates.waveSlider, values) end
-      keep(G.sizeSlider, K.SLIDER_SIZE)
       values.RESUME, values.FIELD, values.TOP, values.STEP, values.SYNC = G.sizeSlider + K.SLIDER_SIZE, 6,
         K.MAX_DEFENDERS, 1, 1
-      jumpTo(G.sizeSlider, assemble(templates.slider, values), K.SLIDER_SIZE)
+      stageJump(G.sizeSlider, assemble(templates.slider, values), K.SLIDER_SIZE)
     end
 
-    keep(G.panel, 5)
     values.RESUME = G.panel + 5
-    jumpTo(G.panel, assemble(templates.panel, values), 5)
+    stageJump(G.panel, assemble(templates.panel, values), 5)
+  end
+  self.saved = saved
+  for _, write in ipairs(writes) do write() end
+  if O.growth or O.interval then
+    hooks.registerHookCallback("afterInit", function()
+      if self.saved == nil then return end
+      moveSliders()
+      if O.interval then refreshSliders() end
+    end)
   end
 end
 
@@ -2479,10 +2508,49 @@ local function enable(self, config)
     end
   end
   if O.jobs or O.siege or O.join or O.retarget then
-    ok, problem = pcall(resolveOrders)
+    ok, problem = pcall(resolveWaveRegister)
     if not ok then
-      log(ERROR, "Outpost wave roles, merging and retargeting are off: " .. tostring(problem))
+      log(ERROR, "Outpost wave roles, siege orders, merging and retargeting are off: " .. tostring(problem))
       O.jobs, O.siege, O.join, O.retarget = false, false, false, false
+    end
+  end
+  if O.retarget then
+    ok, problem = pcall(readCallTarget, G.register, K.REGISTER_SET_TARGET, "setTargetForTribeBasedOnTargetChoiceLogic")
+    if ok then
+      G.setTarget = problem
+    else
+      log(ERROR, "Outpost retargeting is off: " .. tostring(problem))
+      O.retarget = false
+    end
+  end
+  if O.jobs or O.siege or O.join then
+    ok, problem = pcall(function()
+      F.removeFromTribe = core.exposeCode(scan(K.AOB_REMOVE_FROM_TRIBE, "removeUnitFromTribe"), 3, 1)
+    end)
+    if not ok then
+      log(ERROR, "Outpost wave roles, siege orders and merging are off: " .. tostring(problem))
+      O.jobs, O.siege, O.join = false, false, false
+    end
+  end
+  if O.join then
+    ok, problem = pcall(resolveMerge)
+    if not ok then
+      log(ERROR, "Outpost wave merging is off: " .. tostring(problem))
+      O.join = false
+    end
+  end
+  if O.jobs or O.siege then
+    ok, problem = pcall(resolveWaveGroups)
+    if not ok then
+      log(ERROR, "Outpost wave roles and siege orders are off: " .. tostring(problem))
+      O.jobs, O.siege = false, false
+    end
+  end
+  if O.jobs then
+    ok, problem = pcall(resolveRoleOrders)
+    if not ok then
+      log(ERROR, "Outpost wave roles are off: " .. tostring(problem))
+      O.jobs = false
     end
   end
   if O.defenders and G.ticks then
@@ -2509,10 +2577,6 @@ local function enable(self, config)
   end
   if O.defenders or O.growth or O.waves or O.interval then
     ok, problem = pcall(resolvePanel)
-    if ok and O.interval and G.menu == nil then
-      log(ERROR, "Fixed outpost wave intervals stay off without the building menu.")
-      O.interval = false
-    end
     if not ok then
       log(ERROR, "Outpost panel controls, defenders, growth and wave sizes are off: " .. tostring(problem))
       O.defenders, O.growth, O.waves, O.walls, O.riders, O.interval = false, false, false, false, false, false
@@ -2605,28 +2669,24 @@ local function enable(self, config)
     return
   end
   allocate()
+  local installed, installProblem = pcall(install, self)
+  if not installed then
+    local restored = true
+    for index = #(self.saved or {}), 1, -1 do
+      local saved = self.saved[index]
+      if not pcall(core.writeCode, saved.address, saved.bytes, false) then restored = false end
+    end
+    self.saved = nil
+    local reason = restored and "" or " Some game code could not be restored."
+    log(ERROR, "Outpost Control is off. Its patches could not be installed: " .. tostring(installProblem) .. reason)
+    return
+  end
   if O.defenders or O.growth or O.waves or O.interval then hooks.registerHookCallback("afterInit", localizeWords) end
-
   modules["map-extensions"]:registerSection(K.SAVE_SECTION, {
     initialize = function(_) wipe() end,
     serialize = function(_, handle) serialize(handle) end,
     deserialize = function(_, handle) deserialize(handle) end,
   })
-
-  local installed, installProblem = pcall(install, self)
-  if not installed then
-    for index = #(self.saved or {}), 1, -1 do
-      local saved = self.saved[index]
-      core.writeCode(saved.address, saved.bytes)
-    end
-    self.saved = nil
-    log(ERROR, "Outpost Control is off. Its patches could not be installed: " .. tostring(installProblem))
-    return
-  end
-  log(INFO, string.format("%s: on (defenders %s, growth %s, jobs %s, siege engines %s, waves to the AI army %s); buildings 0x%X, "
-    .. "troops 0x%X (size 0x%X), units 0x%X", MODULE_NAME, O.defenders and "on" or "off",
-    O.growth and "on" or "off", O.jobs and "on" or "off", O.siege and "on" or "off", O.join and "on" or "off", G.buildings, G.tribes,
-    G.tribeStride, G.units))
 end
 
 local function disable(self, config)
