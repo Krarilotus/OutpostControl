@@ -1301,7 +1301,7 @@ end
 
 local function rangedRange(kind)
   local projectile = K.RANGED_PROJECTILE[kind]
-  if projectile == 1 then return G.bowRange end
+  if projectile == 1 then return G.bowRanges and G.bowRanges[kind] or G.bowRange end
   if projectile and G.ranges then return rd32(G.ranges + projectile * 4) end
 end
 
@@ -2427,6 +2427,11 @@ local function enable(self, config)
     end
     if O.jobs then
       hooks.registerHookCallback("afterInit", function()
+        local rebalancer = modules.rebalancer
+        if rebalancer and type(rebalancer.getBowRanges) == "function" then
+          G.bowRanges = rebalancer:getBowRanges()
+          if G.bowRanges then return end
+        end
         local ranges = nativeRangeTable(site)
         if ranges then
           G.bowRange = rd32(ranges + 4)
