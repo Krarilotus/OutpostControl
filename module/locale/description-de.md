@@ -1,5 +1,3 @@
 # Outpost Control
 
-**Autor**: Monsterfish
-
-Steuert die europäischen und arabischen Außenposten aus dem Karteneditor: Verteidiger, Wellengröße, -wachstum und -zeitsteuerung sowie die Aufgaben der Truppen. Jeder Teil lässt sich in den Einstellungen abschalten.
+Stelle Verteidiger, Wellengröße, Wachstum und Timing europäischer und arabischer Außenposten ein. Wähle im Karteneditor einen Außenposten aus, um seine Einstellungen zu öffnen. Im Spiel können sich Außenposten-Wellen in Gruppen mit verschiedenen Aufgaben aufteilen.

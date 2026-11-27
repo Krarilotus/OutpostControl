@@ -1,38 +1,27 @@
 defenders_group: 前哨站守军
-defenders_enabled: 选择守军
-defenders_enabled_tooltip: |-
-  为前哨站面板添加“守军”页面。点击面板顶部的按钮即可在“进攻方”页面（游戏原有页面）和“守军”页面之间切换。在“守军”页面中，八个兵种按钮用于选择守卫兵种（多选时将轮流生成），数量滑块用于设置驻守在前哨站周围的守卫人数（从 0 到 50）。阵亡的守卫会逐个补充；设置的数量越多，补充越快，因此整支守军补齐所需的时间与游戏原本的 8 名守卫大致相同。若未选择任何兵种，前哨站将像原版一样使用弓箭手。近战守卫保持防御姿态，奴隶为进攻姿态，骑士为进攻姿态并像骑射手一样巡逻，骑射手为进攻姿态并在前哨站周围随机的六个点位巡逻（遇到障碍物时每个点位会自动移至空位）。
-defenders_walls: 守卫登上附近的城墙和塔楼
-defenders_walls_tooltip: |-
-  新生成的步兵守卫只要能步行到达，就会登上前哨站周围 16 格以内、属于前哨站所有者的城墙、石塔楼或石城门，前往周围守卫最少的空位，从而分散布防并填补阵亡守卫留下的空缺。骑士和骑射手留在地面。适用于所有前哨站，包括未做单独设置的前哨站。
-defenders_knights: 巡逻骑士攻击附近建筑
-defenders_knights_tooltip: |-
-  骑士守卫会像骑射手一样以进攻姿态在前哨站周围巡逻，并与遭遇的敌军交战。开启此选项后，他们还会攻击进入其 10 格范围内的敌方建筑，摧毁后再继续巡逻。
-waves_group: 波次设置
-waves_group_descr: |-
-  前哨站每波进攻包含的兵力数量。
-waves_exact: 设置每波精确兵力数量
-waves_exact_tooltip: |-
-  前哨站面板“进攻方”页面的规模滑块将直接指定每波的精确兵力数量，取代游戏原本 6 档随机兵力规模的设定。范围从 0（完全关闭该前哨站的进攻波次）到游戏最大档位所能派出的最高人数。未启用本模块时，地图会保留最接近的游戏原生档位。
+defenders_enabled: 添加前哨站“守军”页面
+defenders_enabled_tooltip: 在地图编辑器中选中前哨站，点击面板顶部的“守军”，然后选择兵种并设置数量。
+defenders_walls: 前哨站守卫驻守附近城墙与塔楼
+defenders_walls_tooltip: 前哨站守军可进驻附近的城墙和塔楼。
+defenders_knights: 骑士守卫在巡逻时主动攻击
+defenders_knights_tooltip: 前哨站的骑士守卫可在巡逻途中攻击敌人。
+waves_group: 前哨站波次设置
+waves_group_descr: 前哨站每波进攻包含的兵力数量。
+waves_exact: 精确波次规模
+waves_exact_tooltip: 在前哨站的“进攻方”页面将“规模”设为每波人数，设为 0 则停止出兵。
 growth_group: 波次增长
-growth_group_descr: |-
-  前哨站的进攻波次随游戏进程递增的幅度。
-growth_enabled: 选择波次增长幅度
-growth_enabled_tooltip: |-
-  增长会将第一波兵力的一定百分比累加到之后的每一波中。设为 0% 时，每波保持相同规模。波次增长上限为 999 名士兵。
-jobs_group: 进攻部队分工
-jobs_enabled: 为进攻部队分配任务
-jobs_enabled_tooltip: |-
-  将前哨站波次拆分为不同小队，分别执行填平护城河、突破城墙、占据射击阵位、护卫其他小队或从侧翼包抄城堡等任务。
-siege_enabled: 射击沿途目标
-siege_enabled_tooltip: |-
-  前哨站派出的投石车和火焰弩炮会朝目标城堡行进，一旦有敌方建筑（火焰弩炮优先攻击敌军部队）进入射程便停下开火。是否进入射程由游戏自身按各器械射程判定，与玩家控制的器械相同。它们只会瞄准敌人，即与前哨站所有者不同阵营的玩家，绝不会攻击盟友。
-retarget_enabled: 转向下一个对手
-retarget_enabled_tooltip: |-
-  前哨站派出的每支部队都会锁定一名敌方玩家。当该玩家的领主阵亡后，部队不再原地呆立，而是按照游戏选择首个目标的方式——寻找领主仍存活的最近敌人——转向下一个对手。攻城器械本身就会持续射击射程内的任意敌人。
-join_enabled: 将前哨站波次并入 AI 的进攻军队
-join_enabled_tooltip: |-
-  当 AI 玩家的前哨站派出进攻波次时，其士兵会并入该 AI 的进攻军队，并各自归入游戏原生分配的编队：弓箭手、弩手、投石兵、骑射手和火焰投掷兵进入后援部队，其余兵种进入主力军队。随后他们会等待该 AI 下一次出击并一同参战，同时计入 AI 出击前所需的兵力规模。攻城器械仍留在前哨站，向射程内的目标开火。若该 AI 尚未拥有对应编队，则该兵种继续直接从前哨站发起进攻。
+growth_group_descr: 前哨站的进攻波次随游戏进程递增的幅度。
+growth_enabled: 波次增长
+growth_enabled_tooltip: 在前哨站的“进攻方”页面设置“增长”以为后续波次增加兵力，设为 0 则保持规模不变。
+jobs_group: 前哨站波次
+jobs_enabled: 为前哨站波次分配不同职责
+jobs_enabled_tooltip: 在前哨站控制期间，部队按职责分为多个小组行动。
+siege_enabled: 前哨站攻城器械沿途开火
+siege_enabled_tooltip: 前哨站攻城器械可在行进途中停下射击目标。
+retarget_enabled: 前哨站波次转攻下一名对手
+retarget_enabled_tooltip: 当前对手被击败后，幸存的前哨站部队会转向另一名敌人。
+join_enabled: 将前哨站波次编入 AI 军队
+join_enabled_tooltip: 加入 AI 军队的部队会听从其指挥，并脱离前哨站职责。
 improvements: 改进
 balance_changes: 平衡调整
 ai: AI
@@ -40,9 +29,8 @@ panel_attackers: 进攻方
 panel_defenders: 守军
 panel_growth: 增长
 panel_amount: 数量
-waves_interval: 设置波次间的固定等待时间
-waves_interval_tooltip: |-
-  “计时”视图中的“间隔”滑块用于设置前哨站在一波进攻后等待多久才开始组建下一波。设为 0 则使用游戏原有计时。
+waves_interval: 固定波次间隔
+waves_interval_tooltip: 在前哨站的“计时”页面将“间隔”设为固定延迟，设为 0 则使用游戏默认计时。
 panel_size: 规模
 panel_timing: 计时
 panel_interval: 间隔

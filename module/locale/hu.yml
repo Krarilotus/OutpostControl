@@ -1,28 +1,27 @@
 defenders_group: Előőrs védői
-defenders_enabled: Védők kiválasztása
-defenders_enabled_tooltip: |-
-  Védők oldalt ad az előőrs paneljéhez. A panel tetején lévő gombbal válthatsz a Támadók (játék eredeti) és a Védők oldal között. A Védők oldalon a nyolc egységgomb választja ki az őröket (több választásakor váltakoznak), a Mennyiség csúszka pedig 0 és 50 között állítja a létszámukat. Az elesett őrök egyesével térnek vissza, nagyobb létszámnál gyorsabban, hogy a teljes csapat nagyjából annyi idő alatt pótlódjon, mint az alapjáték 8 őre. Kiválasztás nélkül íjászok őrzik. A közelharci őrök védekező, a rabszolgák támadó módban állnak; a lovagok és a lovasíjászok támadó módban járőröznek az előőrs körül hat véletlen ponton (akadály esetén szabad mezőre tolva).
-defenders_walls: Az őrök elfoglalják a közeli falakat és tornyokat
-defenders_walls_tooltip: A gyalogos őrök felmennek az előőrs tulajdonosának falaira, kőtornyaira vagy kő kapuházaira 16 mezőn belül, ha oda tudnak sétálni — mindig a legkevesebb őrrel körülvett szabad mezőre, hogy egyenletesen oszoljanak el és pótolják az elesetteket. A lovagok és lovasíjászok lent maradnak. Minden előőrsre érvényes, egyéni beállítás nélkül is.
-defenders_knights: A járőröző lovagok megtámadják a közeli épületeket
-defenders_knights_tooltip: A lovagőrök támadó módban járőröznek előőrsük körül, mint a lovasíjászok, és harcolnak a szembejövő ellenséggel. Bekapcsolva a 10 mezőn belüli ellenséges épületeket is megtámadják, majd lerombolásuk után folytatják a járőrözést.
-waves_group: Hullámbeállítások
+defenders_enabled: Védők lap hozzáadása az előőrsökhöz
+defenders_enabled_tooltip: Jelölj ki egy előőrsöt a térképszerkesztőben, kattints a panel tetején a Védők lapra, majd válaszd ki a típusokat és a létszámot.
+defenders_walls: Az előőrs őrei elfoglalják a közeli falakat és tornyokat
+defenders_walls_tooltip: Az előőrs védői állást foglalhatnak a közeli várfalakon és tornyokon.
+defenders_knights: A lovagőrök járőrözés közben támadnak
+defenders_knights_tooltip: Az előőrs lovagőrei járőrözés közben megtámadhatják az ellenséget.
+waves_group: Előőrs-hullámok beállításai
 waves_group_descr: Hány egységből áll egy előőrs egyes hulláma.
-waves_exact: Pontos egységszám beállítása hullámonként
-waves_exact_tooltip: A Támadók oldal Méret csúszkája a játék 6 véletlen lépcsője helyett pontosan beállítja minden hullám létszámát, 0-tól (nincsenek hullámok) a játék legnagyobb méretéig. A modul nélkül a térkép a legközelebbi alapjátékbeli méretet őrzi meg.
+waves_exact: Pontos hullámméret
+waves_exact_tooltip: Az előőrs Támadók lapján a Méret értékkel add meg a hullámonkénti létszámot, vagy 0-val állítsd le a hullámokat.
 growth_group: Hullámnövekedés
 growth_group_descr: Mennyivel lesznek nagyobbak az előőrs hullámai a játék során.
-growth_enabled: Hullámok növekedésének beállítása
-growth_enabled_tooltip: A növekedés az első hullám méretének egy százalékát adja hozzá minden következő hullámhoz. 0%-nál minden hullám azonos méretű marad. A növekedés 999 egységnél megáll.
-jobs_group: Támadók feladatai
-jobs_enabled: Feladatok kiosztása a támadóknak
-jobs_enabled_tooltip: Az előőrs hullámait csoportokra osztja, amelyek várárkot temetnek, falakat törnek át, tüzelőállást tartanak, más csoportot kísérnek vagy oldalba támadják a várat.
-siege_enabled: Útba eső célpontok lövése
-siege_enabled_tooltip: Az előőrs katapultjai és tűzballisztái a célvár felé indulnak, és megállnak lőni, amint ellenséges épület (tűzballisztánál előbb ellenséges csapatok) lőtávba kerül, minden gép saját lőtávjával. Csak más csapatba tartozó ellenségekre céloznak, szövetségesekre sosem.
-retarget_enabled: Továbbhaladás a következő ellenfélre
-retarget_enabled_tooltip: Minden előőrsből induló csapat egy ellenséges játékost támad. Ha annak lordja meghal, a csapat a játék szabálya szerint a legközelebbi élő lorddal rendelkező ellenséget választja tétlen ácsorgás helyett. Az ostromgépek már eleve lőnek minden lőtávon belüli ellenségre.
-join_enabled: Előőrs-hullámok küldése az MI támadó seregébe
-join_enabled_tooltip: Amikor egy hullám elhagyja egy MI-játékos előőrsét, egységei a játék által használt csoportba (íjászok, számszeríjászok, parittyások, lovasíjászok és tűzhajítók a tartalékba, a többiek a főseregbe) csatlakoznak az MI támadó seregéhez, és a következő támadásban harcolnak. Az ostromgépek az előőrsnél maradnak. Ha az MI-nek még nincs megfelelő csapata, az egység az előőrsből támad tovább.
+growth_enabled: Hullámok növekedése
+growth_enabled_tooltip: Az előőrs Támadók lapján a Növekedés értékkel adhatsz hozzá katonákat a későbbi hullámokhoz, a 0 megtartja a méretet.
+jobs_group: Előőrs-hullámok
+jobs_enabled: Külön feladatok az előőrs-hullámoknak
+jobs_enabled_tooltip: A csapatok szerepkör szerint csoportokra oszlanak, amíg az előőrs irányítása alatt állnak.
+siege_enabled: Az előőrs ostromgépei útközben is lőnek
+siege_enabled_tooltip: Az előőrs ostromgépei megállhatnak útközben célpontokra lőni.
+retarget_enabled: Az előőrs-hullámok a következő ellenfelet támadják
+retarget_enabled_tooltip: A túlélő előőrs-csapatok másik ellenség ellen indulnak, ha az ellenfelüket legyőzték.
+join_enabled: Előőrs-hullámok csatolása az MI seregéhez
+join_enabled_tooltip: Az MI seregéhez csatlakozó csapatok annak parancsait követik, és elhagyják előőrsi feladataikat.
 improvements: Fejlesztések
 balance_changes: Egyensúlymódosítások
 ai: MI
@@ -30,8 +29,8 @@ panel_attackers: Támadók
 panel_defenders: Védők
 panel_growth: Növekedés
 panel_amount: Mennyiség
-waves_interval: Rögzített várakozási idő beállítása a hullámok között
-waves_interval_tooltip: Az Időzítés nézet Időköz csúszkája állítja be, mennyit vár az előőrs egy hullám után a következő összeállításáig. 0 esetén a játék saját időzítése érvényes.
+waves_interval: Fix időköz a hullámok között
+waves_interval_tooltip: Az előőrs Időzítés lapján az Időköz értékkel adj meg fix késleltetést, vagy 0-val a játék időzítését.
 panel_size: Méret
 panel_timing: Időzítés
 panel_interval: Időköz

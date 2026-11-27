@@ -1,38 +1,27 @@
 defenders_group: Karakol savunucuları
-defenders_enabled: Savunucuları seç
-defenders_enabled_tooltip: |-
-  Karakol paneline bir Savunucular sayfası ekler. Saldıranlar sayfası (oyunun kendi sayfası) ile Savunucular sayfası arasında geçiş yapmak için panelin üstündeki düğmeye tıklayın. Savunucular sayfasındaki sekiz birlik düğmesi muhafızları belirler (birden fazla seçerseniz sırayla üretilirler) ve Miktar kaydırıcısı karakolun çevresinde kaç muhafız duracağını 0 ile 50 arasında ayarlar. Ölen muhafızlar tek tek geri gelir; sayı ne kadar yüksekse o kadar hızlı yenilenirler, böylece tam bir ekip oyunun varsayılan 8 muhafızıyla yaklaşık aynı sürede tamamlanır. Hiçbir birlik seçilmezse karakol oyundaki gibi okçuları kullanır. Yakın dövüş muhafızları savunma duruşunda bekler, köleler saldırgan duruştadır, şövalyeler saldırgan duruşta atlı okçular gibi devriye gezer ve atlı okçular da saldırgan duruşta karakolun çevresinde rastgele altı nokta boyunca devriye gezer; yollarına bir engel çıkarsa her nokta boş bir yere kaydırılır.
-defenders_walls: Muhafızlar yakındaki surlara ve kulelere çıksın
-defenders_walls_tooltip: |-
-  Yeni bir yaya muhafız, yürüyerek ulaşabiliyorsa karakolun 16 kare yakınındaki karakol sahibine ait surlara, taş kulelere veya taş kapı binalarına çıkar ve çevresinde en az muhafız bulunan boş noktaya yerleşir; böylece surlara yayılır ve ölen muhafızların yerini doldururlar. Şövalyeler ve atlı okçular yerde kalır. Ayar yapılmamış olanlar dâhil tüm karakollar için geçerlidir.
-defenders_knights: Devriye gezen şövalyeler yakındaki binalara saldırsın
-defenders_knights_tooltip: |-
-  Şövalye muhafızlar atlı okçular gibi saldırgan duruşta karakollarının çevresinde devriye gezer ve karşılaştıkları düşman birliklerle savaşır. Bu ayar açıkken 10 kare mesafelerine giren düşman binalarına da saldırır, bina yıkılınca devriyelerine geri dönerler.
-waves_group: Dalga ayarları
-waves_group_descr: |-
-  Bir karakolun her dalgasında kaç birlik bulunacağını belirler.
-waves_exact: Dalga başına kesin birlik sayısını ayarla
-waves_exact_tooltip: |-
-  Karakol panelinin Saldıranlar sayfasındaki Boyut kaydırıcısı, oyunun rastgele grup boyutlarından oluşan 6 kademesi yerine her dalgada tam olarak kaç birlik olacağını belirler. Dalgaları tamamen kapatan 0 değerinden, oyunun en büyük boyutunda gönderdiği azami sayıya kadar uzanır. Bu modül olmadan harita, oyunun kendi boyutlarından en yakın olanını korur.
+defenders_enabled: Karakollara Savunucular sayfası ekle
+defenders_enabled_tooltip: Harita düzenleyicide bir karakol seçin, panelin üstündeki Savunucular’a tıklayın, ardından türleri ve sayıyı seçin.
+defenders_walls: Karakol muhafızları yakındaki sur ve kulelere yerleşir
+defenders_walls_tooltip: Karakol savunucuları yakındaki sur ve kulelerde mevzilenebilir.
+defenders_knights: Şövalye muhafızlar devriyede saldırır
+defenders_knights_tooltip: Karakol şövalye muhafızları devriyeleri sırasında düşmanlarla çatışabilir.
+waves_group: Karakol dalga ayarları
+waves_group_descr: Bir karakolun her dalgasında kaç birlik bulunacağını belirler.
+waves_exact: Kesin dalga boyutu
+waves_exact_tooltip: Karakolun Saldıranlar sayfasında Boyut değerini dalga başına asker sayısına veya dalgaları durdurmak için 0’a ayarlayın.
 growth_group: Dalga büyümesi
-growth_group_descr: |-
-  Oyun ilerledikçe bir karakolun dalgalarının ne kadar büyüyeceğini belirler.
-growth_enabled: Dalgaların ne kadar büyüyeceğini seç
-growth_enabled_tooltip: |-
-  Büyüme, ilk dalga boyutunun belirli bir yüzdesini sonraki her dalgaya ekler. %0 değerinde her dalga aynı boyutta kalır. Dalgalar 999 birlikte büyümeyi durdurur.
-jobs_group: Saldıranların görevleri
-jobs_enabled: Saldıranlara görev ver
-jobs_enabled_tooltip: |-
-  Karakol dalgalarını hendek dolduran, surları yaran, atış mevzilerini tutan, başka bir gruba eşlik eden veya kaleye yandan saldıran gruplara böler.
-siege_enabled: Yol üzerindeki hedeflere ateş et
-siege_enabled_tooltip: |-
-  Karakoldan çıkan mancınıklar ve ateş balistaları saldırdıkları kaleye doğru ilerler ve menzile bir düşman binası (ateş balistaları için önce düşman birlikleri) girer girmez durup ateş eder. Neyin menzilde olduğuna, her aracın kendi menziline göre, oyuncunun araçlarında olduğu gibi oyunun kendisi karar verir. Yalnızca düşmanlar hedef alınır: karakol sahibinden farklı takımdaki oyuncular; müttefiklere asla ateş edilmez.
-retarget_enabled: Sonraki rakibe yönel
-retarget_enabled_tooltip: |-
-  Karakolun gönderdiği her birlik bir düşman oyuncuyu hedef alır. O oyuncunun lordu öldüğünde birlik boş boş beklemek yerine, oyunun ilk hedefi seçtiği yolla — lordu hâlâ hayatta olan en yakın düşman — sonraki rakibi seçer. Kuşatma araçları zaten menzillerindeki herhangi bir düşmana ateş eder.
-join_enabled: Karakol dalgalarını yapay zekânın saldırı ordusuna gönder
-join_enabled_tooltip: |-
-  Bir yapay zekâ oyuncusunun karakolundan bir dalga ayrıldığında birlikleri o yapay zekânın saldırı ordusuna katılır; her biri oyunun o birlik için kullanacağı gruba girer: okçular, arbaletçiler, sapancılar, atlı okçular ve ateş atıcılar destek birliklerine, diğer herkes ana orduya. Ardından yapay zekânın sonraki saldırısını bekleyip o saldırıda savaşırlar ve yapay zekânın saldırmadan önce beklediği ordu sayısına dâhil olurlar. Kuşatma araçları karakolda kalıp erişebildikleri hedeflere ateş eder. Yapay zekânın henüz ilgili grubu olmayan bir birlik karakoldan saldırmaya devam eder.
+growth_group_descr: Oyun ilerledikçe bir karakolun dalgalarının ne kadar büyüyeceğini belirler.
+growth_enabled: Dalga büyümesi
+growth_enabled_tooltip: Karakolun Saldıranlar sayfasında sonraki dalgalara asker eklemek için Büyüme değerini, aynı boyutta tutmak için 0’ı seçin.
+jobs_group: Karakol dalgaları
+jobs_enabled: Karakol dalgalarına ayrı görevler ver
+jobs_enabled_tooltip: Birlikler karakol kontrolünde kaldıkları sürece rollerine göre gruplara ayrılır.
+siege_enabled: Karakol kuşatma araçları yolda ateş eder
+siege_enabled_tooltip: Karakol kuşatma araçları rotaları üzerindeki hedeflere ateş etmek için durabilir.
+retarget_enabled: Karakol dalgaları sıradaki rakibe saldırır
+retarget_enabled_tooltip: Rakipleri yenildiğinde hayatta kalan karakol birlikleri başka bir düşmana yönelir.
+join_enabled: Karakol dalgalarını yapay zekâ ordusuna kat
+join_enabled_tooltip: Bir yapay zekâ ordusuna katılan birlikler onun emirlerini izler ve karakol görevlerini bırakır.
 improvements: İyileştirmeler
 balance_changes: Denge değişiklikleri
 ai: Yapay zekâ
@@ -40,9 +29,8 @@ panel_attackers: Saldıranlar
 panel_defenders: Savunucular
 panel_growth: Büyüme
 panel_amount: Miktar
-waves_interval: Dalgalar arasında sabit bekleme süresi ayarla
-waves_interval_tooltip: |-
-  Zamanlama görünümündeki Aralık kaydırıcısı, karakolun bir dalgadan sonra bir sonrakini oluşturmadan önce ne kadar bekleyeceğini belirler. Oyunun kendi zamanlaması için 0 yapın.
+waves_interval: Dalgalar arası sabit aralık
+waves_interval_tooltip: Karakolun Zamanlama sayfasında Aralık değerini sabit bir gecikmeye veya oyun zamanlaması için 0’a ayarlayın.
 panel_size: Boyut
 panel_timing: Zamanlama
 panel_interval: Aralık

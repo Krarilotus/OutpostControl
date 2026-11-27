@@ -1,5 +1,3 @@
 # Outpost Control
 
-**Autor**: Monsterfish
-
-Controla los puestos avanzados europeos y árabes del editor de mapas: defensores, tamaño, crecimiento y tiempos de oleadas y tareas de las tropas. Cada apartado puede desactivarse en los ajustes.
+Configura los defensores, el tamaño de oleada, el crecimiento y los tiempos de puestos avanzados europeos y árabes. Selecciona un puesto avanzado en el editor de mapas para abrir sus ajustes. En partida, las oleadas pueden dividirse en grupos con distintas tareas.

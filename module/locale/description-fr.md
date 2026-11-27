@@ -1,5 +1,3 @@
 # Outpost Control
 
-**Auteur** : Monsterfish
-
-Contrôle les avant-postes européens et arabes de l'éditeur de cartes : défenseurs, taille, croissance et délais des vagues, rôles des troupes. Chaque élément peut être désactivé dans les paramètres.
+Réglez les défenseurs, la taille des vagues, la croissance et les délais des avant-postes européens et arabes. Sélectionnez un avant-poste dans l’éditeur de cartes pour ouvrir ses paramètres. En partie, les vagues peuvent se diviser en groupes aux rôles distincts.

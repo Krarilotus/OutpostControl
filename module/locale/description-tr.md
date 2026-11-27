@@ -1,5 +1,3 @@
 # Outpost Control
 
-**Yazar**: Monsterfish
-
-Harita düzenleyicide yerleştirdiğiniz Avrupalı ve Arap karakollarını yönetir: savunucular, dalga boyutu, büyümesi ve zamanlaması, birliklerin görevleri. Her özellik ayarlardan kapatılabilir.
+Avrupalı ve Arap karakollarının savunucularını, dalga boyutunu, büyümesini ve zamanlamasını ayarlayın. Ayarlarını açmak için harita düzenleyicide bir karakol seçin. Oyunda karakol dalgaları farklı görevlere sahip gruplara ayrılabilir.

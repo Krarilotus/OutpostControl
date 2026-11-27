@@ -1,38 +1,27 @@
 defenders_group: Defensores del puesto avanzado
-defenders_enabled: Elegir los defensores
-defenders_enabled_tooltip: |-
-  Añade una página de Defensores al panel del puesto avanzado. Haz clic en el botón de la parte superior del panel para alternar entre la página de Atacantes (la propia del juego) y la de Defensores. En la página de Defensores, los ocho botones de tropas eligen la guarnición (si eliges varios, se turnan) y el deslizador de Cantidad fija cuántos guardias rodean el puesto, de ninguno a 50. Los guardias caídos se reponen de uno en uno, más rápido cuanto mayor sea el número elegido, de modo que una guarnición completa tarda en reponerse más o menos lo mismo que los 8 guardias originales del juego. Si no eliges ninguna tropa, el puesto usa arqueros, como en el juego base. Los guardias cuerpo a cuerpo mantienen postura defensiva, los esclavos agresiva, los caballeros son agresivos y patrullan como los arqueros a caballo, y los arqueros a caballo son agresivos y patrullan alrededor del puesto por seis puntos aleatorios que se desplazan a una casilla libre si hay algún obstáculo.
-defenders_walls: Los guardias ocupan murallas y torres cercanas
-defenders_walls_tooltip: |-
-  Cada nuevo guardia a pie sube a las murallas, torres de piedra o casas de la puerta de piedra del propietario situadas a menos de 16 casillas del puesto avanzado, si puede llegar caminando: elige el lugar libre con menos guardias alrededor, de modo que se reparten por los muros y cubren las bajas. Los caballeros y arqueros a caballo permanecen en el suelo. Funciona para todos los puestos avanzados, incluidos los que no tienen ajustes propios.
-defenders_knights: Los caballeros de patrulla atacan edificios cercanos
-defenders_knights_tooltip: |-
-  Los guardias caballeros patrullan a caballo alrededor de su puesto avanzado en postura agresiva, igual que los arqueros a caballo, y combaten contra las tropas enemigas que encuentran. Con esta opción activada también atacan edificios enemigos que queden a menos de 10 casillas y retoman la patrulla en cuanto el edificio cae.
-waves_group: Ajustes de oleada
-waves_group_descr: |-
-  Cuántas tropas tiene cada oleada de un puesto avanzado.
-waves_exact: Fijar el número exacto de tropas por oleada
-waves_exact_tooltip: |-
-  El deslizador de Tamaño en la página de Atacantes del panel del puesto avanzado establece exactamente cuántas tropas tiene cada oleada, en lugar de los 6 escalones de tamaños aleatorios del juego. Va desde 0, que desactiva las oleadas del puesto, hasta el máximo que el propio juego envía en su tamaño mayor. Sin el módulo, el mapa conserva el tamaño propio del juego más cercano.
+defenders_enabled: Añadir página Defensores en puestos avanzados
+defenders_enabled_tooltip: Selecciona un puesto avanzado en el editor de mapas, haz clic en Defensores arriba del panel, elige tipos y fija la cantidad.
+defenders_walls: Los guardias de puestos ocupan murallas y torres cercanas
+defenders_walls_tooltip: Los defensores de puestos avanzados pueden apostar en murallas y torres cercanas.
+defenders_knights: Los caballeros guardianes atacan al patrullar
+defenders_knights_tooltip: Los caballeros guardianes de puestos avanzados pueden atacar a enemigos durante sus patrullas.
+waves_group: Ajustes de oleadas de puestos
+waves_group_descr: Cuántas tropas tiene cada oleada de un puesto avanzado.
+waves_exact: Tamaño exacto de oleada
+waves_exact_tooltip: En la página Atacantes del puesto, fija Tamaño en el número de tropas por oleada o 0 para detenerlas.
 growth_group: Crecimiento de oleadas
-growth_group_descr: |-
-  Cuánto crecen las oleadas de un puesto avanzado a lo largo de la partida.
-growth_enabled: Elegir cuánto crecen las oleadas
-growth_enabled_tooltip: |-
-  El crecimiento añade un porcentaje del tamaño de la primera oleada a cada oleada siguiente. En 0 %, todas las oleadas mantienen el mismo tamaño. Las oleadas dejan de crecer al llegar a 999 tropas.
-jobs_group: Tareas de los atacantes
-jobs_enabled: Asignar tareas a los atacantes
-jobs_enabled_tooltip: |-
-  Divide las oleadas del puesto avanzado en grupos que rellenan fosos, abren brechas en murallas, mantienen posiciones de disparo, escoltan a otro grupo o flanquean el castillo.
-siege_enabled: Disparar a objetivos en el camino
-siege_enabled_tooltip: |-
-  Las catapultas y balistas de fuego de un puesto avanzado marchan hacia el castillo que atacan y se detienen para disparar en cuanto un edificio enemigo (para las balistas de fuego, primero tropas enemigas) entra en alcance. El propio juego decide qué está a tiro, con el alcance de cada máquina, igual que con una máquina del jugador. Solo apuntan a enemigos: jugadores de otro equipo distinto al del propietario del puesto, nunca aliados.
-retarget_enabled: Ir a por el siguiente rival
-retarget_enabled_tooltip: |-
-  Cada tropa enviada por un puesto avanzado va a por un jugador enemigo. En cuanto muere el Señor de ese jugador, la tropa elige al siguiente rival del mismo modo que el juego elige el primero —el enemigo más cercano cuyo Señor siga con vida— en lugar de quedarse parada. Las máquinas de asedio ya disparan a cualquier enemigo a su alcance.
-join_enabled: Enviar las oleadas del puesto al ejército de ataque de la IA
-join_enabled_tooltip: |-
-  Cuando una oleada sale de un puesto avanzado de un jugador de la IA, sus tropas se unen al ejército de ataque de esa IA, cada una en el grupo que el propio juego usaría para ella: arqueros, ballesteros, honderos, arqueros a caballo y lanzafuegos a las tropas de apoyo, y el resto al ejército principal. Luego esperan el próximo ataque de la IA, luchan en él y cuentan para el tamaño de ejército que la IA espera reunir antes de atacar. Las máquinas de asedio se quedan con el puesto y disparan a lo que alcancen. Si la IA aún no dispone del grupo correspondiente para una unidad, esta sigue atacando desde el puesto.
+growth_group_descr: Cuánto crecen las oleadas de un puesto avanzado a lo largo de la partida.
+growth_enabled: Crecimiento de oleadas
+growth_enabled_tooltip: En la página Atacantes del puesto, fija Crecimiento para sumar tropas a futuras oleadas o 0 para mantener el tamaño.
+jobs_group: Oleadas de puestos avanzados
+jobs_enabled: Dar tareas separadas a las oleadas de puestos
+jobs_enabled_tooltip: Las tropas se dividen en grupos por función mientras permanecen bajo control del puesto.
+siege_enabled: Las máquinas de asedio de puestos disparan en el camino
+siege_enabled_tooltip: Las máquinas de asedio de puestos pueden detenerse a disparar a objetivos en su ruta.
+retarget_enabled: Las oleadas de puestos atacan al siguiente rival
+retarget_enabled_tooltip: Las tropas supervivientes del puesto avanzan hacia otro enemigo al derrotar a su rival.
+join_enabled: Unir las oleadas de puestos al ejército de la IA
+join_enabled_tooltip: Las tropas que se unen a un ejército de la IA siguen sus órdenes y dejan sus tareas del puesto.
 improvements: Mejoras
 balance_changes: Cambios de equilibrio
 ai: IA
@@ -40,9 +29,8 @@ panel_attackers: Atacantes
 panel_defenders: Defensores
 panel_growth: Crecimiento
 panel_amount: Cantidad
-waves_interval: Fijar una espera fija entre oleadas
-waves_interval_tooltip: |-
-  El deslizador de Intervalo en la vista Tiempos fija cuánto espera el puesto avanzado tras una oleada antes de formar la siguiente. Déjalo en 0 para usar los tiempos del juego.
+waves_interval: Intervalo fijo entre oleadas
+waves_interval_tooltip: En la página Tiempos del puesto, fija Intervalo en una pausa fija o 0 para usar el ritmo del juego.
 panel_size: Tamaño
 panel_timing: Tiempos
 panel_interval: Intervalo
