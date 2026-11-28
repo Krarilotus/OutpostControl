@@ -89,7 +89,7 @@ target:
 
 - **Catapults**, trebuchets and mangonels prefer towers and gatehouses, then walls, then
   other damageable buildings.
-- **Fire ballistas** shoot enemy troops and workers in range first.
+- **Fire ballistas** shoot only enemy troops and workers in range.
 
 Engines without a shot advance toward a firing position on the near side of a fortification.
 

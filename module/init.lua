@@ -21,7 +21,7 @@
      Ranged troops that cannot split use defensive orders in the original tribe.
   4. Siege engines advance toward fortifications and use the game's shooting code.
      Engines prioritize towers and gatehouses, then walls, then other buildings.
-     Fire ballistas look for enemy troops first.
+     Fire ballistas shoot only enemy troops.
 
   The per-outpost settings and the jobs live in the save (and in the map) through the
   map-extensions module. Without this module the game ignores that data.
@@ -55,7 +55,7 @@ K.ANCHOR_PRIORITY = { [K.JOB_SIEGE] = 3, [K.JOB_WALLS] = 2, [K.JOB_MOAT] = 1 }
 
 -- Siege engines an outpost sends (catapults, and fire ballistas at an Arabian one; trebuchets
 -- and mangonels if a map's outposts were made to send them): like the AI's raid engines they are
--- ordered at whatever is in their range on their way. Fire ballistas take troops first.
+-- ordered at whatever is in their range on their way. Fire ballistas shoot only troops.
 K.SIEGE = { [39] = "catapult", [40] = "catapult", [41] = "catapult", [77] = "ballista" }
 -- Their projectile, whose range (in tiles, straight line) the game's range table holds.
 K.SIEGE_PROJECTILE = { [39] = 2, [40] = 3, [41] = 4, [77] = 0x25 }
@@ -1162,6 +1162,8 @@ local function shootIfInRange(id)
       diag("fire ballista %d shoots unit %d", id, enemy)
       return true
     end
+    -- Fire ballistas do no damage to buildings and walls.
+    return false
   end
 
   local x, y = rd16(u + U.X), rd16(u + U.Y)
