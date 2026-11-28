@@ -24,13 +24,6 @@ def run(name, exe):
         if len(hits) != 1:
             raise Exception('AOB %d hits: %s' % (len(hits), p))
         return hits[0]
-    def unique(p):
-        hits = [address for address in exe.find(p.decode()) if address is not None
-                and any(first <= address < first + size
-                        for first, size, _, _, section in exe.secs if section == '.text')]
-        if len(hits) == 1:
-            return hits[0]
-        return None, b'found more than once' if hits else b'not found'
     def alloc(n, z=False):
         a = heap[0]; heap[0] += (int(n) + 15) & ~15; wr(a, b'\0'*int(n)); return a
     scripts = []
@@ -51,7 +44,6 @@ def run(name, exe):
     import lupa
     core = L.table_from({
         b'AOBScan': aob,
-        b'AOBScanUnique': unique,
         b'readInteger': lambda a: struct.unpack('<i', rd(a,4))[0],
         b'readSmallInteger': lambda a: struct.unpack('<h', rd(a,2))[0],
         b'readByte': lambda a: struct.unpack('<b', rd(a,1))[0],

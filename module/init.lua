@@ -400,9 +400,9 @@ local rd32, rd16, rd8 = core.readInteger, core.readSmallInteger, core.readByte
 local wr32, wr16, wr8 = core.writeInteger, core.writeSmallInteger, core.writeByte
 
 local function scan(pattern, purpose)
-  local address, problem = core.AOBScanUnique(pattern)
-  if not address then
-    error(MODULE_NAME .. ": " .. purpose .. " " .. problem)
+  local found, address = pcall(core.AOBScan, pattern)
+  if not found then
+    error(MODULE_NAME .. ": " .. purpose .. " not found")
   end
   return address
 end
@@ -2051,8 +2051,8 @@ end
 
 local function resolveInterval()
   resolveLaunch()
-  local at, problem = core.AOBScanUnique(K.AOB_INTERVAL)
-  if not at then error("idle wave wait " .. problem) end
+  local found, at = pcall(core.AOBScan, K.AOB_INTERVAL)
+  if not found then error("idle wave wait not found") end
   local site = at + K.INTERVAL_AT
   local timer = G.buildings + K.IDLE_TIMER_FIELD
   same(readOperand(site, { 0, { 0x66, 0x83, 0x80 } }, "the idle wave timer"), timer, "the idle wave timer")
@@ -2067,16 +2067,16 @@ local function resolveSiege(acquire)
 end
 
 local function resolveDamageable()
-  local at, problem = core.AOBScanUnique(K.AOB_DAMAGEABLE)
-  if not at then error("building damageability " .. problem) end
+  local found, at = pcall(core.AOBScan, K.AOB_DAMAGEABLE)
+  if not found then error("building damageability not found") end
   same(readOperand(at, { 0, { 0x0F, 0xB7, 0x8E } }, "the damaged building's type"),
     G.buildings + B.TYPE, "the building array")
   G.damageable = readOperand(at, { 16, { 0x83, 0x3C, 0x95 } }, "the damageable building kinds")
 end
 
 local function resolveWallShooting()
-  local at, problem = core.AOBScanUnique(K.AOB_SHOOT_WALL)
-  if not at then error("siege attack at wall " .. problem) end
+  local found, at = pcall(core.AOBScan, K.AOB_SHOOT_WALL)
+  if not found then error("siege attack at wall not found") end
   same(readOperand(at, { 35, { 0x8B, 0x1C, 0x95 } }, "the wall target's map rows"), G.rows, "the map rows")
   G.siegeMap = readOperand(at, { 46, { 0xB9 } }, "the shooting map")
   F.playable = core.exposeCode(readCallTarget(at, 51, "wall target's playable tile test"), 3, 1)
@@ -2485,11 +2485,11 @@ local function enable(self, config)
   G.ticks, G.updateTable = nil, nil
   O.patrol = false
   if O.defenders or O.siege or O.jobs then
-    local site, problem = core.AOBScanUnique(K.AOB_TICKS)
-    if site then
+    local found, site = pcall(core.AOBScan, K.AOB_TICKS)
+    if found then
       G.ticks = rd32(site + K.TICKS_OPERAND)
     else
-      log(ERROR, MODULE_NAME .. ": game tick counter " .. problem
+      log(ERROR, MODULE_NAME .. ": game tick counter not found"
         .. "; defender patrols and periodic knight and siege updates stay off")
       O.riders = false
     end
@@ -2607,14 +2607,14 @@ local function enable(self, config)
     end
   end
   if O.siege or O.jobs then
-    local acquire, reason = core.AOBScanUnique(K.AOB_ACQUIRE)
-    local site = acquire and acquire + K.ACQUIRE_RANGE
-    local acquireProblem = not acquire and ("acquireShootTarget " .. reason)
+    local found, acquire = pcall(core.AOBScan, K.AOB_ACQUIRE)
+    local site = found and acquire + K.ACQUIRE_RANGE or nil
+    local acquireProblem = not found and "acquireShootTarget not found"
     local rangeProblem
     G.ranges = nativeRangeTable(site)
     if not G.ranges then
-      local crossbow, reason = core.AOBScanUnique(K.AOB_XBOW_RANGE)
-      if crossbow then
+      local found, crossbow = pcall(core.AOBScan, K.AOB_XBOW_RANGE)
+      if found then
         local ok, entry = pcall(readOperand, crossbow, K.XBOW_RANGE_ENTRY, "the crossbow range")
         if ok then
           G.ranges = entry - K.RANGED_PROJECTILE[23] * 4
@@ -2622,7 +2622,7 @@ local function enable(self, config)
           rangeProblem = tostring(entry)
         end
       else
-        rangeProblem = "crossbow range binding " .. reason
+        rangeProblem = "crossbow range binding not found"
       end
     end
     if O.jobs then
@@ -2679,8 +2679,8 @@ local function enable(self, config)
   if G.ticks and (O.siege or O.riders) then
     ok, problem = pcall(function()
       -- smarter-recruits patches the 8 bytes before the update table read.
-      local call, reason = core.AOBScanUnique(K.AOB_UPDATE_CALL)
-      if not call then error(MODULE_NAME .. ": unit update dispatch " .. reason) end
+      local found, call = pcall(core.AOBScan, K.AOB_UPDATE_CALL)
+      if not found then error(MODULE_NAME .. ": unit update dispatch not found") end
       G.currentUnit = readOperand(call, K.UPDATE_CURRENT, "the current unit")
       G.updateTable = readOperand(call, K.UPDATE_TABLE, "the update function table")
     end)
