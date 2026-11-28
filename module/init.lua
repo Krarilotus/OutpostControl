@@ -56,7 +56,8 @@ K.ANCHOR_PRIORITY = { [K.JOB_SIEGE] = 3, [K.JOB_WALLS] = 2, [K.JOB_MOAT] = 1 }
 -- Siege engines an outpost sends (catapults, and fire ballistas at an Arabian one; trebuchets
 -- and mangonels if a map's outposts were made to send them): like the AI's raid engines they are
 -- ordered at whatever is in their range on their way. Fire ballistas shoot only troops.
-K.SIEGE = { [39] = "catapult", [40] = "catapult", [41] = "catapult", [77] = "ballista" }
+K.FIRE_BALLISTA = 77
+K.SIEGE = { [39] = "catapult", [40] = "catapult", [41] = "catapult", [K.FIRE_BALLISTA] = "ballista" }
 -- Their projectile, whose range (in tiles, straight line) the game's range table holds.
 K.SIEGE_PROJECTILE = { [39] = 2, [40] = 3, [41] = 4, [77] = 0x25 }
 
@@ -333,6 +334,7 @@ K.XBOW_RANGE_ENTRY = { 5, { 0x8B, 0x0D } }
 K.AOB_UPDATE_CALL = "0F BF 91 A2 06 00 00 8B 04 95 ? ? ? ? FF D0"
 K.UPDATE_TABLE = { 0x07, { 0x8B, 0x04, 0x95 } }
 K.UPDATE_CURRENT = { -0x19, { 0xA1 } }        -- mov eax,[current unit], before the patched part
+K.BALLISTA_IDLE_DELAY = { 0xC3, { 0x8B, 0x86 } }  -- native idle countdown before target acquisition
 -- The game tick counter: mov ecx, [edi+0x998] / mov edx, [ticks] in updateUnits. The mask load
 -- before it is patched by other modules.
 K.AOB_TICKS = "8B 8F 98 09 00 00 8B 15 ? ? ? ?"
@@ -343,8 +345,8 @@ K.STATE_MOVING = 0x65
 K.STATE_WALKING = 1               -- siege engines walk in state 1 as well as 0x65
 K.STATE_CREEPING = 9              -- the AI siege code walking an engine forward in steps
 K.UNIT_TYPES = 80
-K.STATE_SHOOT = 8                 -- aim (then 2 load, 4 fire)
-K.SHOOTING = { [8] = true, [2] = true, [4] = true }
+K.STATE_SHOOT, K.STATE_LOAD, K.STATE_FIRE = 8, 2, 4
+K.SHOOTING = { [K.STATE_SHOOT] = true, [K.STATE_LOAD] = true, [K.STATE_FIRE] = true }
 K.SHOOT_BEFORE_STOP = 10          -- what the game's own idle code sets
 K.SIEGE_TRIES, K.SIEGE_REFRESH = 3, 160
 K.SIEGE_WALL_RADIUS, K.SIEGE_CELL = 48, 4
@@ -383,7 +385,7 @@ K.SIZE_ITEM_FROM_GROUP = 9    -- group header, eight buttons, then the size slid
 local U = { STRIDE = 0x490, STATE = 0x8C, TYPE = 0x8E, OWNER = 0x96, UID = 0x98, X = 0xC4, Y = 0xC6,
   TILE = 0xD4, DYING = 0x2A0, CLIMB = 0x360, ACTION = 0x2C0, TRIBE = 0x2D8, TRIBE_UID = 0x2E4, TARGET_BUILDING = 0x336,
   SHOOT_UNIT = 0x344, TARGETING = 0x39C, SHOOT_BEFORE_STOP = 0x3D8, TARGET_UNIT = 0x39E, TARGET_UID = 0x3A0, WALL_X = 0x3E8, WALL_Y = 0x3EA, BEHAVIOUR = 0x42A,
-  STATE_OFFSET = 0x614 }
+  IDLE_DELAY = 0x3BC, STATE_OFFSET = 0x614 }
 local T = { OWNER = 0x2C, UID = 0x34, STATE = 0x40, SIZE = 0x5C }
 local B = { STRIDE = 0x32C, STATE = 0xD0, TYPE = 0xD2, OWNER = 0xD6, UID = 0xD8, X = 0xEE, Y = 0xF0,
   SIZE = 0xF8, HEALTH = 0x10C, TRIBE_UID = 0x304, MASK = 0x300 }
@@ -2348,13 +2350,24 @@ local function install(self)
   if siegeUpdates then
     values.STATE_CREEPING, values.SIEGE_UNIT = K.STATE_CREEPING, G.siegeUnit
     values.PAD = pad(onSiegeUnit, "siege engines on the way")
+    values.BALLISTA = 0
     local check = assemble(templates.siegeCheck, values)
     for kind in pairs(K.SIEGE) do
-      stage(G.updateTable + kind * 4, core.itob(check))
+      if kind ~= K.FIRE_BALLISTA then stage(G.updateTable + kind * 4, core.itob(check)) end
+    end
+    if G.ballistaIdleDelay then
+      values.BALLISTA, values.IDLE_DELAY = 1, G.ballistaIdleDelay
+      values.U_TARGETING, values.U_TARGET_BUILDING = G.units + U.TARGETING, G.units + U.TARGET_BUILDING
+      values.U_TARGET_UID, values.U_WALL_X = G.units + U.TARGET_UID, G.units + U.WALL_X
+      values.U_SHOOT_UNIT = G.units + U.SHOOT_UNIT
+      values.ATTACK_BUILDING, values.ATTACK_WALL_AT = K.ORDER_ATTACK_BUILDING, K.ORDER_ATTACK_WALL_AT
+      values.STATE_SHOOT, values.STATE_LOAD, values.STATE_FIRE = K.STATE_SHOOT, K.STATE_LOAD, K.STATE_FIRE
+      stage(G.updateTable + K.FIRE_BALLISTA * 4, core.itob(assemble(templates.siegeCheck, values)))
     end
   end
   if O.riders then
     -- the same check for knight guards; their states 0, 1 and 0x65 only
+    values.BALLISTA = 0
     values.STATE_CREEPING, values.SIEGE_UNIT = K.STATE_MOVING, G.riderUnit
     values.PAD = pad(onRider, "patrolling knights")
     stage(G.updateTable + K.KNIGHT * 4, core.itob(assemble(templates.siegeCheck, values)))
@@ -2482,7 +2495,7 @@ local function enable(self, config)
     end
   end
   O.plans[23] = { first = K.JOB_OVERWATCH, rest = K.JOB_OVERWATCH, share = 100 }
-  G.ticks, G.updateTable = nil, nil
+  G.ticks, G.updateTable, G.ballistaIdleDelay = nil, nil, nil
   O.patrol = false
   if O.defenders or O.siege or O.jobs then
     local found, site = pcall(core.AOBScan, K.AOB_TICKS)
@@ -2687,6 +2700,14 @@ local function enable(self, config)
     if not ok then
       log(ERROR, tostring(problem) .. "; periodic knight and siege updates stay off")
       O.riders = false
+    elseif O.siege then
+      ok, problem = pcall(function()
+        local update = rd32(G.updateTable + K.FIRE_BALLISTA * 4)
+        local delay = readOperand(update, K.BALLISTA_IDLE_DELAY, "fire ballista idle delay")
+        same(delay, G.units + U.IDLE_DELAY, "fire ballista idle delay")
+        G.ballistaIdleDelay = delay
+      end)
+      if not ok then log(ERROR, tostring(problem) .. "; outpost fire ballista targeting stays off") end
     end
   end
   if not (O.defenders or O.growth or O.jobs or O.siege or O.join or O.retarget or O.waves or O.interval) then

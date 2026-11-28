@@ -580,13 +580,49 @@ jmp DECIDE
 -- forward in the AI's siege steps (9) goes to lua, which may set it shooting. Then whatever update function the table held runs, by the unit's type.
 templates.siegeCheck = [[
 mov eax,[CURRENT_UNIT]
+if BALLISTA <> 0
+imul ecx,eax,U_STRIDE
+cmp word [ecx+U_BEHAVIOUR],OUTPOST_BEHAVIOUR
+jne go
+movzx edx,word [ecx+U_TARGETING]
+cmp edx,ATTACK_BUILDING
+je clearTarget
+cmp edx,ATTACK_WALL_AT
+jne ballistaIdle
+clearTarget:
+xor edx,edx
+mov word [ecx+U_TARGETING],dx
+mov word [ecx+U_TARGET_BUILDING],dx
+mov dword [ecx+U_TARGET_UID],edx
+mov dword [ecx+U_WALL_X],edx
+mov word [ecx+U_SHOOT_UNIT],dx
+movzx edx,word [ecx+U_ACTION]
+cmp edx,STATE_SHOOT
+je stopShooting
+cmp edx,STATE_LOAD
+je stopShooting
+cmp edx,STATE_FIRE
+jne ballistaIdle
+stopShooting:
+mov word [ecx+U_ACTION],0
+ballistaIdle:
+; A negative countdown keeps the native idle update from acquiring a building.
+cmp word [ecx+U_ACTION],0
+jne stagger
+cmp dword [ecx+IDLE_DELAY],0
+jl stagger
+mov dword [ecx+IDLE_DELAY],-1
+stagger:
+end if
 mov edx,[TICKS]
 add edx,eax
 test edx,SIEGE_EVERY
 jnz go
+if BALLISTA = 0
 imul ecx,eax,U_STRIDE
 cmp word [ecx+U_BEHAVIOUR],OUTPOST_BEHAVIOUR
 jne go
+end if
 movzx edx,word [ecx+U_ACTION]
 test edx,edx
 jz check
