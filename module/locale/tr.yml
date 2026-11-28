@@ -29,3 +29,6 @@ waves_interval: Dalgalar arası sabit aralık
 waves_interval_tooltip: Karakolun Zamanlama sayfasında Aralık değerini sabit bir gecikmeye veya oyun zamanlaması için 0’a ayarlayın.
 qol: Kullanım kolaylığı
 map_editor: Harita düzenleyici
+cat_allies_outposts: Müttefikler ve karakollar
+cat_outpost_guards: Karakol muhafızları
+cat_outposts: Karakollar

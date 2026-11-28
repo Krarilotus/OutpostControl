@@ -29,3 +29,6 @@ waves_interval: 固定波次间隔
 waves_interval_tooltip: 在前哨站的“计时”页面将“间隔”设为固定延迟，设为 0 则使用游戏默认计时。
 qol: 便利性改进
 map_editor: 地图编辑器
+cat_allies_outposts: 盟友与前哨站
+cat_outpost_guards: 前哨站守卫
+cat_outposts: 前哨站

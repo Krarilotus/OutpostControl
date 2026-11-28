@@ -29,3 +29,6 @@ waves_interval: Intervalo fijo entre oleadas
 waves_interval_tooltip: En la página Tiempos del puesto, fija Intervalo en una pausa fija o 0 para usar el ritmo del juego.
 qol: Comodidad de juego
 map_editor: Editor de mapas
+cat_allies_outposts: Aliados y puestos avanzados
+cat_outpost_guards: Guardias del puesto avanzado
+cat_outposts: Puestos avanzados

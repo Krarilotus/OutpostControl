@@ -29,3 +29,6 @@ waves_interval: فاصلهٔ ثابت میان موج‌ها
 waves_interval_tooltip: در صفحهٔ «زمان‌بندی» پایگاه، «فاصله» را روی تأخیر ثابت یا 0 برای زمان‌بندی بازی بگذارید.
 qol: سهولت استفاده
 map_editor: ویرایشگر نقشه
+cat_allies_outposts: متحدان و پایگاه‌های مرزی
+cat_outpost_guards: نگهبانان پایگاه مرزی
+cat_outposts: پایگاه‌های مرزی

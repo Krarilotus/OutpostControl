@@ -33,3 +33,6 @@ waves_interval: Fixed interval between waves
 waves_interval_tooltip: On the outpost’s Timing page, set Interval to a fixed delay or 0 to use game timing.
 qol: Quality of Life
 map_editor: Map editor
+cat_allies_outposts: Allies and outposts
+cat_outpost_guards: Outpost guards
+cat_outposts: Outposts

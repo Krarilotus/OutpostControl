@@ -29,3 +29,6 @@ waves_interval: Fix időköz a hullámok között
 waves_interval_tooltip: Az előőrs Időzítés lapján az Időköz értékkel adj meg fix késleltetést, vagy 0-val a játék időzítését.
 qol: Kényelmi funkciók
 map_editor: Térképszerkesztő
+cat_allies_outposts: Szövetségesek és előőrsök
+cat_outpost_guards: Előőrsök őrsége
+cat_outposts: Előőrsök

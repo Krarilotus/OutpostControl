@@ -29,3 +29,6 @@ waves_interval: Festes Intervall zwischen Wellen
 waves_interval_tooltip: Stelle auf der Seite „Zeit“ des Außenpostens „Intervall“ auf eine feste Pause ein, oder 0 für das Spiel-Timing.
 qol: Komfort
 map_editor: Karteneditor
+cat_allies_outposts: Verbündete und Außenposten
+cat_outpost_guards: Außenposten-Wachen
+cat_outposts: Außenposten

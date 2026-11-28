@@ -14,6 +14,7 @@ options:
   category:
   - '{{qol}}'
   - '{{map_editor}}'
+  - '{{cat_outposts}}'
 - display: GroupBox
   hasHeader: true
   header: '{{waves_group}}'
@@ -45,6 +46,7 @@ options:
   category:
   - '{{qol}}'
   - '{{map_editor}}'
+  - '{{cat_outposts}}'
 - url: outpost-control.defenders.walls
   name: outpost-control-defenders-walls
   text: '{{defenders_walls_tooltip}}'
@@ -55,6 +57,7 @@ options:
   header: '{{defenders_walls}}'
   category:
   - '{{balance_changes}}'
+  - '{{cat_outpost_guards}}'
 - url: outpost-control.defenders.knights
   name: outpost-control-defenders-knights
   text: '{{defenders_knights_tooltip}}'
@@ -65,6 +68,7 @@ options:
   header: '{{defenders_knights}}'
   category:
   - '{{balance_changes}}'
+  - '{{cat_outpost_guards}}'
 - display: GroupBox
   hasHeader: true
   header: '{{jobs_group}}'
@@ -104,6 +108,7 @@ options:
   category:
   - '{{ai}}'
   - '{{improvements}}'
+  - '{{cat_allies_outposts}}'
 - url: outpost-control.jobs.variation
   name: outpost-control-jobs-variation
   display: Slider

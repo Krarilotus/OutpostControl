@@ -29,3 +29,6 @@ waves_interval: Intervalle fixe entre les vagues
 waves_interval_tooltip: Dans la page Délais de l’avant-poste, réglez Intervalle sur un délai fixe ou 0 pour utiliser le rythme du jeu.
 qol: Qualité de vie
 map_editor: Éditeur de cartes
+cat_allies_outposts: Alliés et avant-postes
+cat_outpost_guards: Gardes d'avant-poste
+cat_outposts: Avant-postes
